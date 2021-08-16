@@ -1,0 +1,1910 @@
+// {{-=~}} Variables {{~=-}} \\
+
+const TokenTypes = {
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT"],
+    "String":["TK_STRING1","TK_STRING2"],
+    "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
+    "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
+    "Operator":["TK_ADD","TK_SUB","TK_MUL","TK_DIV","TK_MOD","TK_POW","TK_ROUND"],
+    "Assignment":["TK_EQ","TK_ADDEQ","TK_SUBEQ","TK_DIVEQ","TK_MULEQ","TK_MODEQ","TK_POWEQ"],
+    "Incremental":["TK_INC","TK_DEINC"],
+    "Conditional":["TK_AND","TK_OR","TK_NOT"],
+    "Paren":["TK_POPEN","TK_PCLOSE"],
+    "Bracket":["TK_BOPEN","TK_BCLOSE"],
+    "Brace":["TK_IOPEN","TK_ICLOSE"],
+    "Bool":["TK_TRUE","TK_FALSE"],
+    "Null":["TK_NULL"],
+    "None":["TK_DOT","TK_BACKSLASH","TK_COMMA","TK_NONE","TK_LINEEND","TK_SELFCALL","TK_COLON","TK_PROPCALL","TK_LEN"],
+    "Comment":["TK_COMMENT","TK_COMMENTLONGOPEN","TK_COMMENTLONGCLOSE"],
+    "End":["TK_EOS"],
+};
+
+const RawTokens = {
+	"TK_STRING1":"\"",
+    "TK_STRING2":"\'",
+    "TK_SET":"set",
+    "TK_RETCHAR":String.fromCharCode(10),
+    "TK_TAB":String.fromCharCode(9),
+    "TK_SPACE":" ",
+    "TK_CLASS":"class",
+    "TK_EXTENDS":"extends",
+    "TK_DESTRUCT":"destruct",
+    "TK_NEW":"new",
+    "TK_FOR":"for",
+    "TK_FOREACH":"foreach",
+    "TK_WHILE":"while",
+    "TK_IF":"if",
+    "TK_IN":"in",
+    "TK_ELSE":"else",
+    "TK_ELIF":"elif",
+    "TK_OF":"of",
+    "TK_FUNC":"func",
+    "TK_SEND":"send",
+    "TK_POPEN":"(",
+    "TK_PCLOSE":")",
+    "TK_BOPEN":"{",
+    "TK_BCLOSE":"}",
+    "TK_IOPEN":"[",
+    "TK_ICLOSE":"]",
+    "TK_LINEEND":";",
+    "TK_EQ":"=",
+    "TK_EQS":"==",
+    "TK_LT":"<",
+    "TK_GT":">",
+    "TK_LEQ":"<=",
+    "TK_GEQ":">=",
+    "TK_NEQ":"!=",
+    "TK_NOT":"!",
+    "TK_OR":"|",
+    "TK_AND":"&",
+    "TK_ADDEQ":"+=",
+    "TK_SUBEQ":"-=",
+    "TK_MULEQ":"*=",
+    "TK_DIVEQ":"/=",
+    "TK_MODEQ":"%=",
+    "TK_POWEQ":"^=",
+    "TK_ADD":"+",
+    "TK_SUB":"-",
+    "TK_MUL":"*",
+    "TK_DIV":"/",
+    "TK_MOD":"%",
+    "TK_POW":"^",
+    "TK_DEINC":"--",
+    "TK_INC":"++",
+    "TK_ROUND":"~",
+    "TK_COMMENT":"#",
+    "TK_COMMENTLONGOPEN":"#>",
+    "TK_COMMENTLONGCLOSE":"<#",
+    "TK_COMMA":",",
+    "TK_COLON":":",
+    "TK_SELFCALL":"::",
+    "TK_DOT":".",
+    "TK_NULL":"null",
+    "TK_TRUE":"true",
+    "TK_FALSE":"false",
+    "TK_NONE":"",
+    "TK_EOS":"&lt;eos&gt;",
+    "TK_BACKSLASH":"\\",
+    "TK_PROPCALL":"->",
+    "TK_DEL":"del",
+    "TK_LEN":"?",
+    "TK_STOP":"stop",
+    "TK_WITH":"with",
+};
+
+// {{-=~}} Token Classes {{~=-}} \\
+
+class TokenBase {
+	Type="None";
+    Value="TK_NONE";
+    Position=0;
+    constructor(Type,Value,Position){
+    	this.Type=Type;
+        this.Value=Value;
+        this.Position=Position;
+    }
+    toString(){
+    	return `${this.Type}:${this.Value}:${this.Position}`
+    }
+}
+
+// {{-=~}} Error Classes {{~=-}} \\
+
+class InternalError extends Error {
+	constructor(Message){
+    	super(Message).name = this.constructor.name;
+    }
+}
+
+class LexError extends Error {
+	constructor(Message){
+    	super(Message).name = this.constructor.name;
+    }
+}
+
+class CodeError extends Error {
+	constructor(Message){
+    	super(Message).name = this.constructor.name;
+    }
+}
+
+// {{-=~}} Token Functions {{~=-}} \\
+
+function ToToken(x){
+	for (let k in RawTokens){
+    	if (RawTokens[k] == x){
+        	return k;
+        }
+    }
+    return x;
+}
+
+function FromToken(x){
+	for (let k in RawTokens){
+    	if (k == x){
+        	return RawTokens[k];
+        }
+    }
+    return x;
+}
+
+function IsLiteralToken(x){
+	if (!x.startsWith("(")){return false}
+    if (!x.endsWith(")")){return false}
+    x = x.slice(1);
+    x = x.slice(0,x.length-1);
+    return RawTokens.hasOwnProperty(x);
+}
+
+function GetTokenType(Token){
+	for (let k in TokenTypes){
+    	let v = TokenTypes[k];
+        if (v.includes(Token)){
+        	return new TokenBase(k,Token,0);
+        }
+    }
+    return new TokenBase("Identifier",Token,0);
+}
+
+// {{-=~}} Tokenizer {{~=-}} \\
+
+const Lex = Object.freeze({
+	Tokenize:function(Code){
+    	const Tokens = [];
+        let Letters=0,PToken="TK_NONE";
+        const CL = Code.length;
+        const Append = function(n,x){
+        	Tokens[(Tokens.length-1)+n]=x;
+            if (n == 0){
+            	PToken=x;
+            }
+        }
+        for (let k=0;k<=CL-1;k++){
+        	let Raw = Code.substr(k,1);
+            let Token = ToToken(Raw);
+            if (Raw.length == 1 && Token != Raw){
+            	if (Letters > 0){
+                	let Behind = Code.substring(k-Letters,k);
+                    if (RawTokens.hasOwnProperty(Behind)){
+                    	Behind = `(${Behind})`;
+                    }
+                    Append(1,ToToken(Behind));
+            		Letters=0;
+                }
+                if (Token == "TK_EQ"){
+                	if (PToken == "TK_EQ"){
+                    	Append(0,"TK_EQS");continue
+                    } else if (PToken == "TK_LT"){
+                    	Append(0,"TK_LEQ");continue
+                    } else if (PToken == "TK_GT"){
+                    	Append(0,"TK_GEQ");continue
+                    } else if (PToken == "TK_NOT"){
+                    	Append(0,"TK_NEQ");continue
+                    } else if (PToken == "TK_ADD"){
+                    	Append(0,"TK_ADDEQ");continue
+                    } else if (PToken == "TK_SUB"){
+                    	Append(0,"TK_SUBEQ");continue
+                    } else if (PToken == "TK_MUL"){
+                    	Append(0,"TK_MULEQ");continue
+                    } else if (PToken == "TK_DIV"){
+                    	Append(0,"TK_DIVEQ");continue
+                    } else if (PToken == "TK_MOD"){
+                    	Append(0,"TK_MODEQ");continue
+                    } else if (PToken == "TK_POW"){
+                    	Append(0,"TK_POWEQ");continue
+                    } else {
+                    	Append(1,Token);
+                    }
+                } else if (Token == "TK_GT"){
+                	if (PToken == "TK_COMMENT"){
+                    	Append(0,"TK_COMMENTLONGOPEN");continue
+                    } else if (PToken == "TK_SUB"){
+                    	Append(0,"TK_PROPCALL");continue
+                    } else {
+                    	Append(1,Token);
+                    }
+                } else if (Token == "TK_COMMENT"){
+                	if (PToken == "TK_LT"){
+                    	Append(0,"TK_COMMENTLONGCLOSE");continue
+                    } else {
+                    	Append(1,Token);
+                    }
+                } else if (Token == "TK_ADD"){
+                	if (PToken == "TK_ADD"){
+                    	Append(0,"TK_INC");continue;
+                    } else {
+                    	Append(1,Token);
+                    }
+                } else if (Token == "TK_COLON"){
+                	if (PToken == "TK_COLON"){
+                    	Append(0,"TK_SELFCALL");continue;
+                    } else {
+                    	Append(1,Token);
+                    }
+				} else if (Token == "TK_SUB"){
+                	if (PToken == "TK_SUB"){
+                    	Append(0,"TK_DEINC");continue;
+                    } else {
+                    	Append(1,Token);
+                    }
+                } else {
+                	Append(1,Token);
+                }
+            } else {
+            	if (k >= CL-1){
+                	let Behind = Code.substring(k-Letters,k+1);
+                    if (RawTokens.hasOwnProperty(Behind)){
+                    	Behind = `(${Behind})`;
+                    }
+            		Append(1,ToToken(Behind));
+            		Letters=0;
+                    break;
+                } else {
+                	Letters++;
+                }
+            }
+			PToken = Token;
+        }
+        Tokens.push("TK_EOS");
+        return this.GetTokenTypes(this.RemoveComments(Tokens));
+    },
+    RemoveComments:function(Tokens){
+    	let NewTokens = [];
+        let Skip = [];
+        for (let k in Tokens){
+        	k=+k;
+            if (Skip.includes(k)){continue}
+            let v = Tokens[k];
+            if (v == "TK_COMMENT"){ //Short comment removal
+            	let kk = k+1;
+            	while (Tokens[kk] != "TK_RETCHAR"){ //Skip to the next retchar token
+                	if (kk > Tokens.length-1){break}
+                	Skip.push(kk);
+                    kk++;
+                }
+                Skip.push(kk);
+                continue;
+            } else if (v == "TK_COMMENTLONGOPEN"){ //Long comment removal
+            	let kk = k+1;
+                let Broken = false;
+                while (Tokens[kk] != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
+                	if (kk > Tokens.length-1 || Tokens[kk]=="TK_EOS"){Broken=true;break}
+                    Skip.push(kk);
+                    kk++;
+                }
+                if (Broken){ //No closing long comment token? Throw an error
+                	this.NoStackError("UnclosedLongComment",[Tokens[kk],"TK_COMMENTLONGCLOSE"]);
+                }
+                Skip.push(kk);
+                continue;
+            } else if (v == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
+            	this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
+            }
+            NewTokens.push(v);
+        }
+        return NewTokens;
+    },
+    GetTokenTypes:function(Tokens){
+    	let NewTokens = [];
+        let Line = 1;
+        let Skip = [];
+        for (let k in Tokens){
+        	k=+k;
+            if (Skip.includes(k)){continue}
+        	let v = Tokens[k];
+            if (v == "TK_RETCHAR"){Line++}
+            let Class = GetTokenType(v);
+            Class.Position = k;
+            if (Class.Type == "String"){
+            	let kk=k+1;
+                let pt=v;
+                let st = Class.Value=="TK_STRING1"?0:1;
+                let os = 1;
+                let comp = "";
+                for (let i=kk;i<=Tokens.length-1;i++){
+                	let t = Tokens[i];
+                    Skip.push(i);
+                    if (t=="TK_STRING1"||t=="TK_STRING2"){
+                    	let ct = t=="TK_STRING1"?0:1;
+                        if (ct==st){
+                        	if (pt=="TK_BACKSLASH"){
+                            	comp+=FromToken(t);
+                                pt=t;
+                            	continue;
+                            }
+                        	break;
+                        }
+                    }
+                    comp+=FromToken(t);
+                    pt = t;
+                }
+                Class.Type = "Constant";
+                Class.CType = "String";
+                Class.Value = comp;
+            } else if (Class.Type == "Identifier"){
+            	if (!isNaN(+v)){
+                	let nx = Tokens[k+1];
+                    let num = v;
+                    if (nx == "TK_DOT"){
+                    	let nxx = Tokens[k+2];
+                        if (!isNaN(+nxx)){
+                        	Skip.push(k+1);Skip.push(k+2);
+                        	num+="."+nxx;
+                        }
+                    }
+                    Class.Type="Constant";
+                    Class.CType="Number";
+                    Class.Value=+num;
+                }
+            } else if (Class.Type == "Bool"){
+            	Class.Type = "Constant";
+                Class.CType = "Bool";
+                Class.Value = Class.Value=="TK_TRUE"?true:false;
+            } else if (Class.Type == "Null"){
+            	Class.Type = "Constant";
+                Class.CType = "Null";
+                Class.Value = null;
+            }
+            NewTokens.push(Class);
+        }
+        let LastTokens = [];
+        for (let k in NewTokens){
+        	let v = NewTokens[k];
+            if (v.Type != "Whitespace"){
+            	LastTokens.push(v);
+            }
+        }
+        return LastTokens;
+    }
+});
+
+// {{-=~}} AST Class {{~=-}} \\
+
+const AST = Object.freeze({
+	NewStack:function(Options={}){
+    	let Stack = {
+        	Token:"TK_NONE",
+            PToken:"TK_NONE",
+            Current:-1,
+            OpenChunks:[],
+           	Chunk:[],
+            Result:[],
+        };
+        for (let k in Options){
+        	if (!Stack.hasOwnProperty(k)){
+            	Stack[k] = Options[k];
+            }
+        }
+        return Stack
+    },
+    CloseChunk:function(Stack){
+    	if (Stack.OpenChunks.length > 1){
+        	Stack.OpenChunks[Stack.OpenChunks.length-1].push(Stack.Chunk);
+            Stack.Chunk = Stack.OpenChunks[Stack.OpenChunks.length-1];
+            Stack.OpenChunks.pop();
+        } else {
+        	if (Stack.Chunk){
+            	Stack.Result.push(Stack.Chunk);
+            }
+            if (Stack.OpenChunks.length == 1){
+            	Stack.Chunk = Stack.OpenChunks[0];
+                Stack.OpenChunks.pop();
+            } else {
+            	Stack.Chunk = null;
+            }
+        }
+    },
+    OpenChunk:function(Stack){
+    	if (Stack.Chunk){
+        	Stack.OpenChunks.push(Stack.Chunk);
+        }
+        Stack.Chunk = [];
+    },
+    IsPreciseToken:function(Token,Type,Value){
+    	if (!Token){return false}
+    	return Token.Type==Type&&Token.Value==Value;
+    },
+    IsTokenType:function(Token,Type){
+    	if (!Token){return false}
+    	return Token.Type==Type;
+    },
+    ErrorIfTokenNotType:function(Stack,Type){
+    	if (Stack.Token.Type!=Type){
+       		throw new CodeError(`Expected ${Type}, got ${Stack.Token.Type} instead`);
+        }
+    },
+    ChunkWrite:function(Stack,Value,Place){
+    	if (Place===undefined){
+        	Stack.Chunk.push(Value);
+        } else {
+        	Stack.Chunk[Place] = Value;
+        }
+    },
+    //{{ Next }}\\
+    Next:function(Stack){
+    	Stack.Current++;
+        Stack.PToken=Stack.Token;
+        Stack.Token=Stack.Tokens[Stack.Current];
+        return Stack.Token;
+    },
+    JumpBack:function(Stack,Amount=1){
+    	for (let i=1;i<=Amount;i++){
+        	Stack.Current--;
+            Stack.PToken=Stack.Tokens[Stack.Current-1];
+            Stack.Token=Stack.Tokens[Stack.Current];
+        }
+        return Stack.Token;
+    },
+    //{{ Chunk Editing }}\\
+    NewChunk:function(Type){
+    	return [Type];
+    },
+    ChunkAdd:function(Chunk,Value){
+    	Chunk.push(Value);
+    },
+    ChunkEdit:function(Chunk,Value,Place){
+    	Chunk[Place]=Value;
+    },
+    //{{ CheckNext }}\\
+    CheckNext:function(Stack,Type,Value){
+    	let Token = this.Next(Stack);
+        this.JumpBack(Stack);
+        return this.IsPreciseToken(Token,Type,Value);
+    },
+    TypeCheckNext:function(Stack,Type){
+    	let Token = this.Next(Stack);
+        this.JumpBack(Stack);
+        return this.IsTokenType(Token,Type);
+    },
+    TestNext:function(Stack,Type,Value){
+    	if (!this.CheckNext(Stack,Type,Value)){
+        	throw new CodeError(`Expected ${FromToken(Value)}, got ${FromToken(this.Next(Stack).Value)} instead`);
+        }
+    },
+    TypeTestNext:function(Stack,Type){
+        if (!this.TypeCheckNext(Stack,Type)){
+            throw new CodeError(`Expected type "${Type}"", got type "${this.Next(Stack).Type}"`);
+        }
+    },
+    //{{ AssignmentGet }}\\
+    AssignmentGet:function(Stack,Value){
+        this.TypeTestNext(Stack,"Assignment");
+        this.Next(Stack);
+        let TValue = Stack.Token.Value;
+        if (TValue=="TK_EQ"){
+            this.ChunkAdd(Value,"eq");
+        }else if (TValue=="TK_ADDEQ"){
+            this.ChunkAdd(Value,"addeq");
+        }else if (TValue=="TK_SUBEQ"){
+            this.ChunkAdd(Value,"subeq");
+        }else if (TValue=="TK_MULEQ"){
+            this.ChunkAdd(Value,"muleq");
+        }else if (TValue=="TK_DIVEQ"){
+            this.ChunkAdd(Value,"diveq");
+        }else if (TValue=="TK_POWEQ"){
+            this.ChunkAdd(Value,"poweq");
+        }else if (TValue=="TK_MODEQ"){
+            this.ChunkAdd(Value,"modeq");
+        }
+    },
+    FinishComplexExpression:function(Stack,Value,NoCond){
+        if (NoCond){
+            return Value;
+        }
+        //Conditional
+            let And = this.CheckNext(Stack,"Conditional","TK_AND") || this.IsPreciseToken(Stack.Token,"Conditional","TK_AND");
+            let Or = this.CheckNext(Stack,"Conditional","TK_OR") || this.IsPreciseToken(Stack.Token,"Conditional","TK_OR");
+            
+            let Eq = this.CheckNext(Stack,"Compare","TK_EQS") || this.IsPreciseToken(Stack.Token,"Compare","TK_EQS");
+            let GEq = this.CheckNext(Stack,"Compare","TK_GEQ") || this.IsPreciseToken(Stack.Token,"Compare","TK_GEQ");
+            let LEq = this.CheckNext(Stack,"Compare","TK_LEQ") || this.IsPreciseToken(Stack.Token,"Compare","TK_LEQ");
+            let NEq = this.CheckNext(Stack,"Compare","TK_NEQ") || this.IsPreciseToken(Stack.Token,"Compare","TK_NEQ");
+            let Gt = this.CheckNext(Stack,"Compare","TK_GT") || this.IsPreciseToken(Stack.Token,"Compare","TK_GT");
+            let Lt = this.CheckNext(Stack,"Compare","TK_LT") || this.IsPreciseToken(Stack.Token,"Compare","TK_LT");
+            if (And){
+            	let Chunk = this.NewChunk("IN_AND");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Conditional","TK_AND")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (Or){
+            	let Chunk = this.NewChunk("IN_OR");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Conditional","TK_OR")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (Eq){
+            	let Chunk = this.NewChunk("IN_EQ");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Compare","TK_EQS")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (GEq){
+            	let Chunk = this.NewChunk("IN_GEQ");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Compare","TK_GEQ")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (LEq){
+            	let Chunk = this.NewChunk("IN_LEQ");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Compare","TK_LEQ")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (NEq){
+            	let Chunk = this.NewChunk("IN_NEQ");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Compare","TK_NEQ")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (Gt){
+            	let Chunk = this.NewChunk("IN_GT");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Compare","TK_GT")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (Lt){
+            	let Chunk = this.NewChunk("IN_LT");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Compare","TK_LT")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            }
+            return Value;
+    },
+    //{{ ParseExpression }}\\
+    FinishExpression:function(Stack,Value,NoMath,NoCond){
+    	if (this.CheckNext(Stack,"None","TK_LINEEND")){
+        	this.Next(Stack);
+            return Value;
+        }
+    	let Indexing = this.CheckNext(Stack,"Brace","TK_IOPEN");
+        let AddInc = this.CheckNext(Stack,"Incremental","TK_INC");
+        let SubInc = this.CheckNext(Stack,"Incremental","TK_DEINC");
+        let DotIndexing = this.CheckNext(Stack,"None","TK_DOT");
+        let Calling = this.CheckNext(Stack,"Paren","TK_POPEN");
+        let SelfCalling = this.CheckNext(Stack,"None","TK_SELFCALL");
+        let PropCalling = this.CheckNext(Stack,"None","TK_PROPCALL");
+        let SetIndex = this.CheckNext(Stack,"None","TK_COLON");
+        let Add = this.CheckNext(Stack,"Operator","TK_ADD") || this.IsPreciseToken(Stack.Token,"Operator","TK_ADD");
+        let Sub = this.CheckNext(Stack,"Operator","TK_SUB") || this.IsPreciseToken(Stack.Token,"Operator","TK_SUB");
+        let Mul = this.CheckNext(Stack,"Operator","TK_MUL") || this.IsPreciseToken(Stack.Token,"Operator","TK_MUL");
+        let Div = this.CheckNext(Stack,"Operator","TK_DIV") || this.IsPreciseToken(Stack.Token,"Operator","TK_DIV");
+        let Pow = this.CheckNext(Stack,"Operator","TK_POW") || this.IsPreciseToken(Stack.Token,"Operator","TK_POW");
+        let Mod = this.CheckNext(Stack,"Operator","TK_MOD") || this.IsPreciseToken(Stack.Token,"Operator","TK_MOD");
+        if (Indexing){
+        	let Chunk = this.NewChunk("IN_INDEX");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            this.Next(Stack);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+        } else if (SetIndex){
+        	let Chunk = this.NewChunk("IN_SETINDEX");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            this.Next(Stack);
+            let Token = Stack.Token;
+            if (this.IsPreciseToken(Token,"Brace","TK_IOPEN")){
+            	this.Next(Stack);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                this.TestNext(Stack,"Brace","TK_ICLOSE");
+                this.Next(Stack);
+                this.AssignmentGet(Stack,Chunk);
+                this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            } else if (Token.Type == "Constant" || Token.Type == "Identifier"){
+                this.ChunkAdd(Chunk,Token.Value);
+                this.AssignmentGet(Stack,Chunk);
+                this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            } else {
+            	throw new CodeError(`"${FromToken(Token.Value)}" is not a valid index name`);
+            }
+            Value = Chunk
+            return Value;
+        } else if (AddInc){
+        	let Chunk = this.NewChunk("IN_INC");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+		} else if (SubInc){
+        	let Chunk = this.NewChunk("IN_DEINC");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+        } else if (DotIndexing){
+        	let Chunk = this.NewChunk("IN_INDEX");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,Stack.Token.Value);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+        } else if (SelfCalling){
+        	let Chunk = this.NewChunk("IN_SELFCALL");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            this.Next(Stack);
+            if (this.IsPreciseToken(Stack.Token,"Brace","TK_IOPEN")){
+            	this.Next(Stack);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                this.TestNext(Stack,"Brace","TK_ICLOSE");
+                this.Next(Stack);
+            } else if (Stack.Token.Type == "Constant" || Stack.Token.Type == "Identifier" || Stack.Token.Type == "Keyword"){
+            	if (Stack.Token.Type == "Keyword"){
+                	this.ChunkAdd(Chunk,FromToken(Stack.Token.Value));	
+                } else {
+                	this.ChunkAdd(Chunk,Stack.Token.Value);
+                }
+            } else {
+            	throw new CodeError(`"${FromToken(Stack.Token.Value)}" is not a valid index name`);
+            }
+            this.TestNext(Stack,"Paren","TK_POPEN");
+            this.Next(Stack);
+            this.Next(Stack);
+            let Params = [];
+            let i=0;
+            if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            	while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            		i++;
+                	if (i>100){break}
+                	Params.push(this.ParseExpression(Stack));
+                	this.Next(Stack);
+            	};
+            }
+            this.ChunkAdd(Chunk,Params);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+       	} else if (PropCalling){
+        	let Chunk = this.NewChunk("IN_PROPCALL");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            this.Next(Stack);
+            if (this.IsPreciseToken(Stack.Token,"Brace","TK_IOPEN")){
+            	this.Next(Stack);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                this.TestNext(Stack,"Brace","TK_ICLOSE");
+                this.Next(Stack);
+            } else if (Stack.Token.Type == "Constant" || Stack.Token.Type == "Identifier" || Stack.Token.Type == "Keyword"){
+            	if (Stack.Token.Type == "Keyword"){
+                	this.ChunkAdd(Chunk,FromToken(Stack.Token.Value));	
+                } else {
+                	this.ChunkAdd(Chunk,Stack.Token.Value);
+                }
+            } else {
+            	throw new CodeError(`"${FromToken(Stack.Token.Value)}" is not a valid index name`);
+            }
+            this.TestNext(Stack,"Paren","TK_POPEN");
+            this.Next(Stack);
+            this.Next(Stack);
+            let Params = [];
+            let i=0;
+            if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            	while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            		i++;
+                	if (i>100){break}
+                	Params.push(this.ParseExpression(Stack));
+                	this.Next(Stack);
+            	};
+            }
+            this.ChunkAdd(Chunk,Params);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+        } else if (Calling){
+        	let Chunk = this.NewChunk("IN_CALL");
+            this.ChunkAdd(Chunk,Value);
+            this.Next(Stack);
+            this.Next(Stack);
+            let Params = [];
+            let i=0;
+            if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            	while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            		i++;
+                	if (i>100){break}
+                	Params.push(this.ParseExpression(Stack));
+                	this.Next(Stack);
+            	};
+            }
+            this.ChunkAdd(Chunk,Params);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+        }else{
+            if(NoMath==true){return Value}
+            if (Add){
+                	let Chunk = this.NewChunk("IN_ADD");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_ADD")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                } else if (Sub){
+                	let Chunk = this.NewChunk("IN_SUB");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_SUB")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                } else if (Mul){
+                	let Chunk = this.NewChunk("IN_MUL");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_MUL")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                } else if (Div){
+                	let Chunk = this.NewChunk("IN_DIV");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_DIV")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                } else if (Pow){
+                	let Chunk = this.NewChunk("IN_POW");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_POW")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                } else if (Mod){
+                	let Chunk = this.NewChunk("IN_MOD");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_MOD")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                }
+        }
+        Value = this.FinishComplexExpression(Stack,Value,NoCond);
+        return Value;
+    },
+    ParseExpression:function(Stack,NoMath,NoCond){
+    	let Token = Stack.Token;
+        let Result = null;
+        if (Token.Type == "Constant"){
+        	Result = Token.Value;
+        } else if (Token.Type == "Identifier"){
+        	Result = ["IN_GET",Token.Value];
+        } else if (this.IsPreciseToken(Token,"Conditional","TK_NOT")){
+        	this.Next(Stack);
+           	Result = ["IN_NOT",this.ParseExpression(Stack,NoMath,NoCond)]
+        } else if (this.IsPreciseToken(Token,"Paren","TK_POPEN")){
+        	this.Next(Stack);
+        	Result = this.ParseExpression(Stack,NoMath,NoCond);
+            this.TestNext(Stack,"Paren","TK_PCLOSE");
+            this.Next(Stack);
+        } else if (this.IsPreciseToken(Token,"Bracket","TK_BOPEN")){
+        	let Arr = {};
+            this.Next(Stack);
+            while (!this.IsPreciseToken(Stack.Token,"Bracket","TK_BCLOSE")){
+            	let Var = Stack.Token;
+                let Inner = null;
+                if (this.IsPreciseToken(Var,"Brace","TK_IOPEN")){
+                	this.Next(Stack);
+                    Inner = this.ParseExpression(Stack);
+                    this.TestNext(Stack,"Brace","TK_ICLOSE");
+                    this.Next(Stack);
+                } else if (Var.Type == "Constant" || Var.Type == "Identifier"){
+                	Inner = Var.Value
+                }
+                this.TestNext(Stack,"Assignment","TK_EQ");
+                this.Next(Stack);
+                this.Next(Stack);
+                let Value = this.ParseExpression(Stack);
+                Arr[Inner]=Value;
+                this.Next(Stack);
+            }
+            Result = ["IN_ARRAY",Arr];
+        } else if (this.IsPreciseToken(Token,"Brace","TK_IOPEN")){
+        	let Arr = [];
+            this.Next(Stack);
+            while (!this.IsPreciseToken(Stack.Token,"Brace","TK_ICLOSE")){
+            	let Value = this.ParseExpression(Stack);
+                Arr.push(Value);
+                this.Next(Stack);
+            }
+            Result = ["IN_ARRAY",Arr];
+        } else if (this.IsPreciseToken(Token,"Keyword","TK_FUNC")){
+        	let Chunk = this.NewChunk("IN_FASTFUNC");
+        	this.TestNext(Stack,"Paren","TK_POPEN");
+        	this.Next(Stack);
+        	this.Next(Stack);
+       		let Params = [];
+        	let i=0;
+        	if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            	while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            		i++;
+                	if (i>100){break}
+                	this.ErrorIfTokenNotType(Stack,"Identifier");
+                	Params.push(Stack.Token.Value);
+                	this.Next(Stack);
+            	}
+        	}
+        	this.ChunkAdd(Chunk,Params);
+        	this.Next(Stack);
+        	this.Next(Stack);
+        	let CodeBlock = [];
+            this.OpenChunk(Stack);
+        	while (!this.IsPreciseToken(Stack.Token,"Bracket","TK_BCLOSE")){
+        		this.ParseChunk(Stack);
+            	this.Next(Stack);
+        	}
+        	if (this.IsPreciseToken(Stack.Token,"Bracket","TK_BCLOSE")){
+        		this.Next(Stack);
+        	}
+            CodeBlock = Stack.Chunk;
+            Stack.Chunk = Stack.OpenChunks[Stack.OpenChunks.length-1];
+            Stack.OpenChunks.pop();
+        	this.ChunkAdd(Chunk,CodeBlock);
+            Result = Chunk;
+            this.JumpBack(Stack);
+        } else if (this.IsPreciseToken(Token,"None","TK_LEN")){
+        	let Chunk = this.NewChunk("IN_LEN");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,NoMath,NoCond));
+            Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"Operator","TK_ROUND")){
+        	let Chunk = this.NewChunk("IN_ROUND");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,NoMath,NoCond));
+            Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"Operator","TK_SUB")){
+        	let Chunk = this.NewChunk("IN_UNM");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,NoCond));
+            Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"Keyword","TK_NEW")){
+        	let Chunk = this.NewChunk("IN_MAKENEW");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            if (this.CheckNext(Stack,"Keyword","TK_WITH")){
+            	this.Next(Stack);
+                this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            }
+            Result = Chunk;
+        }
+        Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
+        return Result;
+    },
+    //{{ SetState }}\\
+    SetState:function(Stack){
+        let Name = this.Next(Stack);
+        this.ErrorIfTokenNotType(Stack,"Identifier");
+        this.ChunkWrite(Stack,Name.Value);
+        this.AssignmentGet(Stack,Stack.Chunk);
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.CloseChunk(Stack);
+    },
+    //{{ NewState }}\\
+    NewState:function(Stack){
+        let Name = this.Next(Stack);
+        this.ErrorIfTokenNotType(Stack,"Identifier");
+        this.ChunkWrite(Stack,Name.Value);
+        let Result = this.CheckNext(Stack,"Assignment","TK_EQ");
+        if (Result){
+        	this.Next(Stack);
+            this.Next(Stack);
+        	this.ChunkWrite(Stack,this.ParseExpression(Stack));
+       	} else {
+        	this.ChunkWrite(Stack,null);
+        }
+        this.CloseChunk(Stack);
+    },
+    //{{ CodeBlock }}\\
+    CodeBlock:function(Stack){
+    	this.OpenChunk(Stack);
+        while (!this.IsPreciseToken(Stack.Token,"Bracket","TK_BCLOSE")){
+        	this.ParseChunk(Stack);
+            this.Next(Stack);
+        }
+        if (this.IsPreciseToken(Stack.Token,"Bracket","TK_BCLOSE")){
+        	this.Next(Stack);
+        }
+        this.CloseChunk(Stack);
+    },
+    //{{ IfState }}\\
+    IfState:function(Stack){
+    	this.TestNext(Stack,"Paren","TK_POPEN")
+        this.Next(Stack);
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.TestNext(Stack,"Paren","TK_PCLOSE");
+        this.Next(Stack);
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Next(Stack);
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
+    //{{ ElseState }}\\
+    ElseState:function(Stack){
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Next(Stack);
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
+    //{{ ForEachState }}\\
+    ForEachState:function(Stack){
+    	this.TestNext(Stack,"Paren","TK_POPEN")
+        this.Next(Stack);
+        this.Next(Stack);
+        this.ErrorIfTokenNotType(Stack,"Identifier");
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.Next(Stack);
+        if (this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+        	this.Next(Stack);
+            this.ErrorIfTokenNotType(Stack,"Identifier");
+            this.ChunkWrite(Stack,Stack.Token.Value);
+            Stack.Chunk[0]="IN_FORALL";
+        } else {
+        	this.ErrorIfTokenNotType(Stack,"Keyword");
+        	let Token = Stack.Token;
+        	if (Token.Value == "TK_OF" || Token.Value == "TK_IN"){
+        		this.ChunkWrite(Stack,FromToken(Token.Value));
+        	} else {
+        		throw new CodeError(`Unexpected keyword ${FromToken(Token.Value)}`);
+        	}
+        }
+        this.Next(Stack);
+        let Arr = this.ParseExpression(Stack);
+        this.ChunkWrite(Stack,Arr);
+        this.TestNext(Stack,"Paren","TK_PCLOSE");
+       	this.Next(Stack);
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Next(Stack);
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
+    //{{ ForState }}\\
+    ForState:function(Stack){
+    	this.TestNext(Stack,"Paren","TK_POPEN")
+        this.Next(Stack);
+        this.Next(Stack);
+        this.ErrorIfTokenNotType(Stack,"Identifier");
+        this.ChunkWrite(Stack,Stack.Token.Value);
+       	this.TestNext(Stack,"Assignment","TK_EQ");
+        this.Next(Stack);
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
+    // {{ FuncState }}\\
+    FuncState:function(Stack){
+    	this.Next(Stack);
+    	this.ErrorIfTokenNotType(Stack,"Identifier");
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.TestNext(Stack,"Paren","TK_POPEN");
+        this.Next(Stack);
+        this.Next(Stack);
+       	let Params = [];
+        let i=0;
+        if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
+            	i++;
+                if (i>100){break}
+                this.ErrorIfTokenNotType(Stack,"Identifier");
+                Params.push(Stack.Token.Value);
+                this.Next(Stack);
+            }
+        }
+        this.ChunkWrite(Stack,Params);
+        this.Next(Stack);
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
+    //{{ DelState }}\\
+    DelState:function(Stack){
+    	this.Next(Stack);
+        this.ErrorIfTokenNotType(Stack,"Identifier");
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.CloseChunk(Stack)
+    },
+    //{{ RetState }}\\
+    RetState:function(Stack){
+    	this.Next(Stack);
+    	this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
+    //{{ ClassState }}\\
+    ClassState:function(Stack){
+    	this.TypeTestNext(Stack,"Identifier");
+    	this.Next(Stack);
+    	this.ChunkWrite(Stack,Stack.Token.Value);
+    	if (this.CheckNext(Stack,"Keyword","TK_EXTENDS")){
+    		this.Next(Stack);
+    		this.Next(Stack);
+    		let Value = this.ParseExpression(Stack);
+    		let HasSuper = false;
+    		if (this.CheckNext(Stack,"Keyword","TK_WITH")){
+    			this.Next(Stack);
+    			this.TestNext(Stack,"Identifier","super");
+    			HasSuper = true;
+    			this.Next(Stack);
+    		}
+    		this.Next(Stack);
+    		this.ChunkWrite(Stack,this.ParseExpression(Stack));
+    		this.ChunkWrite(Stack,Value);
+    		this.ChunkWrite(Stack,HasSuper);
+    	} else {
+    		this.Next(Stack);
+    		this.ChunkWrite(Stack,this.ParseExpression(Stack));
+    	}
+    	this.CloseChunk(Stack);
+    },
+    //{{ DestructState }}\\
+    DestructState:function(Stack){
+    	this.Next(Stack);
+    	this.ChunkWrite(Stack,this.ParseExpression(Stack));
+    	this.Next(Stack);
+    	this.ChunkWrite(Stack,this.ParseExpression(Stack));
+    	this.CloseChunk(Stack);
+    },
+    //{{ ParseChunk }}\\
+    ParseChunk:function(Stack){
+        let Token = Stack.Token;
+        if (Token.Type == "Keyword"){
+        	if (Token.Value == "TK_SET"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_NEW");
+            	this.NewState(Stack);
+            } else if (Token.Value == "TK_IF"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_IF");
+                this.IfState(Stack);
+            } else if (Token.Value == "TK_ELIF"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_ELIF");
+                this.IfState(Stack);
+            } else if (Token.Value == "TK_ELSE"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_ELSE");
+                this.ElseState(Stack);
+            } else if (Token.Value == "TK_WHILE"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_WHILE");
+                this.IfState(Stack);
+            } else if (Token.Value == "TK_FOREACH"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_FOREACH");
+                this.ForEachState(Stack);
+            } else if (Token.Value == "TK_FOR"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_FOR");
+                this.ForState(Stack);
+            } else if (Token.Value == "TK_FUNC"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_FUNC");
+                this.FuncState(Stack);
+            } else if (Token.Value == "TK_SEND"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_RETURN");
+                this.RetState(Stack);
+            } else if (Token.Value == "TK_DEL"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_DEL");
+                this.DelState(Stack);
+            } else if (Token.Value == "TK_STOP"){
+            	this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_STOP");
+                this.CloseChunk(Stack);
+            } else if (Token.Value == "TK_CLASS"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_CLASS");
+            	this.ClassState(Stack);
+            } else if (Token.Value == "TK_DESTRUCT"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_DESTRUCT");
+            	this.DestructState(Stack);
+            } else {
+            	throw new CodeError(`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`);
+            }
+        } else if (Token.Type == "Identifier"){
+        	if (this.TypeCheckNext(Stack,"Assignment")){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_SET");
+                this.JumpBack(Stack);
+                this.SetState(Stack);
+            } else {
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_GET");
+            	this.ChunkWrite(Stack,Token.Value);
+        		Stack.Chunk = this.FinishExpression(Stack,Stack.Chunk);
+        		this.CloseChunk(Stack);
+            }
+        }
+    },
+    StartParser:function(Code){
+    	let Stack = this.NewStack({
+        	Tokens:Lex.Tokenize(Code),
+            Code:Code,
+        });
+        while (Stack.Current <= Stack.Tokens.length-1 && !this.IsPreciseToken(Stack.Token,"End","TK_EOS")){
+            this.Next(Stack);
+            if (Stack.Current >= Stack.Tokens.length-1 || this.IsPreciseToken(Stack.Token,"End","TK_EOS")){break}
+            this.ParseChunk(Stack);
+        }
+        return Stack.Result;
+    },
+});
+
+// {{-=~}} Interpreter {{~=-}} \\\
+
+
+const DeepCopy = (inObject) => {
+  let outObject, value, key
+
+  if (typeof inObject !== "object" || inObject === null) {
+    return inObject // Return the value if inObject is not an object
+  }
+
+  // Create an array or object to hold the values
+  outObject = Array.isArray(inObject) ? [] : {}
+
+  for (key in inObject) {
+    value = inObject[key]
+
+    // Recursively (deep) copy for nested objects, including arrays
+    outObject[key] = DeepCopy(value)
+  }
+
+  return outObject
+}
+
+const Interpreter = Object.freeze({
+	NewStack:function(AST,Tokens){
+    	const NewStack = {
+        	Current:-1,
+            PToken:"",
+            Token:"",
+            CloneTokens:DeepCopy(Tokens),
+            Tokens:Tokens,
+        };
+        AST.Stacks.push({
+        	Tokens:Tokens,
+        	Stack:NewStack,
+        });
+    	return NewStack;
+    },
+    GetStack:function(AST,Tokens){
+    	for (let v of AST.Stacks){
+        	if (v.Tokens == Tokens){
+            	return v.Stack;
+            }
+        }
+    },
+    RemoveStack:function(AST,Tokens){
+    	for (let k in AST.Stacks){
+        	k=+k;
+            let v = AST.Stacks[k];
+        	if (v.Tokens == Tokens){
+            	AST.Stacks.splice(k,1);
+                return;
+            }
+        }
+    },
+    Next:function(AST,Stack){
+        if (!this.GetStack(AST,Stack)){
+        	this.NewStack(AST,Stack);
+        }
+    	let ParseStack = this.GetStack(AST,Stack);
+        ParseStack.Current++;
+        ParseStack.PToken=ParseStack.Token;
+        ParseStack.Token=ParseStack.Tokens[ParseStack.Current];
+        AST.CStack = Stack
+        if (ParseStack){
+        	AST.StackCurrent = ParseStack
+        }
+    },
+    GetCurrentVariables:function(AST){
+    	let Variables = [];
+        for (let v of AST.Variables){
+        	if (v.Block <= AST.Block){
+            	Variables.push(v);
+            }
+        }
+        return Variables;
+    },
+    GetHighestVariable:function(AST,Name){
+    	let Variables = this.GetCurrentVariables(AST);
+        let Variable = null;
+        for (let v of Variables){
+        	if (v.Name == Name && v.Block <= AST.Block){
+            	if (!Variable){
+                	Variable = v
+                } else if (v.Block > Variable.Block){
+                	Variable = v;
+                }
+            }
+        }
+        return Variable;
+    },
+    NewVariable:function(Name,Value,Block){
+    	return {
+        	Name:Name,
+            Value:Value,
+            Block:Block,
+        };
+    },
+    SetVariable:function(AST,Name,Value,Type){
+    	let Variable = this.GetHighestVariable(AST,Name);
+        if (Variable){
+            if (!Type || Type=="eq"){
+        	    Variable.Value = Value;
+            }else if(Type=="addeq"){
+                Variable.Value+=Value;
+            }else if(Type=="subeq"){
+                Variable.Value-=Value;
+            }else if(Type=="muleq"){
+                Variable.Value*=Value;
+            }else if(Type=="diveq"){
+                Variable.Value/=Value;
+            }else if(Type=="poweq"){
+                Variable.Value**=Value;
+            }else if(Type=="modeq"){
+                Variable.Value%=Value;
+            }
+        } else {
+        	this.MakeVariable(AST,Name,Value);
+        }
+    },
+    MakeVariable:function(AST,Name,Value,Extra,ForceBlock){
+    	let Variable = this.GetHighestVariable(AST,Name);
+        if (Variable && Variable.Block == AST.Block && ForceBlock==undefined){return}
+        Variable = this.NewVariable(Name,Value,AST.Block);
+        if (ForceBlock!=undefined){
+        	Variable.Block = ForceBlock;
+        }
+        if (Extra && Extra instanceof Array){
+        	for (let k in Extra){
+            	Variables[k] = Extra[k];
+            }
+        }
+        AST.Variables.push(Variable);
+    },
+    RemoveVariable:function(AST,Name){
+    	let Variable = this.GetHighestVariable(AST,Name);
+        if (Variable){
+        	AST.Variables.splice(AST.Variables.indexOf(Variable),1);
+        }
+    },
+    ParseInnerToken:function(AST,Token){
+    	return this.Parse(AST,Token)
+    },
+    ParseToken:function(AST,Token){
+    	if (Token.length == 0){return}
+    	for (let k in Token){
+        	k=+k;
+        	let v = Token[k];
+            if (v instanceof Array){
+            	let R = [this.Parse(AST,v)];
+                if (R.length > 1){
+                	Token[k]=R[0];
+                    for (let kk in R){
+                    	kk=+kk;
+                    	let vv = R[kk];
+                        if (+kk > 0){
+                        	Token.splice((+k)+((+kk-1)),0,vv);
+                        }
+                    }
+                } else {
+                	Token[k] = R[0];
+                }
+            } else if (v instanceof Object){
+            	this.ParseToken(AST,v);
+            	for (let kk in v){
+                   	let vv = v[kk];
+                	v[kk] = this.Parse(AST,v[kk]);
+                }
+            }
+        }
+    },
+    OpenBlock:function(AST){
+    	AST.Block++;
+    },
+    CloseBlock:function(AST){
+    	let Variables = this.GetCurrentVariables(AST);
+        let New = [];
+        for (let v of Variables){
+        	if (v.Block < AST.Block){
+            	New.push(v);
+            }
+        }
+        AST.Variables = New;
+        AST.Block--;
+    },
+    SetState:function(AST,Token){
+    	this.SetVariable(AST,Token[1],Token[3],Token[2]);
+    },
+    NewState:function(AST,Token){
+    	this.MakeVariable(AST,Token[1],Token[2]);
+    },
+    CallState:function(AST,Token){
+    	let Check = Token[1];
+    	if (typeof Check !="function"){
+        	throw new CodeError(`Attempt to call a(n) ${typeof Check} value "${String(Check)}"`);
+        }
+    	return Token[1](...(Token[2]||[]));
+    },
+    SelfCallState:function(AST,Token){
+    	let Check = Token[1][Token[2]];
+    	if (typeof Check !="function"){
+        	throw new CodeError(`Attempt to call a(n) ${typeof Check} value "${String(Check)}"`);
+        }
+    	return Token[1][Token[2]](Token[1],...Token[3]);
+    },
+    PropCallState:function(AST,Token){
+    	let Check = Token[1][Token[2]];
+    	if (typeof Check !="function"){
+        	throw new CodeError(`Attempt to call a(n) ${typeof Check} value "${String(Check)}"`);
+        }
+    	return Token[1][Token[2]](...Token[3]);
+    },
+    FastFuncState:function(AST,Args,Tokens){
+        let Block = AST.Block;
+        this.NewStack(AST,Tokens);
+        const Callback = function(...Params){
+        	Interpreter.OpenBlock(AST);
+            let Stack = Interpreter.GetStack(AST,Tokens);
+            for (let k in Args){
+            	k=+k;
+            	let v = Args[k];
+            	Interpreter.MakeVariable(AST,v,Params[k] || undefined);
+            }
+            let Result = undefined;
+            let CStack = AST.CStack;
+            let PreBlock = AST.InBlock;
+            AST.InBlock = true;
+            do {
+            	Interpreter.Next(AST,Stack.Tokens);
+                if (Stack.Token[0]=="IN_RETURN"){
+                	Result = Interpreter.Parse(AST,Stack.Token);
+                    Stack.Result = null;
+                    break;
+                }
+                Interpreter.Parse(AST,Stack.Token);
+                if (AST.Returned==true){
+                	Result = AST.Result;
+                    AST.Result = null;
+                    break;
+                }
+            }while(Stack.Current < Stack.Tokens.length-1);
+            Stack.Tokens = DeepCopy(Stack.CloneTokens);
+            Stack.Current = 0;
+            Tokens = Stack.Tokens;
+            AST.CStack = CStack;
+            AST.Result = null;
+            Interpreter.RemoveStack(AST,Stack.Tokens);
+            Interpreter.NewStack(AST,Stack.Tokens);
+            Interpreter.CloseBlock(AST);
+            AST.InBlock = PreBlock;
+            AST.Returned = false;
+            return Result;
+        }
+        return Callback;
+    },
+    FuncState:function(AST,Token){
+    	let Name = Token[1];
+        let Args = Token[2];
+        let Tokens = Token[3];
+        let Block = AST.Block;
+        this.NewStack(AST,Tokens);
+        const Callback = this.FastFuncState(AST,Args,Tokens);
+        this.SetVariable(AST,Name,Callback,Block);
+    },
+    SkipIfState:function(AST,Token){
+    	if ((AST.Returned&&AST.InBlock)||(AST.Broken)){return}
+      let Stack = this.GetStack(AST,Token);
+      if (!Stack.Token){
+      	return
+      }
+      if (Stack.Token[0]!="IN_ELIF"&&Stack.Token[0]!="IN_ELSE"){
+        return this.Parse(AST,Stack.Token);
+      }
+      do{
+        this.Next(AST,Token);
+        if (Stack.Current >= Stack.Tokens.length-1){
+        	if (!Stack.Token){return}
+          if (Stack.Token[0]=="IN_ELIF"||Stack.Token[0]=="IN_ELSE"){
+            this.Next(AST,Token);
+          }
+          break;
+        }
+      }while(Stack.Token[0]=="IN_ELIF"||Stack.Token[0]=="IN_ELSE");
+      if (!Stack.Token){return}
+      if (Stack.Token[0]=="IN_ELIF"||Stack.Token[0]=="IN_ELSE"){
+        this.Next(AST,Token);
+      }
+      return this.Parse(AST,Stack.Token);
+    },
+    CondState:function(AST,Token){
+    	this.OpenBlock(AST);
+      this.NewStack(AST,Token);
+      let Stack = this.GetStack(AST,Token);
+      do{
+        this.Next(AST,Stack.Tokens);
+        if (Stack.Token[0]=="IN_RETURN"&&AST.InBlock){
+          AST.Result = this.Parse(AST,Stack.Token);
+          AST.Returned = true;
+          break;
+        } else if (Stack.Token[0]=="IN_STOP"&&AST.InLoop){
+          AST.InLoop=false;
+          AST.Broken=true;
+          break;
+        }
+        this.Parse(AST,Stack.Token);
+      }while(Stack.Current<Stack.Tokens.length-1);
+      this.RemoveStack(AST,Token);
+      this.CloseBlock(AST);
+    },
+    IfState:function(AST,Token){
+    	let Comp = this.Parse(AST,Token[1]);
+        let CStack = AST.CStack;
+        let Stack = Token[2];
+        if (Comp){
+          this.CondState(AST,Stack);
+          this.Next(AST,CStack);
+          this.SkipIfState(AST,CStack);
+          return;
+        } else {
+          this.Next(AST,CStack);
+          let NStack = this.GetStack(AST,CStack);
+          if (!NStack.Token){return}
+          if (NStack.Token[0]=="IN_ELIF"){
+            return this.IfState(AST,NStack.Token);
+          } else if (NStack.Token[0]=="IN_ELSE"){
+            return this.CondState(AST,NStack.Token);
+          }
+          return this.Parse(AST,NStack.Token);
+        }
+    },
+    WhileState:function(AST,Token){
+      let Comp = Token[1];
+      let Stack = Token[2];
+      let NewComp = DeepCopy(Comp);
+      let PreLoop = AST.InLoop;
+      AST.InLoop = true;
+      while(this.Parse(AST,NewComp)){
+        let NewStack = DeepCopy(Stack);
+        this.CondState(AST,NewStack);
+        NewComp=DeepCopy(Comp);
+        if (!AST.InLoop||AST.Returned){break}
+      }
+      AST.Broken=false;
+      AST.InLoop = PreLoop;
+    },
+    ForEachState:function(AST,Token){
+    	let VName = Token[1];
+    	let Type = Token[2];
+    	let Arr = this.Parse(AST,Token[3]);
+    	let Stack = Token[4];
+    	let PreLoop = AST.InLoop
+    	AST.InLoop = true
+    	for (let k in Arr){
+    		let v = Arr[k];
+    		this.MakeVariable(AST,VName,Type=="in"?k:v,undefined,AST.Block+1);
+    		let NewStack = DeepCopy(Stack);
+    		this.CondState(AST,NewStack);
+    		if (!AST.InLoop||AST.Returned){break}
+    	}
+        AST.Broken=false;
+    	AST.InLoop = PreLoop;
+    },
+    ForAllState:function(AST,Token){
+    	let VName1 = Token[1];
+    	let VName2 = Token[2];
+    	let Arr = this.Parse(AST,Token[3]);
+    	let Stack = Token[4];
+    	let PreLoop = AST.InLoop
+    	AST.InLoop = true
+    	for (let k in Arr){
+    		let v = Arr[k];
+    		this.MakeVariable(AST,VName1,k,undefined,AST.Block+1);
+            this.MakeVariable(AST,VName2,v,undefined,AST.Block+1);
+    		let NewStack = DeepCopy(Stack);
+    		this.CondState(AST,NewStack);
+    		if (!AST.InLoop||AST.Returned){break}
+    	}
+        AST.Broken=false;
+    	AST.InLoop = PreLoop;
+    },
+    ForState:function(AST,Token){
+    	let VName = Token[1];
+    	let Start = this.Parse(AST,Token[2]);
+    	let End = this.Parse(AST,Token[3]);
+    	let Inc = this.Parse(AST,Token[4]);
+    	let Stack = Token[5];
+    	let PreLoop = AST.InLoop;
+    	AST.InLoop = true;
+    	for(let i=Start;;i+=Inc){
+    		if (Start<End && i>End){break}
+    		if (Start>End&&i<End){break}
+    		this.MakeVariable(AST,VName,i,undefined,AST.Block+1);
+    		let NewStack = DeepCopy(Stack);
+    		this.CondState(AST,NewStack);
+    		if (!AST.InLoop||AST.Returned){break}
+    	}
+        AST.Broken=false;
+    	AST.InLoop = PreLoop;
+    },
+    ArrayState:function(AST,Token){
+    	let Arr = Token[1];
+    	for (let k in Arr){
+        	Arr[k]=this.Parse(AST,Arr[k]);
+        }
+        return Arr;
+    },
+    ClassState:function(AST,Token){
+    	const Obj = Token[2];
+    	if (!Obj.construct){throw new CodeError(`Invalid class ${Token[1]}`)}
+    	const Extends = Token[3];
+    	const HasSuper = Token[4];
+    	const RClass = function(...a){
+    		let New = {};
+    		if (Extends && !HasSuper){
+    			let Result = new Extends(...a);
+    			for (k in Result){
+    				New[k]=Result[k];
+    			}
+    		}
+    		for (k in Obj){
+    			if (k!="construct"){
+    				New[k]=DeepCopy(Obj[k]);
+    			}
+    		}
+    		let Super = function(...ar){
+    			if (Extends && HasSuper){
+    				let Result = new Extends(...ar);
+    				for (k in Result){
+    					New[k]=Result[k];
+    				}
+    			}
+    		}
+    		Interpreter.MakeVariable(AST,"super",Super,null,AST.Block+1);
+    		let Sent = Obj.construct(New,...a);
+    		if (Sent!=null&&Sent!=undefined){
+    			New=Sent;
+    		}
+    		return New;
+    	}
+    	this.SetVariable(AST,Token[1],RClass);
+    },
+    DestructState:function(AST,Token){
+    	let Arr = Token[1];
+    	let Obj = Token[2];
+    	let Default = Obj.default;
+    	for (let v of Arr){
+    		if (Obj.hasOwnProperty(v)){
+    			this.MakeVariable(AST,v,Obj[v]);
+    		} else if(Default) {
+    			this.MakeVariable(AST,v,Default);
+    		}
+    	}
+    },
+    Parse:function(AST,Token){
+    	if (!(Token instanceof Array)){
+        	return Token
+        }
+        //Non-Parsed
+        if (Token[0]=="IN_FUNC"){
+        	return this.FuncState(AST,Token);
+        } else if (Token[0]=="IN_FASTFUNC"){
+        	return this.FastFuncState(AST,Token[1],Token[2]);
+        } else if (Token[0]=="IN_IF"){
+        	return this.IfState(AST,Token);
+        } else if (Token[0]=="IN_WHILE"){
+        	return this.WhileState(AST,Token);
+        } else if (Token[0]=="IN_FOREACH"){
+        	return this.ForEachState(AST,Token);
+        } else if (Token[0]=="IN_FOR"){
+        	return this.ForState(AST,Token);
+        } else if (Token[0]=="IN_FORALL"){
+        	return this.ForAllState(AST,Token);
+        } else if (Token[0]=="IN_ARRAY"){
+        	return this.ArrayState(AST,Token);
+        }
+        this.ParseToken(AST,Token);
+        //Parsed
+        if (Token[0] == "IN_SET"){
+        	return this.SetState(AST,Token);
+        } else if (Token[0] == "IN_NEW"){
+        	return this.NewState(AST,Token);
+        } else if (Token[0] == "IN_CALL"){
+        	return this.CallState(AST,Token);
+        } else if (Token[0] == "IN_SELFCALL"){
+        	return this.SelfCallState(AST,Token);
+        } else if (Token[0] == "IN_PROPCALL"){
+        	return this.PropCallState(AST,Token);
+        } else if (Token[0]=="IN_GET"){
+        	return AST.Globals[Token[1]];
+        } else if (Token[0]=="IN_ADD"){
+        	return Token[1]+Token[2];
+        } else if (Token[0]=="IN_SUB"){
+        	return Token[1]-Token[2];
+        } else if (Token[0]=="IN_MUL"){
+        	return Token[1]*Token[2];
+        } else if (Token[0]=="IN_DIV"){
+        	return Token[1]/Token[2];
+        } else if (Token[0]=="IN_POW"){
+        	return Token[1]**Token[2];
+        } else if (Token[0]=="IN_MOD"){
+        	return Token[1]%Token[2];
+        } else if (Token[0]=="IN_AND"){
+        	return Token[1]&&Token[2];
+        } else if (Token[0]=="IN_OR"){
+        	return Token[1]||Token[2];
+        } else if (Token[0]=="IN_NOT"){
+        	return !Token[1];
+        } else if (Token[0]=="IN_EQ"){
+        	return Token[1]==Token[2];
+        } else if (Token[0]=="IN_GEQ"){
+        	return Token[1]>=Token[2];
+        } else if (Token[0]=="IN_LEQ"){
+        	return Token[1]<=Token[2];
+        } else if (Token[0]=="IN_NEQ"){
+        	return Token[1]!=Token[2];
+        } else if (Token[0]=="IN_GT"){
+        	return Token[1]>Token[2];
+        } else if (Token[0]=="IN_LT"){
+        	return Token[1]<Token[2];
+        } else if (Token[0]=="IN_INDEX"){
+        	return Token[1][Token[2]];
+        } else if (Token[0]=="IN_SETINDEX"){
+            let Type = Token[3];
+            if (Type=="eq"){
+                Token[1][Token[2]]=Token[4];    
+            }else if (Type=="addeq"){
+                Token[1][Token[2]]+=Token[4];    
+            }else if (Type=="subeq"){
+                Token[1][Token[2]]-=Token[4];    
+            }else if (Type=="muleq"){
+                Token[1][Token[2]]*=Token[4];    
+            }else if (Type=="diveq"){
+                Token[1][Token[2]]/=Token[4];    
+            }else if (Type=="poweq"){
+                Token[1][Token[2]]**=Token[4];    
+            }else if (Type=="modeq"){
+                Token[1][Token[2]]%=Token[4];    
+            }
+            return
+        } else if (Token[0]=="IN_DEL"){
+        	return this.RemoveVariable(AST,Token[1]);
+        } else if (Token[0]=="IN_RETURN"){
+        	if (!AST.InBlock){
+            	throw new CodeError("Expected return");
+            }
+        	AST.Result = Token[1];
+          	AST.Returned = true;
+        	return Token[1];
+        } else if (Token[0]=="IN_LEN"){
+        	return Token[1].length;
+        } else if (Token[0]=="IN_STOP"){
+        	return;
+        } else if (Token[0]=="IN_MAKENEW"){
+        	if (Token[2]){
+            	if (!(Token[2] instanceof Array)){
+                	throw new CodeError(`Adding parameters to "new" with "with" must be an array`);
+                }
+            	return new Token[1](...Token[2]);
+            } else {
+            	return new Token[1];
+            }
+        } else if (Token[0]=="IN_CLASS"){
+        	return this.ClassState(AST,Token);
+        } else if (Token[0]=="IN_DESTRUCT"){
+        	return this.DestructState(AST,Token);
+        } else if (Token[0]=="IN_ROUND"){
+        	return Math.round(Token[1]);
+        } else if (Token[0]=="IN_UNM"){
+            return -Token[1];
+        }
+        return Token;
+    },
+    New:function(Tokens,Library={}){
+    	if (!Library.hasOwnProperty("Globals")){
+    		Library.Globals={};
+    	}
+    	const NVM = {
+        	Stacks:[],
+            MainStack:Tokens,
+            Variables:[],
+            Block:1,
+            CStack:[],
+            Returned:false,
+            InBlock:false,
+            InLoop:false,
+            Result:null,
+            StackCurrent:{},
+            Globals:new Proxy(Library.Globals,{
+            	get:function(_,Name){
+					let Var = Interpreter.GetHighestVariable(NVM,Name);
+					if (Var){
+						return Var.Value;
+					} else {
+                		return _[Name];
+                	}
+            	},
+        	}),
+        };
+        this.NewStack(NVM,Tokens);
+        return NVM;
+    },
+    Start:function(AST){
+    	AST.CStack = AST.MainStack;
+        let Stack = this.GetStack(AST,AST.MainStack);
+        do {
+        	this.Next(AST,AST.MainStack);
+            this.Parse(AST,Stack.Token);
+            Stack = this.GetStack(AST,AST.MainStack);
+        }while(Stack.Current <= Stack.Tokens.length);
+    },
+});
+
+//{{ Print }}\\
+
+function ReduceValue(Value){
+	let Type = typeof Value;
+    if (Type == "string"){
+    	return `"${Value}"`;
+    } else {
+    	return String(Value);
+    }
+}
+
+function GetTabs(Count){
+	let t = "";
+    for (let i=1;i<=Count;i++){
+    	t+="\t";
+    }
+    return t;
+}
+
+function NonReduceString(Add){
+	let New = Add;
+    let Type = typeof Add;
+    if (Type == "string"){
+    	if (Add.match(/\s/)){
+        	New = `["${Add}"]`;	
+        }
+    } else {
+    	New = `[${Add}]`;
+    }
+    return New;
+}
+
+function Print(Table,Arr,Tabs){
+	let TabCount = Tabs || 0;
+    let Arrr = Arr || [];
+    for (let k in Table){
+    	let v = Table[k];
+        if (typeof v == "object"){
+            Arrr.push(GetTabs(TabCount)+`${NonReduceString(k)} = `+`{`+"<br>");
+            Print(v,Arrr,TabCount+1);
+            Arrr.push(GetTabs(TabCount)+"}<br>");
+        } else {
+        	let sv = `${NonReduceString(k)} = `
+        	Arrr.push(GetTabs(TabCount)+sv+ReduceValue(v)+"<br>");
+        }
+    }
+    return Arrr;
+}
+
+//{{ XBS Proxy }}\\
+
+const XBS = Object.freeze({
+  Parse:function(Code){
+    return AST.StartParser(Code);
+  },
+  StylePrint:function(Text){
+    document.write(`<pre style="border-left:5px solid #eeeeee;padding-left:5px;tab-size:3;font-size:12px;line-height:12px;">${Text}</pre>`);
+  },
+  Run:function(Code,Library,Settings={}){
+    if (Settings.PrintCode===true){
+      this.StylePrint(Code);
+    }
+    let ASTResult = this.Parse(Code);
+    if (Settings.PrintAST===true){
+      this.StylePrint(Print(ASTResult).join(""));
+    }
+    let VM = Interpreter.New(ASTResult,Library);
+    Interpreter.Start(VM);
+  },
+  Tokenize:function(Code){
+    return Lex.Tokenize(Code);
+  },
+});
