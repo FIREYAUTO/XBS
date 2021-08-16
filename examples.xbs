@@ -230,3 +230,49 @@ destruct ["a""b"]{
 }
 log(a)
 log(b)
+
+#> Date Testing <#
+
+set p = document->createElement("p");
+document.body->appendChild(p);
+func setDate(){
+	set Date = new window.Date;
+	p:innerHTML=Date->toLocaleString();
+}
+setDate();
+window->setInterval(setDate,1000);
+
+#> DeepCopy Testing <#
+
+func GetBase(t){
+	set ty = type(t);
+    if (ty=="array"){
+    	send [];
+    } elif (ty=="object"){
+    	send {};
+    }
+}
+func DeepCopy(t){
+	set nt = GetBase(t);
+    foreach(k,v t){
+    	set ty = type(v);
+        if ((ty=="array")|(ty=="object")){
+        	nt:[k]=DeepCopy(v);
+        } else {
+        	nt:[k]=v;
+        }
+    }
+    send nt;
+}
+set ar = ["hi";["hi"]];
+set clone = DeepCopy(ar);
+log(clone[1]);
+
+#> Unset Testing <#
+
+set hi={
+	j=true;
+}
+log(hi.j);
+unset hi.j;
+log(hi.j);
