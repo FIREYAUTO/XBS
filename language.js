@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -90,6 +90,7 @@ const RawTokens = {
     "TK_LEN":"?",
     "TK_STOP":"stop",
     "TK_WITH":"with",
+    "TK_UNSET":"unset",
 };
 
 // {{-=~}} Token Classes {{~=-}} \\
@@ -598,7 +599,7 @@ const AST = Object.freeze({
     },
     //{{ ParseExpression }}\\
     FinishExpression:function(Stack,Value,NoMath,NoCond){
-    	if (this.CheckNext(Stack,"None","TK_LINEEND")){
+    	if (this.CheckNext(Stack,"None","TK_LINEEND")||this.CheckNext(Stack,"None","TK_COMMA")){
         	this.Next(Stack);
             return Value;
         }
@@ -1135,6 +1136,14 @@ const AST = Object.freeze({
     	this.ChunkWrite(Stack,this.ParseExpression(Stack));
     	this.CloseChunk(Stack);
     },
+    //{{ UnsetState }}\\
+    UnsetState:function(Stack){
+        this.Next(Stack);
+        let Value = this.ParseExpression(Stack);
+        Value[0]="IN_UNSET";
+        Stack.Chunk = Value;
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack){
         let Token = Stack.Token;
@@ -1191,6 +1200,10 @@ const AST = Object.freeze({
             	this.OpenChunk(Stack);
             	this.ChunkWrite(Stack,"IN_DESTRUCT");
             	this.DestructState(Stack);
+            } else if (Token.Value == "TK_UNSET"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_UNSET");
+                this.UnsetState(Stack);
             } else {
             	throw new CodeError(`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`);
             }
@@ -1450,6 +1463,10 @@ const Interpreter = Object.freeze({
             let CStack = AST.CStack;
             let PreBlock = AST.InBlock;
             AST.InBlock = true;
+            //Make sure the function can call itself
+            let CloneTokens = DeepCopy(Stack.CloneTokens);
+            Tokens = CloneTokens;
+            Interpreter.NewStack(AST,CloneTokens);
             do {
             	Interpreter.Next(AST,Stack.Tokens);
                 if (Stack.Token[0]=="IN_RETURN"){
@@ -1464,6 +1481,7 @@ const Interpreter = Object.freeze({
                     break;
                 }
             }while(Stack.Current < Stack.Tokens.length-1);
+            Interpreter.RemoveStack(AST,CloneTokens);
             Stack.Tokens = DeepCopy(Stack.CloneTokens);
             Stack.Current = 0;
             Tokens = Stack.Tokens;
@@ -1792,6 +1810,9 @@ const Interpreter = Object.freeze({
         	return Math.round(Token[1]);
         } else if (Token[0]=="IN_UNM"){
             return -Token[1];
+        } else if (Token[0]=="IN_UNSET"){
+            delete Token[1][Token[2]];
+            return;
         }
         return Token;
     },
