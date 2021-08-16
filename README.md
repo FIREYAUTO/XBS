@@ -1,6 +1,6 @@
 # Project XBS
 ###  What is XBS?
-  > XBS is a compiled programming language, which is interpreted as easier-to-understand arrays containing information about the code; the AsT.
+  > XBS is a compiled programming language, which is interpreted as easier-to-understand arrays containing information about the code; the AST.
   > XBS will be written in javascript first, then ported to other languages when necessary.
 ### What is the purpose of XBS?
   > The purpose of XBS is to create a flexible, easy-to-use programming language with similarities between multiple programming languages.
