@@ -910,6 +910,9 @@ const AST = Object.freeze({
                 	this.ErrorIfTokenNotType(Stack,"Identifier");
                 	Params.push(Stack.Token.Value);
                 	this.Next(Stack);
+                	if (this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                        this.Next(Stack);
+                    }
             	}
         	}
         	this.ChunkAdd(Chunk,Params);
@@ -1094,6 +1097,9 @@ const AST = Object.freeze({
                 this.ErrorIfTokenNotType(Stack,"Identifier");
                 Params.push(Stack.Token.Value);
                 this.Next(Stack);
+                if (this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                    this.Next(Stack);
+                }
             }
         }
         this.ChunkWrite(Stack,Params);
@@ -1145,8 +1151,21 @@ const AST = Object.freeze({
     },
     //{{ DestructState }}\\
     DestructState:function(Stack){
+        this.TestNext(Stack,"Brace","TK_IOPEN");
     	this.Next(Stack);
-    	this.ChunkWrite(Stack,this.ParseExpression(Stack));
+    	this.Next(Stack);
+    	let Args = [];
+    	if (!this.IsPreciseToken(Stack.Token,"Brace","TK_ICLOSE")){
+            while(!this.IsPreciseToken(Stack.Token,"Brace","TK_ICLOSE")){
+                this.ErrorIfTokenNotType(Stack,"Identifier");
+                Args.push(Stack.Token.Value);
+                this.Next(Stack);
+                if (this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                    this.Next(Stack);
+                }
+            }
+        }
+        this.ChunkWrite(Stack,["IN_ARRAY",Args]);
     	this.Next(Stack);
     	this.ChunkWrite(Stack,this.ParseExpression(Stack));
     	this.CloseChunk(Stack);
