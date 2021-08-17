@@ -1443,7 +1443,6 @@ const Interpreter = Object.freeze({
                 if (Stack){
                     Stack.VariableReference[v.Name]=v.Value;
                 }
-                console.log(Stack.Tokens)
             }
         }
         AST.Variables = New;
