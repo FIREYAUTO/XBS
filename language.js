@@ -14,7 +14,7 @@ const TokenTypes = {
     "Brace":["TK_IOPEN","TK_ICLOSE"],
     "Bool":["TK_TRUE","TK_FALSE"],
     "Null":["TK_NULL"],
-    "None":["TK_DOT","TK_BACKSLASH","TK_COMMA","TK_NONE","TK_LINEEND","TK_SELFCALL","TK_COLON","TK_PROPCALL","TK_LEN"],
+    "None":["TK_DOT","TK_BACKSLASH","TK_COMMA","TK_NONE","TK_LINEEND","TK_SELFCALL","TK_COLON","TK_PROPCALL","TK_LEN","TK_AT"],
     "Comment":["TK_COMMENT","TK_COMMENTLONGOPEN","TK_COMMENTLONGCLOSE"],
     "End":["TK_EOS"],
 };
@@ -57,6 +57,7 @@ const RawTokens = {
     "TK_NEQ":"!=",
     "TK_NOT":"!",
     "TK_OR":"|",
+    "TK_AT":"@",
     "TK_AND":"&",
     "TK_ADDEQ":"+=",
     "TK_SUBEQ":"-=",
@@ -317,6 +318,7 @@ const Lex = Object.freeze({
             if (v == "TK_RETCHAR"){Line++}
             let Class = GetTokenType(v);
             Class.Position = k;
+            Class.Line = Line;
             if (Class.Type == "String"){
             	let kk=k+1;
                 let pt=v;
@@ -377,7 +379,14 @@ const Lex = Object.freeze({
             }
         }
         return LastTokens;
-    }
+    },
+    ThrowError:function(Class,Message,Stack){
+        let Result = Message;
+        if (Stack){
+            Result=`[Line ${Stack.CurrentLine}]: `+Result;
+        }
+        throw new (Class)(Result);
+    },
 });
 
 // {{-=~}} AST Class {{~=-}} \\
@@ -389,6 +398,7 @@ const AST = Object.freeze({
             PToken:"TK_NONE",
             Current:-1,
             OpenChunks:[],
+            CurrentLine:1,
            	Chunk:[],
             Result:[],
         };
@@ -432,7 +442,7 @@ const AST = Object.freeze({
     },
     ErrorIfTokenNotType:function(Stack,Type){
     	if (Stack.Token.Type!=Type){
-       		throw new CodeError(`Expected ${Type}, got ${Stack.Token.Type} instead`);
+    	    Lex.ThrowError(CodeError,`Expected ${Type}, got ${Stack.Token.Type} instead`,Stack);
         }
     },
     ChunkWrite:function(Stack,Value,Place){
@@ -447,6 +457,7 @@ const AST = Object.freeze({
     	Stack.Current++;
         Stack.PToken=Stack.Token;
         Stack.Token=Stack.Tokens[Stack.Current];
+        Stack.CurrentLine = Stack.Token?.Line;
         return Stack.Token;
     },
     JumpBack:function(Stack,Amount=1){
@@ -480,12 +491,12 @@ const AST = Object.freeze({
     },
     TestNext:function(Stack,Type,Value){
     	if (!this.CheckNext(Stack,Type,Value)){
-        	throw new CodeError(`Expected ${FromToken(Value)}, got ${FromToken(this.Next(Stack).Value)} instead`);
+    	    Lex.ThrowError(CodeError,`Expected ${FromToken(Value)}, got ${FromToken(this.Next(Stack).Value)} instead`,Stack);
         }
     },
     TypeTestNext:function(Stack,Type){
         if (!this.TypeCheckNext(Stack,Type)){
-            throw new CodeError(`Expected type "${Type}"", got type "${this.Next(Stack).Type}"`);
+            Lex.ThrowError(CodeError,`Expected type "${Type}"", got type "${this.Next(Stack).Type}"`,Stack);
         }
     },
     //{{ AssignmentGet }}\\
@@ -648,7 +659,7 @@ const AST = Object.freeze({
                 this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             } else {
-            	throw new CodeError(`"${FromToken(Token.Value)}" is not a valid index name`);
+                Lex.ThrowError(CodeError,`"${FromToken(Token.Value)}" is not a valid index name`,Stack);
             }
             Value = Chunk
             return Value;
@@ -692,7 +703,7 @@ const AST = Object.freeze({
                 	this.ChunkAdd(Chunk,Stack.Token.Value);
                 }
             } else {
-            	throw new CodeError(`"${FromToken(Stack.Token.Value)}" is not a valid index name`);
+                Lex.ThrowError(CodeError,`"${FromToken(Stack.Token.Value)}" is not a valid index name`,Stack);
             }
             this.TestNext(Stack,"Paren","TK_POPEN");
             this.Next(Stack);
@@ -728,7 +739,7 @@ const AST = Object.freeze({
                 	this.ChunkAdd(Chunk,Stack.Token.Value);
                 }
             } else {
-            	throw new CodeError(`"${FromToken(Stack.Token.Value)}" is not a valid index name`);
+            	Lex.ThrowError(CodeError,`"${FromToken(Stack.Token.Value)}" is not a valid index name`,Stack);
             }
             this.TestNext(Stack,"Paren","TK_POPEN");
             this.Next(Stack);
@@ -1031,7 +1042,7 @@ const AST = Object.freeze({
         	if (Token.Value == "TK_OF" || Token.Value == "TK_IN"){
         		this.ChunkWrite(Stack,FromToken(Token.Value));
         	} else {
-        		throw new CodeError(`Unexpected keyword ${FromToken(Token.Value)}`);
+        	    Lex.ThrowError(CodeError,`Unexpected keyword ${FromToken(Token.Value)}`,Stack);
         	}
         }
         this.Next(Stack);
@@ -1209,7 +1220,7 @@ const AST = Object.freeze({
                 this.ChunkWrite(Stack,"IN_UNSET");
                 this.UnsetState(Stack);
             } else {
-            	throw new CodeError(`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`);
+                Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
         } else if (Token.Type == "Identifier"){
         	if (this.TypeCheckNext(Stack,"Assignment")){
@@ -1224,6 +1235,17 @@ const AST = Object.freeze({
         		Stack.Chunk = this.FinishExpression(Stack,Stack.Chunk);
         		this.CloseChunk(Stack);
             }
+        } else if (this.IsPreciseToken(Token,"None","TK_AT")){
+            this.OpenChunk(Stack);
+            this.ChunkWrite(Stack,"IN_GLOBALASSIGN");
+            this.TypeTestNext(Stack,"Identifier");
+            this.Next(Stack);
+            this.ChunkWrite(Stack,Stack.Token.Value);
+            this.TestNext(Stack,"Assignment","TK_EQ");
+            this.Next(Stack);
+            this.Next(Stack);
+            this.ChunkWrite(Stack,this.ParseExpression(Stack));
+            this.CloseChunk(Stack);
         }
     },
     StartParser:function(Code){
@@ -1844,6 +1866,9 @@ const Interpreter = Object.freeze({
         } else if (Token[0]=="IN_UNSET"){
             delete Token[1][Token[2]];
             return;
+        } else if (Token[0]=="IN_GLOBALASSIGN"){
+            AST.GlobalSettings[Token[1]]=Token[2];
+            return;
         }
         return Token;
     },
@@ -1862,6 +1887,7 @@ const Interpreter = Object.freeze({
             InLoop:false,
             Result:null,
             StackCurrent:{},
+            GlobalSettings:{},
             Globals:new Proxy(Library.Globals,{
             	get:function(_,Name){
 				    let CStack = NVM.CStack;
@@ -1896,6 +1922,9 @@ const Interpreter = Object.freeze({
             this.Parse(AST,Stack.Token);
             Stack = this.GetStack(AST,AST.MainStack);
         }while(Stack.Current <= Stack.Tokens.length);
+        return {
+            GlobalSettings:AST.GlobalSettings,
+        };
     },
 });
 
@@ -1966,7 +1995,7 @@ const XBS = Object.freeze({
       this.StylePrint(Print(ASTResult).join(""));
     }
     let VM = Interpreter.New(ASTResult,Library);
-    Interpreter.Start(VM);
+    return Interpreter.Start(VM);
   },
   Tokenize:function(Code){
     return Lex.Tokenize(Code);
