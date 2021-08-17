@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -35,6 +35,7 @@ const RawTokens = {
     "TK_WHILE":"while",
     "TK_IF":"if",
     "TK_IN":"in",
+    "TK_AS":"as",
     "TK_ELSE":"else",
     "TK_ELIF":"elif",
     "TK_OF":"of",
@@ -1020,6 +1021,9 @@ const AST = Object.freeze({
         	this.Next(Stack);
             this.ErrorIfTokenNotType(Stack,"Identifier");
             this.ChunkWrite(Stack,Stack.Token.Value);
+            if (this.CheckNext(Stack,"Keyword","TK_AS")){
+                this.Next(Stack);
+            }
             Stack.Chunk[0]="IN_FORALL";
         } else {
         	this.ErrorIfTokenNotType(Stack,"Keyword");
