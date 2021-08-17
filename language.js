@@ -1267,6 +1267,26 @@ const Interpreter = Object.freeze({
             Token:"",
             CloneTokens:DeepCopy(Tokens),
             Tokens:Tokens,
+            Upper:this.GetStack(AST,AST.CStack),
+            VariableReference:new Proxy({},{
+                get:function(self,Name){
+                    let Value = self[Name];
+                    if (!Value){
+                        let Current = AST.Variables[Name];
+                        if (Current){
+                            return Current.Value
+                        } else {
+                            if (NewStack.Upper){
+                                return NewStack.Upper.VariableReference[Name];
+                            }
+                        }
+                    }
+                    return Value;
+                },
+                set:function(self,Name,Value){
+                    self[Name] = Value;  
+                },
+            }),
         };
         AST.Stacks.push({
         	Tokens:Tokens,
@@ -1416,6 +1436,14 @@ const Interpreter = Object.freeze({
         for (let v of Variables){
         	if (v.Block < AST.Block){
             	New.push(v);
+            } else {
+                //Save variables to Stack VariableReference
+                let CStack = AST.CStack;
+                let Stack = this.GetStack(AST,CStack);
+                if (Stack){
+                    Stack.VariableReference[v.Name]=v.Value;
+                }
+                console.log(Stack.Tokens)
             }
         }
         AST.Variables = New;
@@ -1481,6 +1509,7 @@ const Interpreter = Object.freeze({
                     break;
                 }
             }while(Stack.Current < Stack.Tokens.length-1);
+            Interpreter.CloseBlock(AST);
             Interpreter.RemoveStack(AST,CloneTokens);
             Stack.Tokens = DeepCopy(Stack.CloneTokens);
             Stack.Current = 0;
@@ -1489,7 +1518,6 @@ const Interpreter = Object.freeze({
             AST.Result = null;
             Interpreter.RemoveStack(AST,Stack.Tokens);
             Interpreter.NewStack(AST,Stack.Tokens);
-            Interpreter.CloseBlock(AST);
             AST.InBlock = PreBlock;
             AST.Returned = false;
             return Result;
@@ -1833,12 +1861,24 @@ const Interpreter = Object.freeze({
             StackCurrent:{},
             Globals:new Proxy(Library.Globals,{
             	get:function(_,Name){
-					let Var = Interpreter.GetHighestVariable(NVM,Name);
-					if (Var){
-						return Var.Value;
-					} else {
-                		return _[Name];
-                	}
+				    let CStack = NVM.CStack;
+				    let Stack = Interpreter.GetStack(NVM,CStack);
+				    let Var = Interpreter.GetHighestVariable(NVM,Name);
+				    if (Stack){
+				        if (Stack.VariableReference[Name]){
+				            return Stack.VariableReference[Name];
+				        }
+				        if (Var){
+        					return Var.Value;
+        				} else {
+                        	return _[Name];
+                        }
+				    }
+				    if (Var){
+    					return Var.Value;
+    				} else {
+                    	return _[Name];
+                    }
             	},
         	}),
         };
