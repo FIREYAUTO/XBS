@@ -1520,6 +1520,9 @@ const Interpreter = Object.freeze({
             let CloneTokens = DeepCopy(Stack.CloneTokens);
             Tokens = CloneTokens;
             Interpreter.NewStack(AST,CloneTokens);
+            let CS = Interpreter.GetStack(AST,CloneTokens)
+            CS.VariablesReference = Stack.VariablesReference;
+            CS.Upper = Stack.Upper;
             do {
             	Interpreter.Next(AST,Stack.Tokens);
                 if (Stack.Token[0]=="IN_RETURN"){
@@ -1543,6 +1546,9 @@ const Interpreter = Object.freeze({
             AST.Result = null;
             Interpreter.RemoveStack(AST,Stack.Tokens);
             Interpreter.NewStack(AST,Stack.Tokens);
+            CS = Interpreter.GetStack(AST,Stack.Tokens)
+            CS.VariablesReference = Stack.VariablesReference;
+            CS.Upper = Stack.Upper;
             AST.InBlock = PreBlock;
             AST.Returned = false;
             return Result;
