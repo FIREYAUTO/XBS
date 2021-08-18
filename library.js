@@ -90,6 +90,12 @@ const StandardLibrary = {
             f(...a);
         },x*1000);
     },
+    rawget:function(x,n){
+        return x[n];
+    },
+    rawset:function(x,n,v){
+        x[n]=v;
+    }
 };
 
 StandardLibrary.env = StandardLibrary;
