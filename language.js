@@ -936,12 +936,12 @@ const AST = Object.freeze({
         } else if (this.IsPreciseToken(Token,"None","TK_LEN")){
         	let Chunk = this.NewChunk("IN_LEN");
             this.Next(Stack);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack,NoMath,NoCond));
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
         } else if (this.IsPreciseToken(Token,"Operator","TK_ROUND")){
         	let Chunk = this.NewChunk("IN_ROUND");
             this.Next(Stack);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack,NoMath,NoCond));
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
         } else if (this.IsPreciseToken(Token,"Operator","TK_SUB")){
         	let Chunk = this.NewChunk("IN_UNM");
@@ -1529,7 +1529,7 @@ const Interpreter = Object.freeze({
             for (let k in Args){
             	k=+k;
             	let v = Args[k];
-            	Interpreter.MakeVariable(AST,v,Params[k] || undefined);
+            	Interpreter.MakeVariable(AST,v,Params[k]);
             }
             let Result = undefined;
             let CStack = AST.CStack;
@@ -1539,33 +1539,34 @@ const Interpreter = Object.freeze({
             let CloneTokens = DeepCopy(Stack.CloneTokens);
             Tokens = CloneTokens;
             Interpreter.NewStack(AST,CloneTokens);
-            let CS = Interpreter.GetStack(AST,CloneTokens)
+            let CS = Interpreter.GetStack(AST,CloneTokens);
             CS.VariablesReference = Stack.VariablesReference;
             CS.Upper = Stack.Upper;
-            do {
-            	Interpreter.Next(AST,Stack.Tokens);
-                if (Stack.Token[0]=="IN_RETURN"){
-                	Result = Interpreter.Parse(AST,Stack.Token);
-                    Stack.Result = null;
-                    break;
-                }
-                Interpreter.Parse(AST,Stack.Token);
-                if (AST.Returned==true){
-                	Result = AST.Result;
-                    AST.Result = null;
-                    break;
-                }
-            }while(Stack.Current < Stack.Tokens.length-1);
+            if (Stack.Tokens.length > 0){
+                do {
+                	Interpreter.Next(AST,Stack.Tokens);
+                    if (Stack.Token[0]=="IN_RETURN"){
+                    	Result = Interpreter.Parse(AST,Stack.Token);
+                        Stack.Result = null;
+                        break;
+                    }
+                    Interpreter.Parse(AST,Stack.Token);
+                    if (AST.Returned==true){
+                    	Result = AST.Result;
+                        AST.Result = null;
+                        break;
+                    }
+                }while(Stack.Current < Stack.Tokens.length-1);
+            }
             Interpreter.CloseBlock(AST);
             Interpreter.RemoveStack(AST,CloneTokens);
-            Stack.Tokens = DeepCopy(Stack.CloneTokens);
-            Stack.Current = 0;
-            Tokens = Stack.Tokens;
+            Interpreter.RemoveStack(AST,Stack.Tokens);
+            let NewTokens = DeepCopy(Stack.CloneTokens);
+            Tokens = NewTokens;
             AST.CStack = CStack;
             AST.Result = null;
-            Interpreter.RemoveStack(AST,Stack.Tokens);
-            Interpreter.NewStack(AST,Stack.Tokens);
-            CS = Interpreter.GetStack(AST,Stack.Tokens)
+            Interpreter.NewStack(AST,NewTokens);
+            CS = Interpreter.GetStack(AST,NewTokens);
             CS.VariablesReference = Stack.VariablesReference;
             CS.Upper = Stack.Upper;
             AST.InBlock = PreBlock;
