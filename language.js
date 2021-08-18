@@ -1900,11 +1900,23 @@ const Interpreter = Object.freeze({
         } else if (Token[0]=="IN_LT"){
         	return Token[1]<Token[2];
         } else if (Token[0]=="IN_INDEX"){
-        	return Token[1][Token[2]];
+            let Result=null,Method="__index";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else {
+                Result = Token[1][Token[2]];
+            }
+        	return Result;
         } else if (Token[0]=="IN_SETINDEX"){
             let Type = Token[3];
             if (Type=="eq"){
-                Token[1][Token[2]]=Token[4];    
+                let v = Token[1];
+                let Method="__setindex";
+                if (v instanceof Object && v.hasOwnProperty(Method)){
+                    Result = v[Method](v,Token[2],Token[4]);
+                } else {
+                    v[Token[2]]=Token[4];
+                }
             }else if (Type=="addeq"){
                 Token[1][Token[2]]+=Token[4];    
             }else if (Type=="subeq"){
@@ -1948,7 +1960,13 @@ const Interpreter = Object.freeze({
         } else if (Token[0]=="IN_ROUND"){
         	return Math.round(Token[1]);
         } else if (Token[0]=="IN_UNM"){
-            return -Token[1];
+            let Result=null,Method="__unm";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1]);
+            } else {
+                Result = -Token[1];
+            }
+        	return Result;
         } else if (Token[0]=="IN_UNSET"){
             delete Token[1][Token[2]];
             return;
