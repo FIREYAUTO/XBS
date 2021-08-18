@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -29,6 +29,7 @@ const RawTokens = {
     "TK_CLASS":"class",
     "TK_EXTENDS":"extends",
     "TK_DESTRUCT":"destruct",
+    "TK_ISA":"isa",
     "TK_NEW":"new",
     "TK_FOR":"for",
     "TK_FOREACH":"foreach",
@@ -528,6 +529,8 @@ const AST = Object.freeze({
             let And = this.CheckNext(Stack,"Conditional","TK_AND") || this.IsPreciseToken(Stack.Token,"Conditional","TK_AND");
             let Or = this.CheckNext(Stack,"Conditional","TK_OR") || this.IsPreciseToken(Stack.Token,"Conditional","TK_OR");
             
+            let IsA = this.CheckNext(Stack,"Keyword","TK_ISA") || this.IsPreciseToken(Stack.Token,"Keyword","TK_ISA");
+            
             let Eq = this.CheckNext(Stack,"Compare","TK_EQS") || this.IsPreciseToken(Stack.Token,"Compare","TK_EQS");
             let GEq = this.CheckNext(Stack,"Compare","TK_GEQ") || this.IsPreciseToken(Stack.Token,"Compare","TK_GEQ");
             let LEq = this.CheckNext(Stack,"Compare","TK_LEQ") || this.IsPreciseToken(Stack.Token,"Compare","TK_LEQ");
@@ -547,6 +550,15 @@ const AST = Object.freeze({
             	let Chunk = this.NewChunk("IN_OR");
             	this.ChunkAdd(Chunk,Value);
                 if (!this.IsPreciseToken(Stack.Token,"Conditional","TK_OR")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (IsA){
+            	let Chunk = this.NewChunk("IN_ISA");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Conditional","TK_ISA")){
                 	this.Next(Stack);
                 }
             	this.Next(Stack);
@@ -1809,18 +1821,66 @@ const Interpreter = Object.freeze({
         	return this.PropCallState(AST,Token);
         } else if (Token[0]=="IN_GET"){
         	return AST.Globals[Token[1]];
-        } else if (Token[0]=="IN_ADD"){
-        	return Token[1]+Token[2];
+        } else if (Token[0]=="IN_ADD"){ //Math Start
+            let Result=null,Method="__add";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)){
+                Result = Token[2][Method](Token[2],Token[1]);
+            } else {
+                Result = Token[1]+Token[2];
+            }
+        	return Result;
         } else if (Token[0]=="IN_SUB"){
-        	return Token[1]-Token[2];
+        	let Result=null,Method="__sub";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)){
+                Result = Token[2][Method](Token[2],Token[1]);
+            } else {
+                Result = Token[1]-Token[2];
+            }
+        	return Result;
         } else if (Token[0]=="IN_MUL"){
-        	return Token[1]*Token[2];
+        	let Result=null,Method="__mul";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)){
+                Result = Token[2][Method](Token[2],Token[1]);
+            } else {
+                Result = Token[1]*Token[2];
+            }
+        	return Result;
         } else if (Token[0]=="IN_DIV"){
-        	return Token[1]/Token[2];
+        	let Result=null,Method="__div";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)){
+                Result = Token[2][Method](Token[2],Token[1]);
+            } else {
+                Result = Token[1]/Token[2];
+            }
+        	return Result;
         } else if (Token[0]=="IN_POW"){
-        	return Token[1]**Token[2];
-        } else if (Token[0]=="IN_MOD"){
-        	return Token[1]%Token[2];
+        	let Result=null,Method="__pow";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)){
+                Result = Token[2][Method](Token[2],Token[1]);
+            } else {
+                Result = Token[1]**Token[2];
+            }
+        	return Result;
+        } else if (Token[0]=="IN_MOD"){ //Math End
+        	let Result=null,Method="__mod";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+                Result = Token[1][Method](Token[1],Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)){
+                Result = Token[2][Method](Token[2],Token[1]);
+            } else {
+                Result = Token[1]%Token[2];
+            }
+        	return Result;
         } else if (Token[0]=="IN_AND"){
         	return Token[1]&&Token[2];
         } else if (Token[0]=="IN_OR"){
@@ -1895,6 +1955,8 @@ const Interpreter = Object.freeze({
         } else if (Token[0]=="IN_GLOBALASSIGN"){
             AST.GlobalSettings[Token[1]]=Token[2];
             return;
+        } else if (Token[0]=="IN_ISA"){
+            return Token[1] instanceof Token[2];
         }
         return Token;
     },
