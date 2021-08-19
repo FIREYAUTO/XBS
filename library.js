@@ -102,13 +102,15 @@ StandardLibrary.env = StandardLibrary;
 
 //{{ New Library Utility }}\\
 
-const Library = Object.freeze({
-	Standard:{
-		Globals:StandardLibrary,
-	},
+const Library = {
 	New:function(Globals={}){
 		return {
 			Globals:Globals,
+			AddGlobal:function(Name,Value){
+			    this.Globals[Name]=Value;
+			},
 		};
 	},
-});
+};
+
+Library.Standard = Library.New(StandardLibrary);
