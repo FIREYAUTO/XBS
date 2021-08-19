@@ -1552,7 +1552,7 @@ const Interpreter = Object.freeze({
             Tokens = CloneTokens;
             Interpreter.NewStack(AST,CloneTokens);
             let CS = Interpreter.GetStack(AST,CloneTokens);
-            CS.VariablesReference = Stack.VariablesReference;
+            //CS.VariableReference = Stack.VariableReference;
             CS.Upper = Stack.Upper;
             if (Stack.Tokens.length > 0){
                 do {
@@ -1571,15 +1571,15 @@ const Interpreter = Object.freeze({
                 }while(Stack.Current < Stack.Tokens.length-1);
             }
             Interpreter.CloseBlock(AST);
-            Interpreter.RemoveStack(AST,CloneTokens);
             Interpreter.RemoveStack(AST,Stack.Tokens);
+            Interpreter.RemoveStack(AST,CloneTokens);
             let NewTokens = DeepCopy(Stack.CloneTokens);
             Tokens = NewTokens;
             AST.CStack = CStack;
             AST.Result = null;
             Interpreter.NewStack(AST,NewTokens);
             CS = Interpreter.GetStack(AST,NewTokens);
-            CS.VariablesReference = Stack.VariablesReference;
+            //CS.VariableReference = Stack.VariableReference;
             CS.Upper = Stack.Upper;
             AST.InBlock = PreBlock;
             AST.Returned = false;
@@ -1592,7 +1592,6 @@ const Interpreter = Object.freeze({
         let Args = Token[2];
         let Tokens = Token[3];
         let Block = AST.Block;
-        this.NewStack(AST,Tokens);
         const Callback = this.FastFuncState(AST,Args,Tokens);
         this.SetVariable(AST,Name,Callback,Block);
     },
@@ -1622,24 +1621,24 @@ const Interpreter = Object.freeze({
       return this.Parse(AST,Stack.Token);
     },
     CondState:function(AST,Token){
-    	this.OpenBlock(AST);
-      this.NewStack(AST,Token);
-      let Stack = this.GetStack(AST,Token);
-      do{
-        this.Next(AST,Stack.Tokens);
-        if (Stack.Token[0]=="IN_RETURN"&&AST.InBlock){
-          AST.Result = this.Parse(AST,Stack.Token);
-          AST.Returned = true;
-          break;
-        } else if (Stack.Token[0]=="IN_STOP"&&AST.InLoop){
-          AST.InLoop=false;
-          AST.Broken=true;
-          break;
-        }
-        this.Parse(AST,Stack.Token);
-      }while(Stack.Current<Stack.Tokens.length-1);
-      this.RemoveStack(AST,Token);
-      this.CloseBlock(AST);
+        this.OpenBlock(AST);
+        this.NewStack(AST,Token);
+        let Stack = this.GetStack(AST,Token);
+        do{
+            this.Next(AST,Stack.Tokens);
+            if (Stack.Token[0]=="IN_RETURN"&&AST.InBlock){
+                AST.Result = this.Parse(AST,Stack.Token);
+                AST.Returned = true;
+                break;
+            } else if (Stack.Token[0]=="IN_STOP"&&AST.InLoop){
+                AST.InLoop=false;
+                AST.Broken=true;
+                break;
+            }
+            this.Parse(AST,Stack.Token);
+        }while(Stack.Current<Stack.Tokens.length-1);
+        this.CloseBlock(AST);
+        this.RemoveStack(AST,Token);
     },
     IfState:function(AST,Token){
     	let Comp = this.Parse(AST,Token[1]);
@@ -2030,6 +2029,7 @@ const Interpreter = Object.freeze({
         }while(Stack.Current <= Stack.Tokens.length);
         return {
             GlobalSettings:AST.GlobalSettings,
+            AST:AST,
         };
     },
 });
