@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -33,6 +33,7 @@ const RawTokens = {
     "TK_NEW":"new",
     "TK_FOR":"for",
     "TK_FOREACH":"foreach",
+    "TK_USING":"using",
     "TK_WHILE":"while",
     "TK_IF":"if",
     "TK_IN":"in",
@@ -1190,6 +1191,17 @@ const AST = Object.freeze({
         Stack.Chunk = Value;
         this.CloseChunk(Stack);
     },
+    //{{ UsingState }}\\
+    UsingState:function(Stack){
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Next(Stack);
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack){
         let Token = Stack.Token;
@@ -1250,6 +1262,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_UNSET");
                 this.UnsetState(Stack);
+            } else if (Token.Value == "TK_USING"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_USING");
+                this.UsingState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -1413,6 +1429,15 @@ const Interpreter = Object.freeze({
     },
     SetVariable:function(AST,Name,Value,Type){
     	let Variable = this.GetHighestVariable(AST,Name);
+    	let CStack = this.GetStack(AST,AST.CStack);
+    	let Set = false;
+    	if (!Variable && CStack){
+    	    let v = CStack.VariableReference[Name];
+    	    if (v){
+    	        Variable = this.NewVariable(Name,v,AST.Block);
+    	        Set = true;
+    	    }
+    	}
         if (Variable){
             if (!Type || Type=="eq"){
         	    Variable.Value = Value;
@@ -1431,6 +1456,12 @@ const Interpreter = Object.freeze({
             }
         } else {
         	this.MakeVariable(AST,Name,Value);
+        }
+        if (Set){
+            CStack.VariableReference[Name]=Variable.Value;
+            if (CStack.Upper){
+                CStack.Upper.VariableReference[Name]=Variable.Value;
+            }
         }
     },
     MakeVariable:function(AST,Name,Value,Extra,ForceBlock){
@@ -1784,6 +1815,15 @@ const Interpreter = Object.freeze({
     		}
     	}
     },
+    UsingState:function(AST,Token){
+        let PreUsing = AST.InUsing;
+        let PreUse = AST.Using;
+        AST.InUsing = true;
+        AST.Using = this.Parse(AST,Token[1]);
+        this.CondState(AST,Token[2]);
+        AST.InUsing = PreUsing;
+        AST.Using = PreUse;
+    },
     Parse:function(AST,Token){
     	if (!(Token instanceof Array)){
         	return Token
@@ -1805,6 +1845,8 @@ const Interpreter = Object.freeze({
         	return this.ForAllState(AST,Token);
         } else if (Token[0]=="IN_ARRAY"){
         	return this.ArrayState(AST,Token);
+        } else if (Token[0]=="IN_USING"){
+            return this.UsingState(AST,Token);
         }
         this.ParseToken(AST,Token);
         //Parsed
@@ -1991,6 +2033,8 @@ const Interpreter = Object.freeze({
             InBlock:false,
             InLoop:false,
             Result:null,
+            InUsing:false,
+            Using:null,
             StackCurrent:{},
             GlobalSettings:{},
             Globals:new Proxy(Library.Globals,{
@@ -2005,13 +2049,29 @@ const Interpreter = Object.freeze({
 				        if (Var){
         					return Var.Value;
         				} else {
-                        	return _[Name];
+        				    if (NVM.InUsing && NVM.Using){
+        				        if (NVM.Using[Name]){
+        				            return NVM.Using[Name];
+        				        } else {
+        				            return _[Name];
+        				        }
+        				    } else {
+        				        return _[Name];
+        				    }
                         }
 				    }
 				    if (Var){
     					return Var.Value;
     				} else {
-                    	return _[Name];
+                    	if (NVM.InUsing && NVM.Using){
+        				    if (NVM.Using[Name]){
+        				        return NVM.Using[Name];
+        				    } else {
+        				        return _[Name];
+        				    }
+        				} else {
+        				    return _[Name];
+        				}
                     }
             	},
         	}),
