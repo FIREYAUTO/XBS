@@ -274,26 +274,31 @@ const Lex = Object.freeze({
         return this.RemoveWhitespace(this.RemoveComments(this.GetTokenTypes(Tokens)));
     },
     RemoveComments:function(Tokens){
+        return Tokens;
+        /*
     	let NewTokens = [];
         let Skip = [];
         for (let k in Tokens){
         	k=+k;
             if (Skip.includes(k)){continue}
             let v = Tokens[k];
+            if (!v){continue}
             if (v.Value == "TK_COMMENT"){ //Short comment removal
             	let kk = k+1;
-            	while (Tokens[kk].Value != "TK_RETCHAR"){ //Skip to the next retchar token
-                	if (kk > Tokens.length-1){break}
-                	Skip.push(kk);
-                    kk++;
-                }
-                Skip.push(kk);
+            	if (Tokens[kk]){
+                	while (Tokens[kk].Value != "TK_RETCHAR"){ //Skip to the next retchar token
+                    	if (kk > Tokens.length-1){break}
+                    	Skip.push(kk);
+                        kk++;
+                    }
+                    Skip.push(kk);
+            	}
                 continue;
             } else if (v.Value == "TK_COMMENTLONGOPEN"){ //Long comment removal
             	let kk = k+1;
                 let Broken = false;
                 while (Tokens[kk].Value != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
-                	if (kk > Tokens.length-1 || Tokens[kk].Value=="TK_EOS"){Broken=true;break}
+                	if (kk > Tokens.length-1 || (Tokens[kk]&&Tokens[kk].Value=="TK_EOS")){Broken=true;break}
                     Skip.push(kk);
                     kk++;
                 }
@@ -308,6 +313,7 @@ const Lex = Object.freeze({
             NewTokens.push(v);
         }
         return NewTokens;
+        */
     },
     GetTokenTypes:function(Tokens){
     	let NewTokens = [];
@@ -321,7 +327,7 @@ const Lex = Object.freeze({
             let Class = GetTokenType(v);
             Class.Position = k;
             Class.Line = Line;
-            if (Class.Type == "String"){
+            if (Class.Type == "String" && Tokens[k-1].Value!="TK_BACKSLASH"){
             	let kk=k+1;
                 let pt=v;
                 let st = Class.Value=="TK_STRING1"?0:1;
@@ -370,6 +376,34 @@ const Lex = Object.freeze({
             	Class.Type = "Constant";
                 Class.CType = "Null";
                 Class.Value = null;
+            } else if (Class.Type == "Comment"){
+                if (v == "TK_COMMENT"){ //Short comment removal
+                	let kk = k+1;
+                	if (Tokens[kk]){
+                    	while (Tokens[kk] != "TK_RETCHAR"){ //Skip to the next retchar token
+                        	if (kk > Tokens.length-1){break}
+                        	Skip.push(kk);
+                            kk++;
+                        }
+                        Skip.push(kk);
+                	}
+                    continue;
+                } else if (v == "TK_COMMENTLONGOPEN"){ //Long comment removal
+                	let kk = k+1;
+                    let Broken = false;
+                    while (Tokens[kk] != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
+                    	if (kk > Tokens.length-1 || (Tokens[kk]=="TK_EOS")){Broken=true;break}
+                        Skip.push(kk);
+                        kk++;
+                    }
+                    if (Broken){ //No closing long comment token? Throw an error
+                    	this.NoStackError("UnclosedLongComment",[Tokens[kk],"TK_COMMENTLONGCLOSE"]);
+                    }
+                    Skip.push(kk);
+                    continue;
+                } else if (v == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
+                	this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
+                }
             }
             NewTokens.push(Class);
         }
@@ -379,6 +413,7 @@ const Lex = Object.freeze({
         let LastTokens = [];
         for (let k in Tokens){
         	let v = Tokens[k];
+        	if (!v){continue}
             if (v.Type != "Whitespace"){
             	LastTokens.push(v);
             }
