@@ -949,6 +949,10 @@ const AST = Object.freeze({
         	this.ChunkAdd(Chunk,CodeBlock);
             Result = Chunk;
             this.JumpBack(Stack);
+            if (this.CheckNext(Stack,"Bracket","TK_BOPEN")){ //Default parameters
+                this.Next(Stack);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            }
         } else if (this.IsPreciseToken(Token,"None","TK_LEN")){
         	let Chunk = this.NewChunk("IN_LEN");
             this.Next(Stack);
@@ -1122,8 +1126,12 @@ const AST = Object.freeze({
         this.Next(Stack);
         this.Next(Stack);
         this.CodeBlock(Stack);
-        this.CloseChunk(Stack);
         this.JumpBack(Stack);
+        if (this.CheckNext(Stack,"Bracket","TK_BOPEN")){ //Default parameters
+            this.Next(Stack);
+            this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        }
+        this.CloseChunk(Stack);
     },
     //{{ DelState }}\\
     DelState:function(Stack){
@@ -1566,16 +1574,24 @@ const Interpreter = Object.freeze({
         }
     	return Token[1][Token[2]](...Token[3]);
     },
-    FastFuncState:function(AST,Args,Tokens){
+    FastFuncState:function(AST,Args,Tokens,DefaultParams={}){
         let Block = AST.Block;
         this.NewStack(AST,Tokens);
+        DefaultParams = this.Parse(AST,DefaultParams);
         const Callback = function(...Params){
         	Interpreter.OpenBlock(AST);
             let Stack = Interpreter.GetStack(AST,Tokens);
             for (let k in Args){
             	k=+k;
             	let v = Args[k];
-            	Interpreter.MakeVariable(AST,v,Params[k]);
+            	let Param = Params[k];
+            	if (Param==null||Param==undefined){
+            	    if (DefaultParams.hasOwnProperty(v)){
+            	        let P = DeepCopy(DefaultParams[v])
+            	        Param = P;
+            	    }
+            	}
+            	Interpreter.MakeVariable(AST,v,Param);
             }
             let Result = undefined;
             let CStack = AST.CStack;
@@ -1626,7 +1642,7 @@ const Interpreter = Object.freeze({
         let Args = Token[2];
         let Tokens = Token[3];
         let Block = AST.Block;
-        const Callback = this.FastFuncState(AST,Args,Tokens);
+        const Callback = this.FastFuncState(AST,Args,Tokens,Token[4]);
         this.SetVariable(AST,Name,Callback,Block);
     },
     SkipIfState:function(AST,Token){
@@ -1835,7 +1851,7 @@ const Interpreter = Object.freeze({
         if (Token[0]=="IN_FUNC"){
         	return this.FuncState(AST,Token);
         } else if (Token[0]=="IN_FASTFUNC"){
-        	return this.FastFuncState(AST,Token[1],Token[2]);
+        	return this.FastFuncState(AST,Token[1],Token[2],Token[3]);
         } else if (Token[0]=="IN_IF"){
         	return this.IfState(AST,Token);
         } else if (Token[0]=="IN_WHILE"){
