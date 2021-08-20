@@ -271,7 +271,7 @@ const Lex = Object.freeze({
 			PToken = Token;
         }
         Tokens.push("TK_EOS");
-        return this.GetTokenTypes(this.RemoveComments(Tokens));
+        return this.RemoveWhitespace(this.RemoveComments(this.GetTokenTypes(Tokens)));
     },
     RemoveComments:function(Tokens){
     	let NewTokens = [];
@@ -280,29 +280,29 @@ const Lex = Object.freeze({
         	k=+k;
             if (Skip.includes(k)){continue}
             let v = Tokens[k];
-            if (v == "TK_COMMENT"){ //Short comment removal
+            if (v.Value == "TK_COMMENT"){ //Short comment removal
             	let kk = k+1;
-            	while (Tokens[kk] != "TK_RETCHAR"){ //Skip to the next retchar token
+            	while (Tokens[kk].Value != "TK_RETCHAR"){ //Skip to the next retchar token
                 	if (kk > Tokens.length-1){break}
                 	Skip.push(kk);
                     kk++;
                 }
                 Skip.push(kk);
                 continue;
-            } else if (v == "TK_COMMENTLONGOPEN"){ //Long comment removal
+            } else if (v.Value == "TK_COMMENTLONGOPEN"){ //Long comment removal
             	let kk = k+1;
                 let Broken = false;
-                while (Tokens[kk] != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
-                	if (kk > Tokens.length-1 || Tokens[kk]=="TK_EOS"){Broken=true;break}
+                while (Tokens[kk].Value != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
+                	if (kk > Tokens.length-1 || Tokens[kk].Value=="TK_EOS"){Broken=true;break}
                     Skip.push(kk);
                     kk++;
                 }
                 if (Broken){ //No closing long comment token? Throw an error
-                	this.NoStackError("UnclosedLongComment",[Tokens[kk],"TK_COMMENTLONGCLOSE"]);
+                	this.NoStackError("UnclosedLongComment",[Tokens[kk].Value,"TK_COMMENTLONGCLOSE"]);
                 }
                 Skip.push(kk);
                 continue;
-            } else if (v == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
+            } else if (v.Value == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
             	this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
             }
             NewTokens.push(v);
@@ -373,14 +373,17 @@ const Lex = Object.freeze({
             }
             NewTokens.push(Class);
         }
+        return NewTokens;
+    },
+    RemoveWhitespace:function(Tokens){
         let LastTokens = [];
-        for (let k in NewTokens){
-        	let v = NewTokens[k];
+        for (let k in Tokens){
+        	let v = Tokens[k];
             if (v.Type != "Whitespace"){
             	LastTokens.push(v);
             }
         }
-        return LastTokens;
+        return LastTokens;  
     },
     ThrowError:function(Class,Message,Stack){
         let Result = Message;
