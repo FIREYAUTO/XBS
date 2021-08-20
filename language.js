@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -95,6 +95,7 @@ const RawTokens = {
     "TK_STOP":"stop",
     "TK_WITH":"with",
     "TK_UNSET":"unset",
+    "TK_SWAP":"swap",
 };
 
 // {{-=~}} Token Classes {{~=-}} \\
@@ -1248,6 +1249,16 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
+    //{{ SwapState }}\\
+    SwapState:function(Stack){
+        this.TypeTestNext(Stack,"Identifier");
+        this.Next(Stack);
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.TypeTestNext(Stack,"Identifier");
+        this.Next(Stack);
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack){
         let Token = Stack.Token;
@@ -1312,6 +1323,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_USING");
                 this.UsingState(Stack);
+            } else if (Token.Value == "TK_SWAP"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_SWAP");
+                this.SwapState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -2070,6 +2085,19 @@ const Interpreter = Object.freeze({
             return;
         } else if (Token[0]=="IN_ISA"){
             return Token[1] instanceof Token[2];
+        } else if (Token[0]=="IN_SWAP"){
+            let v1 = this.GetHighestVariable(AST,Token[1]);
+            if (!v1){
+                throw new CodeError(`Invalid variable name "${Token[1]}"`);   
+            }
+            let v2 = this.GetHighestVariable(AST,Token[2]);
+            if (!v2){
+                throw new CodeError(`Invalid variable name "${Token[2]}"`);   
+            }
+            let [v1v,v2v]=[v1.Value,v2.Value];
+            this.SetVariable(AST,Token[1],v2v,"eq");
+            this.SetVariable(AST,Token[2],v1v,"eq");
+            return
         }
         return Token;
     },
