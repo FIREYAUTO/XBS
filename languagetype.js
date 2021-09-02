@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE","TK_CONST"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -99,6 +99,7 @@ const RawTokens = {
     "TK_SWITCH":"switch",
     "TK_DEFAULT":"def",
     "TK_CASE":"case",
+    "TK_CONST":"const",
 };
 
 // {{-=~}} Token Classes {{~=-}} \\
@@ -1447,6 +1448,10 @@ const AST = Object.freeze({
             	this.OpenChunk(Stack);
             	this.ChunkWrite(Stack,"IN_NEW");
             	this.NewState(Stack);
+        	} else if (Token.Value == "TK_CONST"){
+            	this.OpenChunk(Stack);
+            	this.ChunkWrite(Stack,"IN_CONST");
+            	this.NewState(Stack);
             } else if (Token.Value == "TK_IF"){
             	this.OpenChunk(Stack);
             	this.ChunkWrite(Stack,"IN_IF");
@@ -1704,6 +1709,9 @@ const Interpreter = Object.freeze({
     	        Set = true;
     	    }
     	}
+    	if (Variable && Variable.Const == true){
+    	    throw new CodeError(`Attempt to set the const variable "${Name}"`);
+    	}
         if (Variable){
             if (!Type || Type=="eq"){
         	    Variable.Value = Value;
@@ -1842,6 +1850,18 @@ const Interpreter = Object.freeze({
     },
     NewState:function(AST,Token){
       let Extra = {};
+      if (Token[3]){
+        Extra.Type = Token[3];
+        if (this.GetType(Token[2]) != Extra.Type){
+          throw new CodeError(`Type "${this.GetType(Token[2])}" does not match type "${Extra.Type}"`);
+        }
+      }
+    	this.MakeVariable(AST,Token[1],Token[2],Extra);
+    },
+    ConstState:function(AST,Token){
+      let Extra = {
+          Const:true,
+      };
       if (Token[3]){
         Extra.Type = Token[3];
         if (this.GetType(Token[2]) != Extra.Type){
@@ -2244,6 +2264,8 @@ const Interpreter = Object.freeze({
         	return this.SetState(AST,Token);
         } else if (Token[0] == "IN_NEW"){
         	return this.NewState(AST,Token);
+        } else if (Token[0] == "IN_CONST"){
+        	return this.ConstState(AST,Token);
         } else if (Token[0] == "IN_CALL"){
         	return this.CallState(AST,Token);
         } else if (Token[0] == "IN_SELFCALL"){
