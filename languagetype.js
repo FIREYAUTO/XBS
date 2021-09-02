@@ -684,6 +684,8 @@ const AST = Object.freeze({
         let Div = this.CheckNext(Stack,"Operator","TK_DIV") || this.IsPreciseToken(Stack.Token,"Operator","TK_DIV");
         let Pow = this.CheckNext(Stack,"Operator","TK_POW") || this.IsPreciseToken(Stack.Token,"Operator","TK_POW");
         let Mod = this.CheckNext(Stack,"Operator","TK_MOD") || this.IsPreciseToken(Stack.Token,"Operator","TK_MOD");
+        
+        let In = this.CheckNext(Stack,"Keyword","TK_IN") || this.IsPreciseToken(Stack.Token,"Keyword","TK_IN");
         if (Indexing){
         	let Chunk = this.NewChunk("IN_INDEX");
             this.ChunkAdd(Chunk,Value);
@@ -829,6 +831,17 @@ const AST = Object.freeze({
             	};
             }
             this.ChunkAdd(Chunk,Params);
+            Value = this.FinishExpression(Stack,Chunk);
+            Value = this.FinishComplexExpression(Stack,Value);
+            return Value;
+        } else if (In){
+            let Chunk = this.NewChunk("IN_IN");
+            this.ChunkAdd(Chunk,Value);
+            if (!this.IsPreciseToken(Stack.Token,"Keyword","TK_IN")){
+                this.Next(Stack);
+            }
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             Value = this.FinishExpression(Stack,Chunk);
             Value = this.FinishComplexExpression(Stack,Value);
             return Value;
@@ -2406,6 +2419,17 @@ const Interpreter = Object.freeze({
             this.SetVariable(AST,Token[1],v2v,"eq");
             this.SetVariable(AST,Token[2],v1v,"eq");
             return
+        } else if (Token[0]=="IN_IN"){
+            let v1 = Token[2];
+            let v2 = Token[1];
+            let ty = this.GetType(v1);
+            if (ty == "string"){
+                return !!v1.match(v2.replace(/[\+\-\{\}\(\)\[\]\|\=\?\&\.\>\<\*\$\^\\]/g,"\\$&"));
+            } else if (ty == "object"){
+                return Object.prototype.hasOwnProperty.call(v1,v2);
+            } else if (ty == "array"){
+                return v1.includes(v2);
+            }
         }
         return Token;
     },
@@ -2541,6 +2565,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
+    Version:"0.0.0.1",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
@@ -2548,6 +2573,7 @@ const XBS = Object.freeze({
     document.write(`<pre style="border-left:5px solid #eeeeee;padding-left:5px;tab-size:3;font-size:12px;line-height:12px;">${Text}</pre>`);
   },
   Run:function(Code,Library,Settings={}){
+    Library.Globals._VERSION=XBS.Version;
     if (Settings.PrintCode===true){
       this.StylePrint(Code);
     }
