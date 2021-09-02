@@ -1802,6 +1802,20 @@ const Interpreter = Object.freeze({
         AST.Variables = New;
         AST.Block--;
     },
+    GetExtendingClasses:function(Class){
+    	let Extensions = [];
+        Extensions.push(Class);
+        let Proto = Object.prototype.hasOwnProperty.call(Class,"Extends")?Class.Extends:Object.getPrototypeOf(Class);
+        while (Proto){
+            if (Extensions.includes(Proto)){
+            	Extensions.pop();
+            	break;
+            }
+        	Extensions.push(Proto);
+            Proto = Object.prototype.hasOwnProperty.call(Proto,"Extends")?Proto.Extends:Object.getPrototypeOf(Proto.constructor);
+        }
+        return Extensions;
+    },
     SetState:function(AST,Token){
       let Var = this.GetHighestVariable(AST,Token[1]);
       if (Var){
@@ -2124,6 +2138,9 @@ const Interpreter = Object.freeze({
     		}
     		return New;
     	}
+    	if (Extends!=undefined){
+    	    RClass.Extends = Extends;    
+    	}
     	this.SetVariable(AST,Token[1],RClass);
     },
     DestructState:function(AST,Token){
@@ -2373,7 +2390,9 @@ const Interpreter = Object.freeze({
         } else if (Token[0]=="IN_ISA"){
             let v1 = Token[1];
             let v2 = Token[2];
-            return Token[1] instanceof Token[2];
+            let ex = this.GetExtendingClasses(v1.constructor);
+            let inst = ex.includes(v2);
+            return inst;
         } else if (Token[0]=="IN_SWAP"){
             let v1 = this.GetHighestVariable(AST,Token[1]);
             if (!v1){
