@@ -2298,7 +2298,7 @@ const Interpreter = Object.freeze({
         	return Token[1]<Token[2];
         } else if (Token[0]=="IN_INDEX"){
             let Result=null,Method="__index";
-            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+            if ((Token[1] instanceof Object) && Object.prototype.hasOwnProperty.call(Token[1],Method)){
                 Result = Token[1][Method](Token[1],Token[2]);
             } else {
                 Result = this.IndexState(AST,Token);
@@ -2309,7 +2309,7 @@ const Interpreter = Object.freeze({
             if (Type=="eq"){
                 let v = Token[1];
                 let Method="__setindex";
-                if (v instanceof Object && v.hasOwnProperty(Method)){
+                if ((v instanceof Object) && Object.prototype.hasOwnProperty.call(v,Method)){
                     Result = v[Method](v,Token[2],Token[4]);
                 } else {
                     v[Token[2]]=Token[4];
@@ -2358,7 +2358,7 @@ const Interpreter = Object.freeze({
         	return Math.round(Token[1]);
         } else if (Token[0]=="IN_UNM"){
             let Result=null,Method="__unm";
-            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)){
+            if ((Token[1] instanceof Object) && Object.prototype.hasOwnProperty.call(Token[1],Method)){
                 Result = Token[1][Method](Token[1]);
             } else {
                 Result = -Token[1];
