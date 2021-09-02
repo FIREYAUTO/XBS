@@ -51,6 +51,24 @@ const StandardLibrary = {
     	reverse:function(x){
         	return x.split("").reverse().join("");
         },
+        char:function(x){
+            return x.charCodeAt(0); 
+        },
+        byte:function(x){
+            return String.fromCharCode(x);
+        },
+        lower:function(x){
+            return x.toLowerCase();  
+        },
+        upper:function(x){
+            return x.toUpperCase();  
+        },
+        split:function(x,b){
+            return x.split(b||"");
+        },
+        at:function(x,b){
+            return x.charAt(b);
+        },
     }),
     load:function(x,g){
     	if (!g){
@@ -62,9 +80,9 @@ const StandardLibrary = {
         	Interpreter.Start(vm);
         };
     },
-    table:LibraryUtilities.ReadOnlyObject({
+    array:LibraryUtilities.ReadOnlyObject({
     	find:function(a,x){
-        	return a.includes(x);
+        	return a.indexOf(x);
         },
         remove:function(a,x){
         	a.splice(x,1);
@@ -75,6 +93,18 @@ const StandardLibrary = {
             } else {
             	a.splice(x,0,y);
             }
+        },
+        reverse:function(a){
+            return [...a].reverse();
+        },
+        join:function(a,b){
+            return a.join(b||", ");
+        },
+        sort:function(a,b){
+            return Array.prototype.sort.call(a,b);
+        },
+        has:function(a,b){
+            return a.includes(b);
         }
     }),
     object:Object,
@@ -99,13 +129,15 @@ const StandardLibrary = {
 };
 
 StandardLibrary.env = StandardLibrary;
+StandardLibrary.table = StandardLibrary.array;
 
 //{{ New Library Utility }}\\
 
 const Library = {
-	New:function(Globals={}){
+	New:function(Globals={},Settings={}){
 		return {
 			Globals:Globals,
+			Settings:Settings,
 			AddGlobal:function(Name,Value){
 			    this.Globals[Name]=Value;
 			},
