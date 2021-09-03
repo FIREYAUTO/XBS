@@ -2212,6 +2212,49 @@ const Interpreter = Object.freeze({
     		this.CondState(AST,Default);
     	}
     },
+    IncState:function(AST,Token,State){
+        let Item = Token[1];
+        if (this.GetType(Item)!="array"){
+            throw new CodeError(`Attempt to ${State?"increment":"decrement"} a ${this.GetType(Item)}`);
+        }
+        if (Item[0]=="IN_INDEX"){
+            let Name = this.Parse(AST,Item[1]);
+            let Value = this.Parse(AST,Item[2]);
+            if (State){
+                Name[Value]++;
+            }else{
+                Name[Value]--;
+            }
+        }else if(Item[0]=="IN_GET"){
+            let Name = Item[1];
+            let Var = this.GetHighestVariable(AST,Name);
+            if (Var){
+                if (Var.Const == true){
+                    throw new CodeError(`Attempt to change const "${Name}"`);
+                }
+                if (State){
+                    Var.Value++;
+                }else{
+                    Var.Value--;
+                }
+            } else {
+                let CStack = NVM.CStack;
+				let Stack = Interpreter.GetStack(NVM,CStack);
+                if (Stack && Stack.VariableReference[Name]){
+                    if (State){
+                        Stack.VariableReference[Name]++;
+                    }else{
+                        Stack.VariableReference[Name]--;
+                    }
+				}
+                if (State){
+                    AST.Globals[Name]++;
+                }else{
+                    AST.Globals[Name]--;
+                }
+            }
+        }
+    },
     Parse:function(AST,Token){
     	if (!(Token instanceof Array)){
         	return Token
@@ -2257,6 +2300,10 @@ const Interpreter = Object.freeze({
             }
         } else if (Token[0]=="IN_SWITCH"){
         	return this.SwitchState(AST,Token);
+        } else if (Token[0]=="IN_INC"){
+        	return this.IncState(AST,Token,true);
+        } else if (Token[0]=="IN_DEINC"){
+        	return this.IncState(AST,Token,false);
         }
         this.ParseToken(AST,Token);
         //Parsed
