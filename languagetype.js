@@ -1446,11 +1446,20 @@ const AST = Object.freeze({
     //{{ RepeatState }}\\
     RepeatState:function(Stack){
         this.Next(Stack);
+        let VarName = undefined;
         this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        if (this.CheckNext(Stack,"Keyword","TK_AS")){
+            this.Next(Stack);
+            this.TypeTestNext(Stack,"Identifier");
+            VarName = this.Next(Stack).Value;
+        }
         this.TestNext(Stack,"Bracket","TK_BOPEN");
         this.Next(Stack);
         this.Next(Stack);
         this.CodeBlock(Stack);
+        if (VarName){
+            this.ChunkWrite(Stack,VarName);
+        }
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
@@ -2280,10 +2289,14 @@ const Interpreter = Object.freeze({
             throw new CodeError(`Expected type "number" for repeat loop, got type "${this.GetType(Count)}" instead!`);
         }
         let Stack = Token[2];
+        let VarName = Token[3];
     	let PreLoop = AST.InLoop;
     	AST.InLoop = true;
     	for(let i=1;i<=Count;i++){
     		let NewStack = DeepCopy(Stack);
+    		if (VarName){
+    		    this.MakeVariable(AST,VarName,i,undefined,AST.Block+1);
+    		}
     		this.CondState(AST,NewStack);
     		if (!AST.InLoop||AST.Returned){break}
     	}
