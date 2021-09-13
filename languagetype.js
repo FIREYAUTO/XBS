@@ -1294,9 +1294,8 @@ const AST = Object.freeze({
         	this.Next(Stack);
             this.ErrorIfTokenNotType(Stack,"Identifier");
             this.ChunkWrite(Stack,Stack.Token.Value);
-            if (this.CheckNext(Stack,"Keyword","TK_AS")){
-                this.Next(Stack);
-            }
+            this.TestNext(Stack,"Keyword","TK_AS");
+            this.Next(Stack);
             Stack.Chunk[0]="IN_FORALL";
         } else {
         	this.ErrorIfTokenNotType(Stack,"Keyword");
