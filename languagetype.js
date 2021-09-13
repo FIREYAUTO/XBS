@@ -1029,6 +1029,9 @@ const AST = Object.freeze({
             		return Value;
                 }
         }
+        if (this.TypeCheckNext(Stack,"Identifier") && Stack.Token.Type == "Identifier"){
+            Lex.ThrowError(CodeError,`Unexpected Identifier "${Stack.Token.Value}"`,Stack);
+        }
         Value = this.FinishComplexExpression(Stack,Value,NoCond);
         return Value;
     },
