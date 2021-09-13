@@ -17,6 +17,7 @@ const TokenTypes = {
     "None":["TK_DOT","TK_BACKSLASH","TK_COMMA","TK_NONE","TK_LINEEND","TK_SELFCALL","TK_COLON","TK_PROPCALL","TK_LEN","TK_AT"],
     "Comment":["TK_COMMENT","TK_COMMENTLONGOPEN","TK_COMMENTLONGCLOSE"],
     "End":["TK_EOS"],
+    "Bitwise":["TK_BITAND","TK_BITOR","TK_BITXOR","TK_BITNOT","TK_BITZLSHIFT","TK_BITZRSHIFT",,"TK_BITRSHIFT"],
 };
 
 const RawTokens = {
@@ -100,7 +101,13 @@ const RawTokens = {
     "TK_DEFAULT":"def",
     "TK_CASE":"case",
     "TK_CONST":"const",
-    "TK_REPEAT":"repeat",
+    "TK_BITAND":"&&",
+    "TK_BITOR":"||",
+    "TK_BITXOR":"^^",
+    "TK_BITNOT":"~~",
+    "TK_BITZLSHIFT":"<<",
+    "TK_BITZRSHIFT":">>",
+    "TK_BITRSHIFT":"&>",
 };
 
 // {{-=~}} Token Classes {{~=-}} \\
@@ -231,6 +238,10 @@ const Lex = Object.freeze({
                     	Append(0,"TK_COMMENTLONGOPEN");continue
                     } else if (PToken == "TK_SUB"){
                     	Append(0,"TK_PROPCALL");continue
+                    } else if (PToken == "TK_GT"){
+                        Append(0,"TK_BITZRSHIFT");continue
+                    } else if (PToken == "TK_AND"){
+                        Append(0,"TK_BITRSHIFT");continue
                     } else {
                     	Append(1,Token);
                     }
@@ -258,6 +269,36 @@ const Lex = Object.freeze({
                     } else {
                     	Append(1,Token);
                     }
+				} else if (Token=="TK_AND"){
+				    if (PToken=="TK_AND"){
+				        Append(0,"TK_BITAND");continue;
+				    } else {
+				        Append(1,Token);
+				    }
+				} else if (Token=="TK_OR"){
+				    if (PToken=="TK_OR"){
+				        Append(0,"TK_BITOR");continue;
+				    } else {
+				        Append(1,Token);
+				    }
+				} else if (Token=="TK_POW"){
+				    if (PToken=="TK_POW"){
+				        Append(0,"TK_BITXOR");continue;
+				    } else {
+				        Append(1,Token);
+				    }
+				} else if (Token=="TK_ROUND"){
+				    if (PToken=="TK_ROUND"){
+				        Append(0,"TK_BITNOT");continue;
+				    } else {
+				        Append(1,Token);
+				    }
+				} else if (Token=="TK_LT"){
+				    if (PToken == "TK_LT"){
+				        Append(0,"TK_BITZLSHIFT");continue;
+				    } else {
+				        Append(1,Token);
+				    }
                 } else {
                 	Append(1,Token);
                 }
@@ -409,12 +450,12 @@ const Lex = Object.freeze({
                         kk++;
                     }
                     if (Broken){ //No closing long comment token? Throw an error
-                    	this.NoStackError("UnclosedLongComment",[Tokens[kk],"TK_COMMENTLONGCLOSE"]);
+                    	throw new CodeError(`Expected closing long comment to close comment`)//this.NoStackError("UnclosedLongComment",[Tokens[kk],"TK_COMMENTLONGCLOSE"]);
                     }
                     Skip.push(kk);
                     continue;
                 } else if (v == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
-                	this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
+                	throw new CodeError(`Unexpected closing long comment`)//this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
                 }
             }
             NewTokens.push(Class);
@@ -588,6 +629,15 @@ const AST = Object.freeze({
             let NEq = this.CheckNext(Stack,"Compare","TK_NEQ") || this.IsPreciseToken(Stack.Token,"Compare","TK_NEQ");
             let Gt = this.CheckNext(Stack,"Compare","TK_GT") || this.IsPreciseToken(Stack.Token,"Compare","TK_GT");
             let Lt = this.CheckNext(Stack,"Compare","TK_LT") || this.IsPreciseToken(Stack.Token,"Compare","TK_LT");
+            
+            //Bitwise
+            let BitAnd = this.CheckNext(Stack,"Bitwise","TK_BITAND") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITAND");
+            let BitOr = this.CheckNext(Stack,"Bitwise","TK_BITOR") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITOR");
+            let BitXor = this.CheckNext(Stack,"Bitwise","TK_BITXOR") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITXOR");
+            
+            let BitZLShift = this.CheckNext(Stack,"Bitwise","TK_BITZLSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZLSHIFT");
+            let BitZRShift = this.CheckNext(Stack,"Bitwise","TK_BITZRSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZRSHIFT");
+            let BitRShift = this.CheckNext(Stack,"Bitwise","TK_BITRSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITRSHIFT");
             if (And){
             	let Chunk = this.NewChunk("IN_AND");
             	this.ChunkAdd(Chunk,Value);
@@ -664,6 +714,60 @@ const AST = Object.freeze({
             	let Chunk = this.NewChunk("IN_LT");
             	this.ChunkAdd(Chunk,Value);
                 if (!this.IsPreciseToken(Stack.Token,"Compare","TK_LT")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (BitAnd){
+            	let Chunk = this.NewChunk("IN_BITAND");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITAND")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (BitOr){
+            	let Chunk = this.NewChunk("IN_BITOR");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITOR")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (BitXor){
+            	let Chunk = this.NewChunk("IN_BITXOR");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITXOR")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (BitZLShift){
+            	let Chunk = this.NewChunk("IN_BITZLSHIFT");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZLSHIFT")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (BitZRShift){
+            	let Chunk = this.NewChunk("IN_BITZRSHIFT");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZRSHIFT")){
+                	this.Next(Stack);
+                }
+            	this.Next(Stack);
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	Value = this.FinishExpression(Stack,Chunk);
+            } else if (BitRShift){
+            	let Chunk = this.NewChunk("IN_BITRSHIFT");
+            	this.ChunkAdd(Chunk,Value);
+                if (!this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITRSHIFT")){
                 	this.Next(Stack);
                 }
             	this.Next(Stack);
@@ -1060,6 +1164,11 @@ const AST = Object.freeze({
             Chunk[11] = ReturnType;
         } else if (this.IsPreciseToken(Token,"None","TK_LEN")){
         	let Chunk = this.NewChunk("IN_LEN");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
+            Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"Bitwise","TK_BITNOT")){
+        	let Chunk = this.NewChunk("IN_BITNOT");
             this.Next(Stack);
             this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
@@ -2559,6 +2668,20 @@ const Interpreter = Object.freeze({
             } else if (ty == "array"){
                 return v1.includes(v2);
             }
+        }else if(Token[0]=="IN_BITAND"){
+            return Token[1]&Token[2];
+        }else if(Token[0]=="IN_BITOR"){
+            return Token[1]|Token[2];
+        }else if(Token[0]=="IN_BITXOR"){
+            return Token[1]^Token[2];
+        }else if(Token[0]=="IN_BITZLSHIFT"){
+            return Token[1]<<Token[2];
+        }else if(Token[0]=="IN_BITZRSHIFT"){
+            return Token[1]>>>Token[2];
+        }else if(Token[0]=="IN_BITRSHIFT"){
+            return Token[1]>>Token[2];
+        }else if(Token[0]=="IN_BITNOT"){
+            return ~Token[1]
         }
         return Token;
     },
@@ -2694,7 +2817,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.0.2",
+    Version:"0.0.0.3",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
