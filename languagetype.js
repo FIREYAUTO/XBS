@@ -2284,7 +2284,7 @@ const Interpreter = Object.freeze({
         }
     },
     RepeatState:function(AST,Token){
-        let Count = Token[1];
+        let Count = this.Parse(AST,Token[1]);
         if (this.GetType(Count)!="number"){
             throw new CodeError(`Expected type "number" for repeat loop, got type "${this.GetType(Count)}" instead!`);
         }
