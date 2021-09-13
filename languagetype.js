@@ -339,22 +339,28 @@ const Lex = Object.freeze({
                 let st = Class.Value=="TK_STRING1"?0:1;
                 let os = 1;
                 let comp = "";
-                for (let i=kk;i<=Tokens.length-1;i++){
-                	let t = Tokens[i];
-                    Skip.push(i);
+                while (kk <= Tokens.length-1){
+                    let t = Tokens[kk];
+                    Skip.push(kk);
+                    if (t=="TK_BACKSLASH"){
+                        kk++;Skip.push(kk);t=Tokens[kk];
+                        comp+=FromToken(t);
+                        pt=t;
+                        kk++;
+                        continue;
+                    }
                     if (t=="TK_STRING1"||t=="TK_STRING2"){
                     	let ct = t=="TK_STRING1"?0:1;
                         if (ct==st){
-                        	if (pt=="TK_BACKSLASH"){
-                            	comp+=FromToken(t);
-                                pt=t;
-                            	continue;
-                            }
                         	break;
                         }
                     }
                     comp+=FromToken(t);
-                    pt = t;
+                    pt = t; 
+                    kk++;
+                }
+                for (let i=kk;i<=Tokens.length-1;i++){
+                	
                 }
                 Class.Type = "Constant";
                 Class.CType = "String";
