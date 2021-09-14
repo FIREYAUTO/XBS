@@ -3000,7 +3000,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.0.3",
+    Version:"0.0.1.0",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
