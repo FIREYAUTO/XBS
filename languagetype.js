@@ -1061,7 +1061,7 @@ const AST = Object.freeze({
                 this.Next(Stack);
             }
             this.Next(Stack);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Value = this.FinishExpression(Stack,Chunk);
             Value = this.FinishComplexExpression(Stack,Value);
             return Value;
