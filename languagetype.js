@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE","TK_CONST","TK_REPEAT","TK_SETTYPE"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE","TK_CONST","TK_REPEAT","TK_SETTYPE","TK_PASS"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -110,6 +110,7 @@ const RawTokens = {
     "TK_BITZRSHIFT":">>",
     "TK_BITRSHIFT":"&>",
     "TK_SETTYPE":"settype",
+    "TK_PASS":"pass",
 };
 
 // {{-=~}} Token Classes {{~=-}} \\
@@ -376,7 +377,11 @@ const Lex = Object.freeze({
             let Class = GetTokenType(v);
             Class.Position = k;
             Class.Line = Line;
-            if (Class.Type == "String" && Tokens[k-1].Value!="TK_BACKSLASH"){
+            if (Class.Type == "String"){
+                if((Tokens[k-1]&&Tokens[k-1].Value=="TK_BACKSLASH")){
+                    NewTokens.push(Class);
+                    continue;
+                }
             	let kk=k+1;
                 let pt=v;
                 let st = Class.Value=="TK_STRING1"?0:1;
@@ -729,6 +734,7 @@ const AST = Object.freeze({
             let BitZLShift = this.CheckNext(Stack,"Bitwise","TK_BITZLSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZLSHIFT");
             let BitZRShift = this.CheckNext(Stack,"Bitwise","TK_BITZRSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZRSHIFT");
             let BitRShift = this.CheckNext(Stack,"Bitwise","TK_BITRSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITRSHIFT");
+            let Ques = this.CheckNext(Stack,"None","TK_LEN");
             if (And){
             	let Chunk = this.NewChunk("IN_AND");
             	this.ChunkAdd(Chunk,Value);
@@ -864,6 +870,16 @@ const AST = Object.freeze({
             	this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             	Value = this.FinishExpression(Stack,Chunk);
+            } else if (Ques){
+                let Chunk = this.NewChunk("IN_CHECK");
+                this.ChunkAdd(Chunk,Value);
+                this.Move(Stack,2);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                this.Next(Stack);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                Value = this.FinishExpression(Stack,Chunk);
+                Value = this.FinishComplexExpression(Stack,Value);
+                return Value;
             }
             return Value;
     },
@@ -1046,7 +1062,7 @@ const AST = Object.freeze({
                 this.Next(Stack);
             }
             this.Next(Stack);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Value = this.FinishExpression(Stack,Chunk);
             Value = this.FinishComplexExpression(Stack,Value);
             return Value;
@@ -1745,6 +1761,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_SETTYPE");
                 this.SetTypeState(Stack);
+            } else if (Token.Value == "TK_PASS"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_PASS");
+                this.CloseChunk(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -2352,6 +2372,8 @@ const Interpreter = Object.freeze({
                 AST.InLoop=false;
                 AST.Broken=true;
                 break;
+            } else if(Stack.Token[0]=="IN_PASS"){
+                break;
             }
             this.Parse(AST,Stack.Token);
         }while(Stack.Current<Stack.Tokens.length-1);
@@ -2648,6 +2670,13 @@ const Interpreter = Object.freeze({
         	return this.IncState(AST,Token,false);
         } else if (Token[0]=="IN_REPEAT"){
             return this.RepeatState(AST,Token);
+        } else if (Token[0]=="IN_CHECK"){
+            let Exp = this.Parse(AST,Token[1]);
+            if (Exp){
+                return this.Parse(AST,Token[2]);
+            } else {
+                return this.Parse(AST,Token[3]);
+            }
         }
         this.ParseToken(AST,Token);
         //Parsed
