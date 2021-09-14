@@ -89,7 +89,7 @@ const StandardLibrary = {
         },
         insert:function(a,x,y){
         	if (y==undefined){
-            	a.push(y);
+            	a.push(x);
             } else {
             	a.splice(x,0,y);
             }
@@ -98,7 +98,10 @@ const StandardLibrary = {
             return [...a].reverse();
         },
         join:function(a,b){
-            return a.join(b||", ");
+            if (b==null||b==undefined){
+                b=", ";
+            }
+            return a.join(b);
         },
         sort:function(a,b){
             return Array.prototype.sort.call(a,b);
@@ -108,7 +111,67 @@ const StandardLibrary = {
         }
     }),
     object:Object,
-    math:Math,
+    math:LibraryUtilities.ReadOnlyObject({
+        sin:function(x){
+            return Math.sin(x);
+        },
+        cos:function(x){
+            return Math.cos(x);
+        },
+        tan:function(x){
+            return Math.tan(x);
+        },
+        acos:function(x){
+            return Math.acos(x);
+        },
+        asin:function(x){
+            return Math.asin(x);
+        },
+        atan:function(x){
+            return Math.atan(x);
+        },
+        atan2:function(y,x){
+            return Math.atan2(y,x);
+        },
+        rad:function(x){
+            return x*(Math.PI/180);
+        },
+        deg:function(x){
+            return x*(180/Math.PI);
+        },
+        random:function(mi,ma){
+    	    return Math.floor(Math.random() * (ma-mi+1) + mi);
+        },
+        floor:function(x){
+            return Math.floor(x);
+        },
+        ceil:function(x){
+            return Math.ceil(x);
+        },
+        round:function(x){
+            return Math.round(x);
+        },
+        sqrt:function(x){
+            return Math.sqrt(x);
+        },
+        sqrt2:function(x,b=2){
+            return x**(1/b);
+        },
+        pow:function(x,y){
+            return Math.pow(x,y);
+        },
+        pi:Math.PI,
+        e:Math.E,
+        log:function(x){
+            return Math.log(x);
+        },
+        logb:function(x,b=10){
+            return Math.log10(x)/Math.log10(b);
+        },
+        log10:function(x){
+            return Math.log10(x);
+        },
+    }),
     rnd:function(mi,ma){
     	return Math.floor(Math.random() * (ma-mi+1) + mi);
     },
