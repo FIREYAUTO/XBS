@@ -2062,9 +2062,9 @@ const Interpreter = Object.freeze({
                         }
                         return true;
                     } else {
-                        for(let k in a){
-                            let v=a[k];
-                            if (!Check(v,b.Value[k])){
+                        for(let k in b.Value){
+                            let v=b.Value[k];
+                            if (a.hasOwnProperty(k)&&!Check(a[k],v)){
                                 return false;
                             }
                         }
