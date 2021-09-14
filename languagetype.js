@@ -1,7 +1,7 @@
 // {{-=~}} Variables {{~=-}} \\
 
 const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE","TK_CONST","TK_REPEAT"],
+	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE","TK_CONST","TK_REPEAT","TK_SETTYPE"],
     "String":["TK_STRING1","TK_STRING2"],
     "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
     "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
@@ -33,6 +33,7 @@ const RawTokens = {
     "TK_ISA":"isa",
     "TK_NEW":"new",
     "TK_FOR":"for",
+    "TK_REPEAT":"repeat",
     "TK_FOREACH":"foreach",
     "TK_USING":"using",
     "TK_WHILE":"while",
@@ -108,6 +109,7 @@ const RawTokens = {
     "TK_BITZLSHIFT":"<<",
     "TK_BITZRSHIFT":">>",
     "TK_BITRSHIFT":"&>",
+    "TK_SETTYPE":"settype",
 };
 
 // {{-=~}} Token Classes {{~=-}} \\
@@ -553,6 +555,13 @@ const AST = Object.freeze({
         Stack.CurrentLine = Stack.Token?.Line;
         return Stack.Token;
     },
+    Move:function(Stack,Amount=1){
+    	Stack.Current+=Amount;
+        Stack.PToken=Stack.Token;
+        Stack.Token=Stack.Tokens[Stack.Current];
+        Stack.CurrentLine = Stack.Token?.Line;
+        return Stack.Token;
+    },
     JumpBack:function(Stack,Amount=1){
     	for (let i=1;i<=Amount;i++){
         	Stack.Current--;
@@ -591,6 +600,88 @@ const AST = Object.freeze({
         if (!this.TypeCheckNext(Stack,Type)){
             Lex.ThrowError(CodeError,`Expected type "${Type}"", got type "${this.Next(Stack).Type}"`,Stack);
         }
+    },
+    //{{ Type Handling }}\\
+    FinishTypeExpression:function(Stack,Value){
+        let Union = this.CheckNext(Stack,"Conditional","TK_OR");
+        let Concat = this.CheckNext(Stack,"Conditional","TK_AND");
+        if(Union){
+            this.Move(Stack,2);
+            let Chunk=[];
+            Chunk.push("IN_TYPEUNION");
+            Chunk.push(Value);
+            Chunk.push(this.TypeExpression(Stack));
+            Value=this.FinishTypeExpression(Stack,Chunk);
+        }else if(Concat){
+            this.Move(Stack,2);
+            let Chunk=[];
+            Chunk.push("IN_TYPECONCAT");
+            Chunk.push(Value);
+            Chunk.push(this.TypeExpression(Stack));
+            Value=this.FinishTypeExpression(Stack,Chunk);
+        }
+        return Value;
+    },
+    TypeExpression:function(Stack,NoFinish){
+        let Token=Stack.Token;
+        let Result = null;
+        if (Token.Type == "Identifier"){
+            Result = ["IN_TYPEGET",Token.Value];
+        } else if (Token.Type == "Constant" && Token.Value==null){
+            return ["IN_TYPEGET","null"];
+        } else if (this.IsPreciseToken(Token,"Paren","TK_POPEN")){
+            this.Next(Stack);
+            let Result = this.TypeExpression(Stack);
+            this.TestNext(Stack,"Paren","TK_PCLOSE");
+            this.Next(Stack);
+        } else if (this.IsPreciseToken(Token,"Brace","TK_IOPEN")){
+            this.Next(Stack);
+            Result = ["IN_TYPEARR",this.TypeExpression(Stack)];
+            this.TestNext(Stack,"Brace","TK_ICLOSE");
+            this.Next(Stack);
+        } else if (this.IsPreciseToken(Token,"None","TK_LEN")){
+            this.Next(Stack);
+            Result = ["IN_TYPENULL",this.TypeExpression(Stack,true)];
+        } else if (this.IsPreciseToken(Token,"Bracket","TK_BOPEN")){
+            this.Next(Stack);
+            Result = ["IN_TYPEOBJ"];
+            let Obj = {Type:"Object",Value:{}};
+            let Write=true;
+            Result.push(Obj);
+            while (!this.IsPreciseToken(Stack.Token,"Bracket","TK_BCLOSE")){
+                if (this.IsPreciseToken(Stack.Token,"Brace","TK_IOPEN")){
+                    this.Next(Stack);
+                    Obj.Type = "TypeObject";
+                    Obj.Key = this.TypeExpression(Stack);
+                    this.TestNext(Stack,"Brace","TK_ICLOSE");
+                    this.Next(Stack);
+                    this.TestNext(Stack,"None","TK_COLON");
+                    this.Move(Stack,2);
+                    Obj.Value = this.TypeExpression(Stack);
+                    Write=false;
+                } else {
+                    if (Write){
+                        KeyName=Stack.Token;
+                        if (KeyName.Type!="Constant"&&KeyName.Type!="Identifier"){
+                            throw new CodeError(`Invalid typed-object Key "${KeyName.Value}"`);
+                        }
+                        let Value = null;
+                        this.TestNext(Stack,"None","TK_COLON");
+                        this.Move(Stack,2);
+                        Value = this.TypeExpression(Stack);
+                        Obj.Value[KeyName.Value]=Value;
+                    }
+                }
+                this.Next(Stack);
+                if (this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                    this.Next(Stack);
+                }
+            }
+        }
+        if (!NoFinish){
+            Result = this.FinishTypeExpression(Stack,Result);    
+        }
+        return Result;
     },
     //{{ AssignmentGet }}\\
     AssignmentGet:function(Stack,Value){
@@ -1070,13 +1161,8 @@ const AST = Object.freeze({
                 	Inner = Var.Value
                 }
                 if (this.CheckNext(Stack,"None","TK_COLON")){
-                  this.Next(Stack);
-                  this.Next(Stack);
-                    if ((Stack.Token.Type == "Constant" && Stack.Token.Value != null)&&(Stack.Token.Type != "Identifier")){
-                        throw new CodeError(`Invalid type "${Stack.Token.Value}"`);
-                    }
-                  //this.Next(Stack);
-                  ArrTypes[Inner] = String(Stack.Token.Value);
+                  this.Move(Stack,2);
+                  ArrTypes[Inner] = this.TypeExpression(Stack);
                 }
                 this.TestNext(Stack,"Assignment","TK_EQ");
                 this.Next(Stack);
@@ -1117,10 +1203,7 @@ const AST = Object.freeze({
                 	this.Next(Stack);
                   if (this.IsPreciseToken(Stack.Token,"None","TK_COLON")){
                         this.Next(Stack);
-                        if ((Stack.Token.Type == "Constant" && Stack.Token.Value != null)&&(Stack.Token.Type != "Identifier")){
-                            throw new CodeError(`Invalid type "${Stack.Token.Value}"`);
-                        }
-                    ParamTypes[Name]=String(Stack.Token.Value);
+                    ParamTypes[Name]=this.TypeExpression(Stack);
                     this.Next(Stack);
                   }
                   if (this.IsPreciseToken(Stack.Token,"Assignment","TK_EQ")){
@@ -1138,10 +1221,7 @@ const AST = Object.freeze({
         	let ReturnType = null;
             if(this.IsPreciseToken(Stack.Token,"None","TK_COLON")){
                 this.Next(Stack);
-                if ((Stack.Token.Type == "Constant" && Stack.Token.Value != null)&&(Stack.Token.Type != "Identifier")){
-                    throw new CodeError(`Invalid type "${Stack.Token.Value}"`);
-                }
-                ReturnType=String(Stack.Token.Value);
+                ReturnType=this.TypeExpression(Stack);
                 this.TestNext(Stack,"Bracket","TK_BOPEN");
             }
         	this.Next(Stack);
@@ -1227,11 +1307,8 @@ const AST = Object.freeze({
         if (this.CheckNext(Stack,"None","TK_COLON")){
           this.Next(Stack);
           this.Next(Stack);
-          if ((Stack.Token.Type == "Constant" && Stack.Token.Value != null)&&(Stack.Token.Type != "Identifier")){
-                document.write(Stack.Token.Type,": ",Stack.Token.Value,"<br>")
-              throw new CodeError(`Invalid type "${Stack.Token.Value}"`);
-          }
-          Type = String(Stack.Token.Value);
+          Type = this.TypeExpression(Stack);
+          
         }
         let Result = this.CheckNext(Stack,"Assignment","TK_EQ");
         if (Result){
@@ -1361,10 +1438,7 @@ const AST = Object.freeze({
                 this.Next(Stack);
                 if (this.IsPreciseToken(Stack.Token,"None","TK_COLON")){
                   this.Next(Stack);
-                    if ((Stack.Token.Type == "Constant" && Stack.Token.Value != null)&&(Stack.Token.Type != "Identifier")){
-                        throw new CodeError(`Invalid type "${Stack.Token.Value}"`);
-                    }
-                  ParamTypes[Name]=String(Stack.Token.Value);
+                  ParamTypes[Name]=this.TypeExpression(Stack);
                   this.Next(Stack);
                 }
                 if (this.IsPreciseToken(Stack.Token,"Assignment","TK_EQ")){
@@ -1382,10 +1456,7 @@ const AST = Object.freeze({
         let ReturnType = null;
         if(this.IsPreciseToken(Stack.Token,"None","TK_COLON")){
             this.Next(Stack);
-            if ((Stack.Token.Type == "Constant" && Stack.Token.Value != null)&&(Stack.Token.Type != "Identifier")){
-                throw new CodeError(`Invalid type "${Stack.Token.Value}"`);
-            }
-            ReturnType=String(Stack.Token.Value);
+            ReturnType=this.TypeExpression(Stack);
             this.TestNext(Stack,"Bracket","TK_BOPEN");
         }
         this.Next(Stack);
@@ -1580,6 +1651,16 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
+    //{{ SetTypeState }}\\
+    SetTypeState:function(Stack){
+        this.TypeTestNext(Stack,"Identifier");
+        this.Next(Stack);
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.TestNext(Stack,"Assignment","TK_EQ");
+        this.Move(Stack,2);
+        this.ChunkWrite(Stack,this.TypeExpression(Stack));
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack){
         let Token = Stack.Token;
@@ -1660,6 +1741,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_REPEAT");
                 this.RepeatState(Stack);
+            } else if (Token.Value == "TK_SETTYPE"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_SETTYPE");
+                this.SetTypeState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -1895,6 +1980,108 @@ const Interpreter = Object.freeze({
         }
         return String(ty);
     },
+    TypeParse:function(AST,Token){
+        if (!(Token instanceof Array)){
+            return Token;   
+        }
+        if(Token[0]=="IN_TYPEGET"){
+            let Type = AST.Types[Token[1]];
+            if (!Type){
+                return Token[1];
+            }
+            return this.TypeParse(AST,Type);
+        }else if(Token[0]=="IN_TYPEUNION"){
+            return {Type:"Union",V1:this.TypeParse(AST,Token[1]),V2:this.TypeParse(AST,Token[2]),toString:function(){
+                return `${String(this.V1)}|${String(this.V2)}`;
+            }};
+        }else if(Token[0]=="IN_TYPECONCAT"){
+            return {Type:"Concat",V1:this.TypeParse(AST,Token[1]),V2:this.TypeParse(AST,Token[2]),toString:function(){
+                return `${String(this.V1)}&${String(this.V2)}`;
+            }};
+        }else if(Token[0]=="IN_TYPEARR"){
+            return {Type:"Array",V:this.TypeParse(AST,Token[1]),toString:function(){
+                return `[${String(this.V)}]`;
+            }};
+        }else if(Token[0]=="IN_TYPENULL"){
+            return {Type:"Null",V:this.TypeParse(AST,Token[1]),toString:function(){
+                return `?${String(this.V)}`;
+            }};
+        }else if(Token[0]=="IN_TYPEOBJ"){
+            let Ty = {Type:"Object"};
+            let Obj = Token[1];
+            if (Obj.Type=="TypeObject"){
+                Ty.OType="TypeObject";
+                Ty.Key=this.TypeParse(AST,Obj.Key);
+                Ty.Value=this.TypeParse(AST,Obj.Value);
+                Ty.toString=function(){
+                    return `{[${String(this.Key)}]:${String(this.Value)}}`;
+                }
+            } else {
+                Ty.Value={};
+                Ty.OType="Object";
+                for(let k in Obj.Value){
+                    let v = Obj.Value[k];
+                    Ty.Value[k] = this.TypeParse(AST,v);
+                }
+                Ty.toString=function(){
+                    let Str = [];
+                    for(let k in this.Value){
+                        let v = this.Value[k];
+                        Str.push(`${String(k).match(/\s/)?`"${k}"`:k}:${String(v)}`);
+                    }
+                    return `{${Str.join(", ")}}`;
+                }
+            }
+            return Ty
+        }
+    },
+    TypeCheck:function(AST,x,t){
+        let ts = AST.Types;
+        let type = this.TypeParse(AST,t)
+        function Check(a,b){
+            let ta = Interpreter.GetType(a);
+            if (b instanceof Object){
+                if (b.Type=="Union"){
+                    return Check(a,b.V1)||Check(a,b.V2);
+                }else if(b.Type=="Concat"){
+                    return Check(a,b.V1)&&Check(a,b.V2);
+                }else if(b.Type=="Array"){
+                    return Check(a,"array")&&(!a.find((v,k)=>!Check(v,b.V)))
+                }else if(b.Type=="Null"){
+                    return Check(a,"null")||Check(a,b.V);
+                }else if(b.Type=="Object"){
+                    if (!Check(a,"object")){
+                        return false;
+                    }
+                    if (b.OType=="TypeObject"){
+                        for(let k in a){
+                            let v=a[k];
+                            if (!Check(k,b.Key)||!Check(v,b.Value)){
+                                return false;
+                            }
+                        }
+                        return true;
+                    } else {
+                        for(let k in a){
+                            let v=a[k];
+                            if (!Check(v,b.Value[k])){
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                }
+            } else {
+                if (b=="any"){return true}
+                return b==ta;
+            }
+        }
+        let Result = Check(x,type);
+        let ta = this.GetType(x);
+        if (!Result){
+            throw new CodeError(`"${String(x)}" of type "${this.GetType(x)}" does not match type "${String(type)}"`);
+        }
+    },
     MakeVariable:function(AST,Name,Value,Extra,ForceBlock){
     	let Variable = this.GetHighestVariable(AST,Name);
         if (Variable && Variable.Block == AST.Block && ForceBlock==undefined){return}
@@ -1986,9 +2173,7 @@ const Interpreter = Object.freeze({
       let Var = this.GetHighestVariable(AST,Token[1]);
       if (Var){
         if (Var.hasOwnProperty("Type")){
-          if (this.GetType(Token[2]) != Var.Type){
-            throw new CodeError(`Type "${this.GetType(Token[2])}" does not match type "${Var.Type}"`);
-          }
+            this.TypeCheck(AST,Token[2],Var.Type);
         }
       }
     	this.SetVariable(AST,Token[1],Token[3],Token[2]);
@@ -1997,9 +2182,7 @@ const Interpreter = Object.freeze({
       let Extra = {};
       if (Token[3]){
         Extra.Type = Token[3];
-        if (this.GetType(Token[2]) != Extra.Type){
-          throw new CodeError(`Type "${this.GetType(Token[2])}" does not match type "${Extra.Type}"`);
-        }
+        this.TypeCheck(AST,Token[2],Extra.Type);
       }
     	this.MakeVariable(AST,Token[1],Token[2],Extra);
     },
@@ -2009,9 +2192,7 @@ const Interpreter = Object.freeze({
       };
       if (Token[3]){
         Extra.Type = Token[3];
-        if (this.GetType(Token[2]) != Extra.Type){
-          throw new CodeError(`Type "${this.GetType(Token[2])}" does not match type "${Extra.Type}"`);
-        }
+        this.TypeCheck(AST,Token[2],Extra.Type);
       }
     	this.MakeVariable(AST,Token[1],Token[2],Extra);
     },
@@ -2072,9 +2253,7 @@ const Interpreter = Object.freeze({
             	    }
             	}
             	if (ParamTypes.hasOwnProperty(v)){
-            	  if (Interpreter.GetType(Param) != ParamTypes[v]){
-                  throw new CodeError(`Type "${Interpreter.GetType(Param)}" does not match type "${ParamTypes[v]}"`);
-                }
+            	    Interpreter.TypeCheck(AST,Param,ParamTypes[v]);
             	}
             	Interpreter.MakeVariable(AST,v,Param);
             }
@@ -2118,8 +2297,8 @@ const Interpreter = Object.freeze({
             CS.Upper = Stack.Upper;
             AST.InBlock = PreBlock;
             AST.Returned = false;
-            if (ReturnType && Interpreter.GetType(Result) != ReturnType){
-                throw new CodeError(`Return Type "${Interpreter.GetType(Result)}" does not match type "${ReturnType}"`);
+            if (ReturnType){
+                Interpreter.TypeCheck(AST,Result,ReturnType)
             }
             return Result;
         }
@@ -2275,9 +2454,7 @@ const Interpreter = Object.freeze({
     	for (let k in Arr){
     	  let Result = this.Parse(AST,Arr[k]);
     	  if (ArrTypes.hasOwnProperty(k)){
-    	    if (this.GetType(Result) != ArrTypes[k]){
-            throw new CodeError(`Type "${this.GetType(Result)}" does not match type "${ArrTypes[k]}"`);
-          }
+    	      this.TypeCheck(AST,Result,ArrTypes[k]);
     	  }
         Arr[k]=Result;
       }
@@ -2684,6 +2861,9 @@ const Interpreter = Object.freeze({
             return Token[1]>>Token[2];
         }else if(Token[0]=="IN_BITNOT"){
             return ~Token[1]
+        }else if(Token[0]=="IN_SETTYPE"){
+            AST.Types[Token[1]]=Token[2];
+            return;
         }
         return Token;
     },
@@ -2704,6 +2884,7 @@ const Interpreter = Object.freeze({
             Result:null,
             InUsing:false,
             Using:null,
+            Types:{},
             StackCurrent:{},
             GlobalSettings:{},
             LibGlobals:Globals,
