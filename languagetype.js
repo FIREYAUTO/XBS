@@ -732,6 +732,8 @@ const AST = Object.freeze({
             let BitZLShift = this.CheckNext(Stack,"Bitwise","TK_BITZLSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZLSHIFT");
             let BitZRShift = this.CheckNext(Stack,"Bitwise","TK_BITZRSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITZRSHIFT");
             let BitRShift = this.CheckNext(Stack,"Bitwise","TK_BITRSHIFT") || this.IsPreciseToken(Stack.Token,"Bitwise","TK_BITRSHIFT");
+            
+            let Ques = this.CheckNext(Stack,"None","TK_LEN");
             if (And){
             	let Chunk = this.NewChunk("IN_AND");
             	this.ChunkAdd(Chunk,Value);
@@ -867,6 +869,16 @@ const AST = Object.freeze({
             	this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             	Value = this.FinishExpression(Stack,Chunk);
+            } else if (Ques){
+                let Chunk = this.NewChunk("IN_CHECK");
+                this.ChunkAdd(Chunk,Value);
+                this.Move(Stack,2);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                this.Next(Stack);
+                this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+                Value = this.FinishExpression(Stack,Chunk);
+                Value = this.FinishComplexExpression(Stack,Value);
+                return Value;
             }
             return Value;
     },
@@ -891,7 +903,7 @@ const AST = Object.freeze({
         let Pow = this.CheckNext(Stack,"Operator","TK_POW") || this.IsPreciseToken(Stack.Token,"Operator","TK_POW");
         let Mod = this.CheckNext(Stack,"Operator","TK_MOD") || this.IsPreciseToken(Stack.Token,"Operator","TK_MOD");
         
-        let Ques = this.CheckNext(Stack,"None","TK_LEN")
+        
         
         let In = this.CheckNext(Stack,"Keyword","TK_IN") || this.IsPreciseToken(Stack.Token,"Keyword","TK_IN");
         if (Indexing){
@@ -901,16 +913,6 @@ const AST = Object.freeze({
             this.Next(Stack);
             this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             this.Next(Stack);
-            Value = this.FinishExpression(Stack,Chunk);
-            Value = this.FinishComplexExpression(Stack,Value);
-            return Value;
-        } else if (Ques){
-            let Chunk = this.NewChunk("IN_CHECK");
-            this.ChunkAdd(Chunk,Value);
-            this.Move(Stack,2);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
-            this.Next(Stack);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             Value = this.FinishExpression(Stack,Chunk);
             Value = this.FinishComplexExpression(Stack,Value);
             return Value;
