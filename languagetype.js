@@ -2319,6 +2319,16 @@ const Interpreter = Object.freeze({
     ParseInnerToken:function(AST,Token){
     	return this.Parse(AST,Token)
     },
+    UnpackState:function(AST,Token,k,R){
+        Token[k]=R[0][1][0];
+        for (let kk in R[0][1]){
+            kk=+kk;
+            let vv = R[0][1][kk];
+            if (kk > 0){
+                Token.splice(k+kk,0,vv);
+            }
+        }
+    },
     ParseToken:function(AST,Token){
     	if (Token.length == 0){return}
     	for (let k in Token){
@@ -2327,14 +2337,7 @@ const Interpreter = Object.freeze({
             if (v instanceof Array){
             	let R = [this.Parse(AST,v)];
                 if (R[0]instanceof Array && R[0][0]=="IN_UNPACK"){
-                	Token[k]=R[0][1][0];
-                    for (let kk in R[0][1]){
-                    	kk=+kk;
-                    	let vv = R[0][1][kk];
-                        if (kk > 0){
-                        	Token.splice(k+kk,0,vv);
-                        }
-                    }
+                	this.UnpackState(AST,Token,k,R);
                 } else {
                 	Token[k] = R[0];
                 }
@@ -2612,7 +2615,7 @@ const Interpreter = Object.freeze({
       let NewComp = DeepCopy(Comp);
       let PreLoop = AST.InLoop;
       AST.InLoop = true;
-      while(this.Parse(AST,NewComp)){
+      while(this.ParseUnpack(AST,NewComp)){
         let NewStack = DeepCopy(Stack);
         this.CondState(AST,NewStack);
         NewComp=DeepCopy(Comp);
@@ -2624,7 +2627,7 @@ const Interpreter = Object.freeze({
     ForEachState:function(AST,Token){
     	let VName = Token[1];
     	let Type = Token[2];
-    	let Arr = this.Parse(AST,Token[3]);
+    	let Arr = this.ParseUnpack(AST,Token[3]);
     	let Stack = Token[4];
     	let PreLoop = AST.InLoop
     	AST.InLoop = true
@@ -2641,7 +2644,7 @@ const Interpreter = Object.freeze({
     ForAllState:function(AST,Token){
     	let VName1 = Token[1];
     	let VName2 = Token[2];
-    	let Arr = this.Parse(AST,Token[3]);
+    	let Arr = this.ParseUnpack(AST,Token[3]);
     	let Stack = Token[4];
     	let PreLoop = AST.InLoop
     	AST.InLoop = true
@@ -2658,9 +2661,9 @@ const Interpreter = Object.freeze({
     },
     ForState:function(AST,Token){
     	let VName = Token[1];
-    	let Start = this.Parse(AST,Token[2]);
-    	let End = this.Parse(AST,Token[3]);
-    	let Inc = this.Parse(AST,Token[4]);
+    	let Start = this.ParseUnpack(AST,Token[2]);
+    	let End = this.ParseUnpack(AST,Token[3]);
+    	let Inc = this.ParseUnpack(AST,Token[4]);
     	let Stack = Token[5];
     	let PreLoop = AST.InLoop;
     	AST.InLoop = true;
@@ -2683,7 +2686,12 @@ const Interpreter = Object.freeze({
     	  if (ArrTypes.hasOwnProperty(k)){
     	      this.TypeCheck(AST,Result,ArrTypes[k]);
     	  }
-        Arr[k]=Result;
+    	if (Result instanceof Array && Result[0]=="IN_UNPACK"){
+    	    Result = [Result];
+    	    this.UnpackState(AST,Arr,+k,Result);
+    	} else {
+    	    Arr[k]=Result;
+    	}
       }
       return Arr;
     },
@@ -2741,17 +2749,17 @@ const Interpreter = Object.freeze({
         let PreUsing = AST.InUsing;
         let PreUse = AST.Using;
         AST.InUsing = true;
-        AST.Using = this.Parse(AST,Token[1]);
+        AST.Using = this.ParseUnpack(AST,Token[1]);
         this.CondState(AST,Token[2]);
         AST.InUsing = PreUsing;
         AST.Using = PreUse;
     },
     SwitchState:function(AST,Token){
-    	let Expression = this.Parse(AST,Token[1]);
+    	let Expression = this.ParseUnpack(AST,Token[1]);
     	let Cases = Token[2];
     	let Default = Token[3];
     	for (let v of Cases){
-    		let e = this.Parse(AST,v.Expression);
+    		let e = this.ParseUnpack(AST,v.Expression);
     		if (Expression==e){
     			this.CondState(AST,v.Block)
     			return;
@@ -2767,8 +2775,8 @@ const Interpreter = Object.freeze({
             throw new CodeError(`Attempt to ${State?"increment":"decrement"} a ${this.GetType(Item)}`);
         }
         if (Item[0]=="IN_INDEX"){
-            let Name = this.Parse(AST,Item[1]);
-            let Value = this.Parse(AST,Item[2]);
+            let Name = this.ParseUnpack(AST,Item[1]);
+            let Value = this.ParseUnpack(AST,Item[2]);
             if (State){
                 Name[Value]++;
             }else{
@@ -2805,7 +2813,7 @@ const Interpreter = Object.freeze({
         }
     },
     RepeatState:function(AST,Token){
-        let Count = this.Parse(AST,Token[1]);
+        let Count = this.ParseUnpack(AST,Token[1]);
         if (this.GetType(Count)!="number"){
             throw new CodeError(`Expected type "number" for repeat loop, got type "${this.GetType(Count)}" instead!`);
         }
@@ -2823,6 +2831,14 @@ const Interpreter = Object.freeze({
     	}
         AST.Broken=false;
     	AST.InLoop = PreLoop;
+    },
+    ParseUnpack:function(AST,Token){
+        if (Token instanceof Array && Token[0]=="IN_UNPACK"){
+    	    throw new CodeError(`Invalid unpack statement`);
+        } else {
+            return this.Parse(AST,Token);
+        }
+        return Token;
     },
     Parse:function(AST,Token){
     	if (!(Token instanceof Array)){
