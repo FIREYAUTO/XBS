@@ -759,7 +759,7 @@ const AST = Object.freeze({
                 	this.Next(Stack);
                 }
             	this.Next(Stack);
-            	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            	this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             	Value = this.FinishExpression(Stack,Chunk);
             } else if (Eq){
             	let Chunk = this.NewChunk("IN_EQ");
@@ -911,7 +911,7 @@ const AST = Object.freeze({
             this.ChunkAdd(Chunk,Value);
             this.Next(Stack);
             this.Next(Stack);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack));
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,NoMath,NoCond));
             this.Next(Stack);
             Value = this.FinishExpression(Stack,Chunk);
             Value = this.FinishComplexExpression(Stack,Value);
@@ -960,8 +960,8 @@ const AST = Object.freeze({
             this.Next(Stack);
             this.Next(Stack);
             this.ChunkAdd(Chunk,Stack.Token.Value);
-            Value = this.FinishExpression(Stack,Chunk);
-            Value = this.FinishComplexExpression(Stack,Value);
+            Value = this.FinishExpression(Stack,Chunk,NoMath,NoCond);
+            Value = this.FinishComplexExpression(Stack,Value,NoMath,NoCond);
             return Value;
         } else if (SelfCalling){
         	let Chunk = this.NewChunk("IN_SELFCALL");
