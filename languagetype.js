@@ -1381,14 +1381,23 @@ const AST = Object.freeze({
        		let Params = [];
        		let ParamTypes = {};
        		let Defaults = {};
+       		let VArgs=[];
         	let i=0;
         	if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
             	while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
             		i++;
                 	if (i>100){break}
+                	let VArg=false;
+                	if (this.IsPreciseToken(Stack.Token,"Operator","TK_MUL")){
+                	    VArg=true;
+                	    this.Next(Stack);
+                	}
                 	this.ErrorIfTokenNotType(Stack,"Identifier");
                 	Params.push(Stack.Token.Value);
                 	let Name = Stack.Token.Value;
+                	if (VArg==true){
+                	    VArgs.push(Name);
+                	}
                 	this.Next(Stack);
                   if (this.IsPreciseToken(Stack.Token,"None","TK_COLON")){
                         this.Next(Stack);
@@ -1434,8 +1443,14 @@ const AST = Object.freeze({
             }
             Chunk[10] = ParamTypes;
             Chunk[11] = ReturnType;
+            Chunk[12] = VArgs;
         } else if (this.IsPreciseToken(Token,"None","TK_LEN")){
         	let Chunk = this.NewChunk("IN_LEN");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
+            Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"Operator","TK_MUL")){
+        	let Chunk = this.NewChunk("IN_UNPACK");
             this.Next(Stack);
             this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
@@ -1616,14 +1631,23 @@ const AST = Object.freeze({
        	let Params = [];
        	let ParamTypes = {};
        	let Defaults = {};
+       	let VArgs=[];
         let i=0;
         if (!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
             while(!this.IsPreciseToken(Stack.Token,"Paren","TK_PCLOSE")){
             	i++;
                 if (i>100){break}
+                let VArg=false;
+                if (this.IsPreciseToken(Stack.Token,"Operator","TK_MUL")){
+                    VArg=true;
+                    this.Next(Stack);
+                }
                 this.ErrorIfTokenNotType(Stack,"Identifier");
                 let Name = Stack.Token.Value;
                 Params.push(Stack.Token.Value);
+                if (VArg==true){
+                    VArgs.push(Name);
+                }
                 this.Next(Stack);
                 if (this.IsPreciseToken(Stack.Token,"None","TK_COLON")){
                   this.Next(Stack);
@@ -1655,6 +1679,7 @@ const AST = Object.freeze({
             this.ChunkWrite(Stack,Defaults)
         }
         Stack.Chunk[10]=ParamTypes;
+        Stack.Chunk[12]=VArgs;
         if (ReturnType){
             Stack.Chunk[11]=ReturnType;
         }
@@ -2301,13 +2326,13 @@ const Interpreter = Object.freeze({
         	let v = Token[k];
             if (v instanceof Array){
             	let R = [this.Parse(AST,v)];
-                if (R.length > 1){
-                	Token[k]=R[0];
-                    for (let kk in R){
+                if (R[0]instanceof Array && R[0][0]=="IN_UNPACK"){
+                	Token[k]=R[0][1][0];
+                    for (let kk in R[0][1]){
                     	kk=+kk;
-                    	let vv = R[kk];
-                        if (+kk > 0){
-                        	Token.splice((+k)+((+kk-1)),0,vv);
+                    	let vv = R[0][1][kk];
+                        if (kk > 0){
+                        	Token.splice(k+kk,0,vv);
                         }
                     }
                 } else {
@@ -2423,11 +2448,12 @@ const Interpreter = Object.freeze({
         }
     	return Check.call(Token[1],...Token[3]);
     },
-    FastFuncState:function(AST,Args,Tokens,DefaultParams={},ParamTypes={},ReturnType=null){
+    FastFuncState:function(AST,Args,Tokens,DefaultParams={},ParamTypes={},ReturnType=null,VArgs=[]){
         let Block = AST.Block;
         this.NewStack(AST,Tokens);
         DefaultParams = this.Parse(AST,DefaultParams);
         ParamTypes = ParamTypes;
+        VArgs = VArgs;
         const Callback = function(...Params){
         	Interpreter.OpenBlock(AST);
             let Stack = Interpreter.GetStack(AST,Tokens);
@@ -2441,10 +2467,22 @@ const Interpreter = Object.freeze({
             	        Param = P;
             	    }
             	}
-            	if (ParamTypes.hasOwnProperty(v)){
-            	    Interpreter.TypeCheck(AST,Param,ParamTypes[v]);
+            	if (!VArgs.includes(v)){
+            	    if (ParamTypes.hasOwnProperty(v)){
+            	        Interpreter.TypeCheck(AST,Param,ParamTypes[v]);
+            	    }
+            	    Interpreter.MakeVariable(AST,v,Param);    
+            	} else {
+            	    let NP = [];
+            	    for(let i=k;i<=Params.length-1;i++){
+            	        NP.push(Params[i]);
+            	    }
+            	    if (ParamTypes.hasOwnProperty(v)){
+            	        Interpreter.TypeCheck(AST,NP,ParamTypes[v]);
+            	    }
+            	    Interpreter.MakeVariable(AST,v,NP);
+            	    break;
             	}
-            	Interpreter.MakeVariable(AST,v,Param);
             }
             let Result = undefined;
             let CStack = AST.CStack;
@@ -2498,7 +2536,7 @@ const Interpreter = Object.freeze({
         let Args = Token[2];
         let Tokens = Token[3];
         let Block = AST.Block;
-        const Callback = this.FastFuncState(AST,Args,Tokens,Token[4],Token[10],Token[11]);
+        const Callback = this.FastFuncState(AST,Args,Tokens,Token[4],Token[10],Token[11],Token[12]);
         this.SetVariable(AST,Name,Callback,Block);
     },
     SkipIfState:function(AST,Token){
@@ -2794,7 +2832,7 @@ const Interpreter = Object.freeze({
         if (Token[0]=="IN_FUNC"){
         	return this.FuncState(AST,Token);
         } else if (Token[0]=="IN_FASTFUNC"){
-        	return this.FastFuncState(AST,Token[1],Token[2],Token[3],Token[10],Token[11]);
+        	return this.FastFuncState(AST,Token[1],Token[2],Token[3],Token[10],Token[11],Token[12]);
         } else if (Token[0]=="IN_IF"){
         	return this.IfState(AST,Token);
         } else if (Token[0]=="IN_WHILE"){
