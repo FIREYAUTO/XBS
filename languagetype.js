@@ -1,133 +1,3 @@
-// {{-=~}} Variables {{~=-}} \\
-
-const TokenTypes = {
-	"Keyword":["TK_IF","TK_SET","TK_FOR","TK_FOREACH","TK_WHILE","TK_OF","TK_IN","TK_FUNC","TK_SEND","TK_ELIF","TK_ELSE","TK_DEL","TK_STOP","TK_NEW","TK_WITH","TK_CLASS","TK_EXTENDS","TK_DESTRUCT","TK_UNSET","TK_AS","TK_ISA","TK_USING","TK_SWAP","TK_SWITCH","TK_DEFAULT","TK_CASE","TK_CONST","TK_REPEAT","TK_SETTYPE"],
-    "String":["TK_STRING1","TK_STRING2"],
-    "Whitespace":["TK_RETCHAR","TK_SPACE","TK_TAB"],
-    "Compare":["TK_EQS","TK_LT","TK_GT","TK_GEQ","TK_LEQ","TK_NEQ"],
-    "Operator":["TK_ADD","TK_SUB","TK_MUL","TK_DIV","TK_MOD","TK_POW","TK_ROUND"],
-    "Assignment":["TK_EQ","TK_ADDEQ","TK_SUBEQ","TK_DIVEQ","TK_MULEQ","TK_MODEQ","TK_POWEQ"],
-    "Incremental":["TK_INC","TK_DEINC"],
-    "Conditional":["TK_AND","TK_OR","TK_NOT"],
-    "Paren":["TK_POPEN","TK_PCLOSE"],
-    "Bracket":["TK_BOPEN","TK_BCLOSE"],
-    "Brace":["TK_IOPEN","TK_ICLOSE"],
-    "Bool":["TK_TRUE","TK_FALSE"],
-    "Null":["TK_NULL"],
-    "None":["TK_DOT","TK_BACKSLASH","TK_COMMA","TK_NONE","TK_LINEEND","TK_SELFCALL","TK_COLON","TK_PROPCALL","TK_LEN","TK_AT"],
-    "Comment":["TK_COMMENT","TK_COMMENTLONGOPEN","TK_COMMENTLONGCLOSE"],
-    "End":["TK_EOS"],
-    "Bitwise":["TK_BITAND","TK_BITOR","TK_BITXOR","TK_BITNOT","TK_BITZLSHIFT","TK_BITZRSHIFT",,"TK_BITRSHIFT"],
-};
-
-const RawTokens = {
-	"TK_STRING1":"\"",
-    "TK_STRING2":"\'",
-    "TK_SET":"set",
-    "TK_RETCHAR":String.fromCharCode(10),
-    "TK_TAB":String.fromCharCode(9),
-    "TK_SPACE":" ",
-    "TK_CLASS":"class",
-    "TK_EXTENDS":"extends",
-    "TK_DESTRUCT":"destruct",
-    "TK_ISA":"isa",
-    "TK_NEW":"new",
-    "TK_FOR":"for",
-    "TK_REPEAT":"repeat",
-    "TK_FOREACH":"foreach",
-    "TK_USING":"using",
-    "TK_WHILE":"while",
-    "TK_IF":"if",
-    "TK_IN":"in",
-    "TK_AS":"as",
-    "TK_ELSE":"else",
-    "TK_ELIF":"elif",
-    "TK_OF":"of",
-    "TK_FUNC":"func",
-    "TK_SEND":"send",
-    "TK_POPEN":"(",
-    "TK_PCLOSE":")",
-    "TK_BOPEN":"{",
-    "TK_BCLOSE":"}",
-    "TK_IOPEN":"[",
-    "TK_ICLOSE":"]",
-    "TK_LINEEND":";",
-    "TK_EQ":"=",
-    "TK_EQS":"==",
-    "TK_LT":"<",
-    "TK_GT":">",
-    "TK_LEQ":"<=",
-    "TK_GEQ":">=",
-    "TK_NEQ":"!=",
-    "TK_NOT":"!",
-    "TK_OR":"|",
-    "TK_AT":"@",
-    "TK_AND":"&",
-    "TK_ADDEQ":"+=",
-    "TK_SUBEQ":"-=",
-    "TK_MULEQ":"*=",
-    "TK_DIVEQ":"/=",
-    "TK_MODEQ":"%=",
-    "TK_POWEQ":"^=",
-    "TK_ADD":"+",
-    "TK_SUB":"-",
-    "TK_MUL":"*",
-    "TK_DIV":"/",
-    "TK_MOD":"%",
-    "TK_POW":"^",
-    "TK_DEINC":"--",
-    "TK_INC":"++",
-    "TK_ROUND":"~",
-    "TK_COMMENT":"#",
-    "TK_COMMENTLONGOPEN":"#>",
-    "TK_COMMENTLONGCLOSE":"<#",
-    "TK_COMMA":",",
-    "TK_COLON":":",
-    "TK_SELFCALL":"::",
-    "TK_DOT":".",
-    "TK_NULL":"null",
-    "TK_TRUE":"true",
-    "TK_FALSE":"false",
-    "TK_NONE":"",
-    "TK_EOS":"&lt;eos&gt;",
-    "TK_BACKSLASH":"\\",
-    "TK_PROPCALL":"->",
-    "TK_DEL":"del",
-    "TK_LEN":"?",
-    "TK_STOP":"stop",
-    "TK_WITH":"with",
-    "TK_UNSET":"unset",
-    "TK_SWAP":"swap",
-    "TK_SWITCH":"switch",
-    "TK_DEFAULT":"def",
-    "TK_CASE":"case",
-    "TK_CONST":"const",
-    "TK_BITAND":"&&",
-    "TK_BITOR":"||",
-    "TK_BITXOR":"^^",
-    "TK_BITNOT":"~~",
-    "TK_BITZLSHIFT":"<<",
-    "TK_BITZRSHIFT":">>",
-    "TK_BITRSHIFT":"&>",
-    "TK_SETTYPE":"settype",
-};
-
-// {{-=~}} Token Classes {{~=-}} \\
-
-class TokenBase {
-	Type="None";
-    Value="TK_NONE";
-    Position=0;
-    constructor(Type,Value,Position){
-    	this.Type=Type;
-        this.Value=Value;
-        this.Position=Position;
-    }
-    toString(){
-    	return `${this.Type}:${this.Value}:${this.Position}`
-    }
-}
-
 // {{-=~}} Error Classes {{~=-}} \\
 
 class InternalError extends Error {
@@ -150,333 +20,632 @@ class CodeError extends Error {
 
 // {{-=~}} Token Functions {{~=-}} \\
 
-function ToToken(x){
-	for (let k in RawTokens){
-    	if (RawTokens[k] == x){
-        	return k;
-        }
-    }
-    return x;
-}
-
 function FromToken(x){
-	for (let k in RawTokens){
+	for (let k in Lex.Tokens){
+	    let v = Lex.Tokens[k];
     	if (k == x){
-        	return RawTokens[k];
+        	return v.Token;
         }
     }
     return x;
-}
-
-function IsLiteralToken(x){
-	if (!x.startsWith("(")){return false}
-    if (!x.endsWith(")")){return false}
-    x = x.slice(1);
-    x = x.slice(0,x.length-1);
-    return RawTokens.hasOwnProperty(x);
-}
-
-function GetTokenType(Token){
-	for (let k in TokenTypes){
-    	let v = TokenTypes[k];
-        if (v.includes(Token)){
-        	return new TokenBase(k,Token,0);
-        }
-    }
-    return new TokenBase("Identifier",Token,0);
 }
 
 // {{-=~}} Tokenizer {{~=-}} \\
 
-const Lex = Object.freeze({
-	Tokenize:function(Code){
-    	const Tokens = [];
-        let Letters=0,PToken="TK_NONE";
-        const CL = Code.length;
-        const Append = function(n,x){
-        	Tokens[(Tokens.length-1)+n]=x;
-            if (n == 0){
-            	PToken=x;
+const Lex = {
+	Tokens:{
+    	/*
+        "TK_":{
+        	Token:"",
+            Type:"",
+        },
+        */
+    	"TK_SPACE":{
+        	Token:" ",
+            Type:"Whitespace",
+        },
+        "TK_TAB":{
+        	Token:String.fromCharCode(9),
+            Type:"Whitespace",
+        },
+        "TK_RETCHAR":{
+        	Token:String.fromCharCode(10),
+            Type:"Whitespace",
+        },
+        "TK_BACKSLASH":{
+        	Token:"\\",
+            Type:"None",
+        },
+        "TK_STRING1":{
+        	Token:"\"",
+            Type:"String",
+        },
+        "TK_STRING2":{
+        	Token:"'",
+            Type:"String",
+        },
+        "TK_ADDEQ":{
+        	Token:"+=",
+            Type:"Assignment",
+        },
+        "TK_SUBEQ":{
+        	Token:"-=",
+            Type:"Assignment",
+        },
+        "TK_MULEQ":{
+        	Token:"*=",
+            Type:"Assignment",
+        },
+        "TK_DIVEQ":{
+        	Token:"/=",
+            Type:"Assignment",
+        },
+        "TK_MODEQ":{
+        	Token:"%=",
+            Type:"Assignment",
+        },
+        "TK_POWEQ":{
+        	Token:"^=",
+            Type:"Assignment",
+        },
+        "TK_EQ":{
+        	Token:"=",
+            Type:"Assignment",
+            Combinations:{
+            	"TK_EQS":"TK_EQ",
+                "TK_GEQ":"TK_GT",
+                "TK_LEQ":"TK_LT",
+                "TK_NEQ":"TK_NOT",
+                "TK_ADDEQ":"TK_ADD",
+                "TK_SUBEQ":"TK_SUB",
+                "TK_MULEQ":"TK_MUL",
+                "TK_DIVEQ":"TK_DIV",
+                "TK_MODEQ":"TK_MOD",
+                "TK_POWEQ":"TK_POW",
+            },
+        },
+        "TK_GT":{
+        	Token:">",
+            Type:"Compare",
+            Combinations:{
+            	"TK_COMMENTLONGOPEN":"TK_COMMENT",
+				"TK_PROPCALL":"TK_SUB",
+                "TK_BITZRSHIFT":"TK_GT",
+                "TK_BITRSHIFT":"TK_AND",
+            }
+        },
+        "TK_LT":{
+        	Token:"<",
+            Type:"Compare",
+            Combinations:{
+            	"TK_BITZLSHIFT":"TK_LT",
+            },
+        },
+        "TK_EQS":{
+        	Token:"==",
+            Type:"Compare",
+        },
+        "TK_GEQ":{
+        	Token:">=",
+            Type:"Compare",
+        },
+        "TK_LEQ":{
+        	Token:"<=",
+            Type:"Compare",
+        },
+        "TK_NEQ":{
+        	Token:"!=",
+            Type:"Compare",
+        },
+        "TK_NOT":{
+        	Token:"!",
+            Type:"Conditional",
+        },
+        "TK_AND":{
+        	Token:"&",
+            Type:"Conditional",
+            Combinations:{
+            	"TK_BITAND":"TK_AND",
+            },
+        },
+        "TK_OR":{
+        	Token:"|",
+            Type:"Conditional",
+            Combinations:{
+            	"TK_BITOR":"TK_OR",
+            },
+        },
+        "TK_DOT":{
+        	Token:".",
+            Type:"None",
+        },
+        "TK_ADD":{
+        	Token:"+",
+            Type:"Operator",
+            Combinations:{
+            	"TK_INC":"TK_ADD",
+            },
+        },
+        "TK_SUB":{
+        	Token:"-",
+            Type:"Operator",
+            Combinations:{
+            	"TK_DEINC":"TK_SUB",
+            },
+        },
+        "TK_MUL":{
+        	Token:"*",
+            Type:"Operator",
+        },
+        "TK_DIV":{
+        	Token:"/",
+            Type:"Operator",
+        },
+        "TK_POW":{
+        	Token:"^",
+            Type:"Operator",
+            Combinations:{
+            	"TK_BITXOR":"TK_POW",
+            },
+        },
+        "TK_MOD":{
+        	Token:"%",
+            Type:"Operator",
+        },
+        "TK_ROUND":{
+        	Token:"~",
+            Type:"Operator",
+            Combinations:{
+            	"TK_BITNOT":"TK_ROUND",
+            },
+        },
+        "TK_INC":{
+        	Token:"++",
+            Type:"Incremental",
+        },
+        "TK_DEINC":{
+        	Token:"--",
+            Type:"Incremental",
+        },
+        "TK_TRUE":{
+        	Token:"true",
+            Type:"Bool",
+        },
+        "TK_FALSE":{
+        	Token:"false",
+            Type:"Bool",
+        },
+        "TK_NULL":{
+        	Token:"null",
+            Type:"Null",
+        },
+        "TK_BOPEN":{
+        	Token:"{",
+            Type:"Bracket",
+        },
+        "TK_BCLOSE":{
+        	Token:"}",
+            Type:"Bracket",
+        },
+        "TK_POPEN":{
+        	Token:"(",
+            Type:"Paren",
+        },
+        "TK_PCLOSE":{
+        	Token:")",
+            Type:"Paren",
+        },
+        "TK_IOPEN":{
+        	Token:"[",
+            Type:"Brace",
+        },
+        "TK_ICLOSE":{
+        	Token:"]",
+            Type:"Brace",
+        },
+        "TK_COMMENT":{
+        	Token:"#",
+            Type:"Comment",
+            Combinations:{
+            	"TK_COMMENTLONGCLOSE":"TK_LT",
+            },
+        },
+        "TK_COMMENTLONGOPEN":{
+        	Token:"#>",
+            Type:"Comment"
+        },
+        "TK_COMMENTLONGCLOSE":{
+        	Token:"<#",
+            Type:"Comment"
+        },
+        "TK_COMMA":{
+        	Token:",",
+            Type:"None",
+        },
+        "TK_NONE":{
+        	Token:"",
+            Type:"None",
+        },
+        "TK_LINEEND":{
+        	Token:";",
+            Type:"None",
+        },
+        "TK_SELFCALL":{
+        	Token:"::",
+            Type:"None",
+        },
+        "TK_COLON":{
+        	Token:":",
+            Type:"None",
+            Combinations:{
+            	"TK_SELFCALL":"TK_COLON",
+            },
+        },
+        "TK_PROPCALL":{
+        	Token:"->",
+            Type:"None",
+        },
+        "TK_LEN":{
+        	Token:"?",
+            Type:"None",
+        },
+        "TK_AT":{
+        	Token:"@",
+            Type:"None",
+        },
+        "TK_EOS":{
+        	Token:"&lt;eos&gt;",
+            Type:"End",
+        },
+        "TK_BITAND":{
+        	Token:"&&",
+            Type:"Bitwise",
+        },
+        "TK_BITOR":{
+        	Token:"||",
+            Type:"Bitwise",
+        },
+        "TK_BITXOR":{
+        	Token:"^^",
+            Type:"Bitwise",
+        },
+        "TK_BITNOT":{
+        	Token:"~~",
+            Type:"Bitwise",
+        },
+        "TK_BITZLSHIFT":{
+        	Token:"<<",
+            Type:"Bitwise",
+        },
+        "TK_BITZRSHIFT":{
+        	Token:">>",
+            Type:"Bitwise",
+        },
+        "TK_BITRSHIFT":{
+        	Token:"&>",
+            Type:"Bitwise",
+        },
+        //Keywords
+        "TK_SET":{
+        	Token:"set",
+            Type:"Keyword",
+        },
+        "TK_IF":{
+        	Token:"if",
+            Type:"Keyword",
+        },
+        "TK_ELIF":{
+        	Token:"elif",
+            Type:"Keyword",
+        },
+        "TK_ELSE":{
+        	Token:"else",
+            Type:"Keyword",
+        },
+        "TK_WHILE":{
+        	Token:"while",
+            Type:"Keyword",
+        },
+        "TK_FOR":{
+        	Token:"for",
+            Type:"Keyword",
+        },
+        "TK_FOREACH":{
+        	Token:"foreach",
+            Type:"Keyword",
+        },
+        "TK_IN":{
+        	Token:"in",
+            Type:"Keyword",
+        },
+        "TK_OF":{
+        	Token:"of",
+            Type:"Keyword",
+        },
+        "TK_AS":{
+        	Token:"as",
+            Type:"Keyword",
+        },
+        "TK_FUNC":{
+        	Token:"func",
+            Type:"Keyword",
+        },
+        "TK_SEND":{
+        	Token:"send",
+            Type:"Keyword",
+        },
+        "TK_DEL":{
+        	Token:"del",
+            Type:"Keyword",
+        },
+        "TK_STOP":{
+        	Token:"stop",
+            Type:"Keyword",
+        },
+        "TK_NEW":{
+        	Token:"new",
+            Type:"Keyword",
+        },
+        "TK_WITH":{
+        	Token:"with",
+            Type:"Keyword",
+        },
+        "TK_CLASS":{
+        	Token:"class",
+            Type:"Keyword",
+        },
+        "TK_EXTENDS":{
+        	Token:"extends",
+            Type:"Keyword",
+        },
+        "TK_DESTRUCT":{
+        	Token:"destruct",
+            Type:"Keyword",
+        },
+        "TK_UNSET":{
+        	Token:"unset",
+            Type:"Keyword",
+        },
+        "TK_ISA":{
+        	Token:"isa",
+            Type:"Keyword",
+        },
+        "TK_USING":{
+        	Token:"using",
+            Type:"Keyword",
+        },
+        "TK_SWAP":{
+        	Token:"swap",
+            Type:"Keyword",
+        },
+        "TK_SWITCH":{
+        	Token:"switch",
+            Type:"Keyword",
+        },
+        "TK_DEFAULT":{
+        	Token:"def",
+            Type:"Keyword",
+        },
+        "TK_CASE":{
+        	Token:"case",
+            Type:"Keyword",
+        },
+        "TK_CONST":{
+        	Token:"const",
+            Type:"Keyword",
+        },
+        "TK_REPEAT":{
+        	Token:"repeat",
+            Type:"Keyword",
+        },
+        "TK_SETTYPE":{
+        	Token:"settype",
+            Type:"Keyword",
+        },
+    },
+    GetToken:function(x){
+    	for(let k in this.Tokens){
+        	let v = this.Tokens[k];
+            if (v.Token == x){
+            	return k;
             }
         }
-        for (let k=0;k<=CL-1;k++){
-        	let Raw = Code.substr(k,1);
-            let Token = ToToken(Raw);
-            if (Raw.length == 1 && Token != Raw){
+        return x;
+    },
+    NewToken:function(Value,Type,Index,Line){
+    	return {
+        	Value:Value,
+            Type:Type,
+            Position:Index,
+            Line:Line,
+            toString:function(){
+            	return `Type: "<b>${this.Type}</b>" => Value: "<b>${this.Value}</b>" => Position: <b>${this.Position}</b> => Line: <b>${this.Line}</b>${this.hasOwnProperty("CType")?` => CType: "<b>${this.CType}</b>"`:""}`;
+            }
+        }
+    },
+    GetTokenType:function(x){
+    	let v = this.Tokens[x];
+    	return v?v.Type:"Identifier";
+    },
+    IsToken:function(x){
+    	return this.Tokens.hasOwnProperty(x);
+    },
+    Tokenize:function(Code){
+    	let Tokens = [];
+        let Letters = 0;
+        let Index=1,Line=1;
+        let CL = Code.length;
+        function Write(n,x,literal=false,forceIndex,forceLine){
+        	let Type = !literal?Lex.GetTokenType(x):"Identifier";
+            if (Type=="Whitespace"&&x=="TK_RETCHAR"){
+            	Line++;
+                Index=0;
+            }
+        	Tokens[(Tokens.length-1)+n]=Lex.NewToken(x,Type,forceIndex||Index,forceLine||Line);
+        }
+        function Last(){
+        	return Tokens[Tokens.length-1];
+        }
+        for(let i=0;i<=CL-1;i++){
+        	let Raw = Code.substr(i,1);
+            let Token = this.GetToken(Raw);
+            if (Token != Raw){
             	if (Letters > 0){
-                	let Behind = Code.substring(k-Letters,k);
-                    if (RawTokens.hasOwnProperty(Behind)){
-                    	Behind = `(${Behind})`;
-                    }
-                    Append(1,ToToken(Behind));
-            		Letters=0;
+                	let Behind = Code.substring(i-Letters,i);
+                    let Literal = this.IsToken(Behind);
+                    Write(1,this.GetToken(Behind),Literal,Index-Letters);
+                    Letters = 0;
                 }
-                if (Token == "TK_EQ"){
-                	if (PToken == "TK_EQ"){
-                    	Append(0,"TK_EQS");continue
-                    } else if (PToken == "TK_LT"){
-                    	Append(0,"TK_LEQ");continue
-                    } else if (PToken == "TK_GT"){
-                    	Append(0,"TK_GEQ");continue
-                    } else if (PToken == "TK_NOT"){
-                    	Append(0,"TK_NEQ");continue
-                    } else if (PToken == "TK_ADD"){
-                    	Append(0,"TK_ADDEQ");continue
-                    } else if (PToken == "TK_SUB"){
-                    	Append(0,"TK_SUBEQ");continue
-                    } else if (PToken == "TK_MUL"){
-                    	Append(0,"TK_MULEQ");continue
-                    } else if (PToken == "TK_DIV"){
-                    	Append(0,"TK_DIVEQ");continue
-                    } else if (PToken == "TK_MOD"){
-                    	Append(0,"TK_MODEQ");continue
-                    } else if (PToken == "TK_POW"){
-                    	Append(0,"TK_POWEQ");continue
-                    } else {
-                    	Append(1,Token);
+                let Previous = Last();
+                let Combinations = this.Tokens[Token].Combinations;
+                let DidWrite = false;
+                if (Combinations&&Previous){
+                	for(let k in Combinations){
+                    	let v = Combinations[k];
+                        let tv = this.Tokens[v];
+                        if (!tv){continue}
+                        if (v == Previous.Value && tv.Type == Previous.Type){
+                        	Write(0,k);
+                            DidWrite = true;
+                            break;
+                        }
                     }
-                } else if (Token == "TK_GT"){
-                	if (PToken == "TK_COMMENT"){
-                    	Append(0,"TK_COMMENTLONGOPEN");continue
-                    } else if (PToken == "TK_SUB"){
-                    	Append(0,"TK_PROPCALL");continue
-                    } else if (PToken == "TK_GT"){
-                        Append(0,"TK_BITZRSHIFT");continue
-                    } else if (PToken == "TK_AND"){
-                        Append(0,"TK_BITRSHIFT");continue
-                    } else {
-                    	Append(1,Token);
-                    }
-                } else if (Token == "TK_COMMENT"){
-                	if (PToken == "TK_LT"){
-                    	Append(0,"TK_COMMENTLONGCLOSE");continue
-                    } else {
-                    	Append(1,Token);
-                    }
-                } else if (Token == "TK_ADD"){
-                	if (PToken == "TK_ADD"){
-                    	Append(0,"TK_INC");continue;
-                    } else {
-                    	Append(1,Token);
-                    }
-                } else if (Token == "TK_COLON"){
-                	if (PToken == "TK_COLON"){
-                    	Append(0,"TK_SELFCALL");continue;
-                    } else {
-                    	Append(1,Token);
-                    }
-				} else if (Token == "TK_SUB"){
-                	if (PToken == "TK_SUB"){
-                    	Append(0,"TK_DEINC");continue;
-                    } else {
-                    	Append(1,Token);
-                    }
-				} else if (Token=="TK_AND"){
-				    if (PToken=="TK_AND"){
-				        Append(0,"TK_BITAND");continue;
-				    } else {
-				        Append(1,Token);
-				    }
-				} else if (Token=="TK_OR"){
-				    if (PToken=="TK_OR"){
-				        Append(0,"TK_BITOR");continue;
-				    } else {
-				        Append(1,Token);
-				    }
-				} else if (Token=="TK_POW"){
-				    if (PToken=="TK_POW"){
-				        Append(0,"TK_BITXOR");continue;
-				    } else {
-				        Append(1,Token);
-				    }
-				} else if (Token=="TK_ROUND"){
-				    if (PToken=="TK_ROUND"){
-				        Append(0,"TK_BITNOT");continue;
-				    } else {
-				        Append(1,Token);
-				    }
-				} else if (Token=="TK_LT"){
-				    if (PToken == "TK_LT"){
-				        Append(0,"TK_BITZLSHIFT");continue;
-				    } else {
-				        Append(1,Token);
-				    }
-                } else {
-                	Append(1,Token);
+                }
+                if (!DidWrite){
+                	Write(1,Token);
                 }
             } else {
-            	if (k >= CL-1){
-                	let Behind = Code.substring(k-Letters,k+1);
-                    if (RawTokens.hasOwnProperty(Behind)){
-                    	Behind = `(${Behind})`;
-                    }
-            		Append(1,ToToken(Behind));
-            		Letters=0;
+            	if (i>=CL-1){
+                	let Behind = Code.substring(i-Letters,i+1);
+                    let Literal = this.IsToken(Behind);
+                    Write(1,this.GetToken(Behind),Literal,Index-Letters);
                     break;
                 } else {
                 	Letters++;
                 }
             }
-			PToken = Token;
+            Index++;
         }
-        Tokens.push("TK_EOS");
-        return this.RemoveWhitespace(this.RemoveComments(this.GetTokenTypes(Tokens)));
+        Write(1,"TK_EOS",false);
+        return this.RemoveWhitespace(this.MakeConstants(Tokens));
     },
-    RemoveComments:function(Tokens){
-        return Tokens;
-        /*
-    	let NewTokens = [];
-        let Skip = [];
-        for (let k in Tokens){
-        	k=+k;
-            if (Skip.includes(k)){continue}
-            let v = Tokens[k];
-            if (!v){continue}
-            if (v.Value == "TK_COMMENT"){ //Short comment removal
-            	let kk = k+1;
-            	if (Tokens[kk]){
-                	while (Tokens[kk].Value != "TK_RETCHAR"){ //Skip to the next retchar token
-                    	if (kk > Tokens.length-1){break}
-                    	Skip.push(kk);
-                        kk++;
-                    }
-                    Skip.push(kk);
-            	}
-                continue;
-            } else if (v.Value == "TK_COMMENTLONGOPEN"){ //Long comment removal
-            	let kk = k+1;
-                let Broken = false;
-                while (Tokens[kk].Value != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
-                	if (kk > Tokens.length-1 || (Tokens[kk]&&Tokens[kk].Value=="TK_EOS")){Broken=true;break}
-                    Skip.push(kk);
-                    kk++;
-                }
-                if (Broken){ //No closing long comment token? Throw an error
-                	this.NoStackError("UnclosedLongComment",[Tokens[kk].Value,"TK_COMMENTLONGCLOSE"]);
-                }
-                Skip.push(kk);
-                continue;
-            } else if (v.Value == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
-            	this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
+    MakeConstants:function(Tokens){
+    	let Result = [];
+        let Current = -1;
+        let Token = undefined;
+        function Next(){
+        	Current++;
+            Token=Tokens[Current];
+            return Token;
+        }
+        function Jump(Amount=1){
+        	Current-=Amount;
+           	Token=Tokens[Current];
+            return Token;
+        }
+        function IsEnd(){
+        	return Current>=Tokens.length;
+        }
+        function TypeToken(Token,Type){
+        	if (!Token){return false}
+        	return Token.Type==Type;
+        }
+        function PreciseToken(Token,Type,Value){
+        	if (!Token){return false}
+        	return TypeToken(Token,Type)&&Token.Value==Value;
+        }
+        function From(Token){
+        	let v = Lex.Tokens[Token.Value];
+            if (v&&v.Type==Token.Type){
+            	return v.Token;
             }
-            NewTokens.push(v);
+            return Token.Value;
         }
-        return NewTokens;
-        */
-    },
-    GetTokenTypes:function(Tokens){
-    	let NewTokens = [];
-        let Line = 1;
-        let Skip = [];
-        for (let k in Tokens){
-        	k=+k;
-            if (Skip.includes(k)){continue}
-        	let v = Tokens[k];
-            if (v == "TK_RETCHAR"){Line++}
-            let Class = GetTokenType(v);
-            Class.Position = k;
-            Class.Line = Line;
-            if (Class.Type == "String"){
-                if((Tokens[k-1]&&Tokens[k-1].Value=="TK_BACKSLASH")){
-                    continue
-                }
-            	let kk=k+1;
-                let pt=v;
-                let st = Class.Value=="TK_STRING1"?0:1;
-                let os = 1;
-                let comp = "";
-                while (kk <= Tokens.length-1){
-                    let t = Tokens[kk];
-                    Skip.push(kk);
-                    if (t=="TK_BACKSLASH"){
-                        kk++;Skip.push(kk);t=Tokens[kk];
-                        comp+=FromToken(t);
-                        pt=t;
-                        kk++;
-                        continue;
-                    }
-                    if (t=="TK_STRING1"||t=="TK_STRING2"){
-                    	let ct = t=="TK_STRING1"?0:1;
-                        if (ct==st){
+        function StringType(Token){
+        	if (!TypeToken(Token,"String")){return -1}
+        	return Token.Value=="TK_STRING1"?0:1;
+        }
+        function Read(){
+        	let CT = Token;
+        	if (CT.Type == "String"){
+            	let New = "";
+                Next();
+                let ST = StringType(CT);
+                if (!TypeToken(Token,"String")&&!(StringType(Token)==ST)){
+                    while (!IsEnd()){
+                    	if (PreciseToken(Token,"None","TK_BACKSLASH")){
+                        	Next();
+                        }
+                        New+=From(Token);
+                        Next();
+                        if (TypeToken(Token,"String")&&StringType(Token)==ST){
                         	break;
                         }
-                    }
-                    comp+=FromToken(t);
-                    pt = t; 
-                    kk++;
+                    }    
                 }
-                for (let i=kk;i<=Tokens.length-1;i++){
-                	
-                }
-                Class.Type = "Constant";
-                Class.CType = "String";
-                Class.Value = comp;
-            } else if (Class.Type == "Identifier"){
-            	if (!isNaN(+v)){
-                	let nx = Tokens[k+1];
-                    let num = v;
-                    if (nx == "TK_DOT"){
-                    	let nxx = Tokens[k+2];
-                        if (!isNaN(+nxx)){
-                        	Skip.push(k+1);Skip.push(k+2);
-                        	num+="."+nxx;
-                        }
+                CT.Type="Constant";
+                CT.Value=New;
+                CT.CType="String";
+            } else if (!isNaN(+CT.Value)){
+            	let Num = CT.Value;
+                Next();
+                if (PreciseToken(Token,"None","TK_DOT")){
+                	Next();
+                    if (Token&&!isNaN(+Token.Value)){
+                    	Num += `.${Token.Value}`;
+                    } else {
+                    	Jump(2);
                     }
-                    Class.Type="Constant";
-                    Class.CType="Number";
-                    Class.Value=+num;
+                } else {
+                	Jump();
                 }
-            } else if (Class.Type == "Bool"){
-            	Class.Type = "Constant";
-                Class.CType = "Bool";
-                Class.Value = Class.Value=="TK_TRUE"?true:false;
-            } else if (Class.Type == "Null"){
-            	Class.Type = "Constant";
-                Class.CType = "Null";
-                Class.Value = null;
-            } else if (Class.Type == "Comment"){
-                if (v == "TK_COMMENT"){ //Short comment removal
-                	let kk = k+1;
-                	if (Tokens[kk]){
-                    	while (Tokens[kk] != "TK_RETCHAR"){ //Skip to the next retchar token
-                        	if (kk > Tokens.length-1){break}
-                        	Skip.push(kk);
-                            kk++;
-                        }
-                        Skip.push(kk);
-                	}
-                    continue;
-                } else if (v == "TK_COMMENTLONGOPEN"){ //Long comment removal
-                	let kk = k+1;
-                    let Broken = false;
-                    while (Tokens[kk] != "TK_COMMENTLONGCLOSE"){ //Skip to the closing comment token
-                    	if (kk > Tokens.length-1 || (Tokens[kk]=="TK_EOS")){Broken=true;break}
-                        Skip.push(kk);
-                        kk++;
+                CT.Type="Constant";
+                CT.Value=+Num;
+                CT.CType="Number";
+            } else if (TypeToken(CT,"Bool")){
+            	CT.Value=CT.Value=="TK_TRUE"?true:false;
+                CT.CType="Bool";
+                CT.Type="Constant";
+            } else if (TypeToken(CT,"Null")){
+            	CT.Type="Constant";
+                CT.CType="Null";
+            	CT.Value=null;
+            } else if (PreciseToken(CT,"Comment","TK_COMMENT")){
+            	Next();
+            	while (!IsEnd()){
+                    Next();
+                    if (PreciseToken(Token,"Whitespace","TK_RETCHAR")){
+                    	break;
                     }
-                    if (Broken){ //No closing long comment token? Throw an error
-                    	throw new CodeError(`Expected closing long comment to close comment`)//this.NoStackError("UnclosedLongComment",[Tokens[kk],"TK_COMMENTLONGCLOSE"]);
-                    }
-                    Skip.push(kk);
-                    continue;
-                } else if (v == "TK_COMMENTLONGCLOSE"){ //No opening long comment token? Throw an error
-                	throw new CodeError(`Unexpected closing long comment`)//this.NoStackError("ClosedLongComment",["TK_COMMENTLONGCLOSE","TK_COMMENTLONGOPEN"]);
                 }
+                return;
+            } else if (PreciseToken(CT,"Comment","TK_COMMENTLONGOPEN")){
+            	Next();
+            	while (!IsEnd()){
+                	if (PreciseToken(Token,"None","TK_BACKSLASH")){
+                    	Next();
+                    }
+                    Next();
+                    if (PreciseToken(Token,"Comment","TK_COMMENTLONGCLOSE")){
+                    	break;
+                    }
+                }
+                return;
             }
-            NewTokens.push(Class);
+            return CT;
         }
-        return NewTokens;
+        Next();
+        while (!IsEnd()){
+        	let T = Read();
+            if (T){
+            	Result.push(T);
+            }
+            Next();
+        }
+        return Result;
     },
     RemoveWhitespace:function(Tokens){
-        let LastTokens = [];
-        for (let k in Tokens){
-        	let v = Tokens[k];
-        	if (!v){continue}
-            if (v.Type != "Whitespace"){
-            	LastTokens.push(v);
-            }
-        }
-        return LastTokens;  
+    	return Tokens.filter(x=>x.Type!="Whitespace");
     },
     ThrowError:function(Class,Message,Stack){
         let Result = Message;
@@ -485,7 +654,7 @@ const Lex = Object.freeze({
         }
         throw new (Class)(Result);
     },
-});
+}
 
 // {{-=~}} AST Class {{~=-}} \\
 
@@ -1146,6 +1315,9 @@ const AST = Object.freeze({
     ParseExpression:function(Stack,NoMath,NoCond){
     	let Token = Stack.Token;
         let Result = null;
+        if (!Token){
+            return Result;   
+        }
         if (Token.Type == "Constant"){
         	Result = Token.Value;
         } else if (Token.Type == "Identifier"){
@@ -3024,7 +3196,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.0",
+    Version:"0.0.1.1",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
@@ -3035,6 +3207,10 @@ const XBS = Object.freeze({
     Library.Globals._VERSION=XBS.Version;
     if (Settings.PrintCode===true){
       this.StylePrint(Code);
+    }
+    if (Settings.PrintTokens==true){
+        let Tokens = this.Tokenize(Code);
+        this.StylePrint(Print(Tokens).join(""));
     }
     let ASTResult = this.Parse(Code);
     if (Settings.PrintAST===true){
