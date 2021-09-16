@@ -455,6 +455,18 @@ const Lex = {
         	Token:"exclude",
             Type:"Keyword",
         },
+        "TK_TRY":{
+        	Token:"try",
+            Type:"Keyword",
+        },
+        "TK_CATCH":{
+        	Token:"catch",
+            Type:"Keyword",
+        },
+        "TK_FINALLY":{
+        	Token:"finally",
+            Type:"Keyword",
+        },
     },
     GetToken:function(x){
     	for(let k in this.Tokens){
@@ -1945,6 +1957,31 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
+    //{{ TryState }}\\
+    TryState:function(Stack){
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Move(Stack,2);
+        this.CodeBlock(Stack);
+        this.JumpBack(Stack);
+        this.TestNext(Stack,"Keyword","TK_CATCH");
+        this.Next(Stack);
+        this.TestNext(Stack,"Paren","TK_POPEN");
+        this.Next(Stack);
+        this.TypeTestNext(Stack,"Identifier");
+        this.ChunkWrite(Stack,this.Next(Stack).Value);
+        this.TestNext(Stack,"Paren","TK_PCLOSE");
+        this.Next(Stack);
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Move(Stack,2);
+        this.CodeBlock(Stack);
+        if (this.IsPreciseToken(Stack.Token,"Keyword","TK_FINALLY")){
+            this.TestNext(Stack,"Bracket","TK_BOPEN");
+            this.Move(Stack,2);
+            this.CodeBlock(Stack);
+        }
+        this.JumpBack(Stack);
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack,NoMath,NoCond){
         let Token = Stack.Token;
@@ -2033,6 +2070,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_CHUNK");
                 this.ChunkState(Stack);
+            } else if (Token.Value == "TK_TRY"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_TRY");
+                this.TryState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -2929,6 +2970,22 @@ const Interpreter = Object.freeze({
         }
         return Token;
     },
+    TryState:function(AST,Token){
+        let Block = Token[1];
+        let VName = Token[2];
+        let CatchBlock = Token[3];
+        let FinallyBlock = Token[4];
+        try {
+            this.CondState(AST,Block);
+        }catch(e){
+            this.MakeVariable(AST,VName,e.message,undefined,AST.Block+1);
+            this.CondState(AST,CatchBlock);
+        }finally{
+            if (FinallyBlock&&!AST.Returned){
+                this.CondState(AST,FinallyBlock);
+            }
+        }
+    },
     Parse:function(AST,Token){
     	if (!(Token instanceof Array)){
         	return Token
@@ -2989,6 +3046,8 @@ const Interpreter = Object.freeze({
             }
         } else if (Token[0]=="IN_CHUNK"){
             return this.ChunkState(AST,Token);
+        }else if(Token[0]=="IN_TRY"){
+            return this.TryState(AST,Token);
         }
         this.ParseToken(AST,Token);
         //Parsed
