@@ -1119,8 +1119,12 @@ const AST = Object.freeze({
                 this.AssignmentGet(Stack,Chunk);
                 this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
-            } else if (Token.Type == "Constant" || Token.Type == "Identifier"){
-                this.ChunkAdd(Chunk,Token.Value);
+            } else if (Token.Type == "Constant" || Token.Type == "Identifier" || Token.Type == "Keyword"){
+                let Var = Token.Value;
+                if (Token.Type=="Keyword"){
+                    Var=FromToken(Var);
+                }
+                this.ChunkAdd(Chunk,Var);
                 this.AssignmentGet(Stack,Chunk);
                 this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
@@ -1148,7 +1152,11 @@ const AST = Object.freeze({
             this.ChunkAdd(Chunk,Value);
             this.Next(Stack);
             this.Next(Stack);
-            this.ChunkAdd(Chunk,Stack.Token.Value);
+            let Var = Stack.Token.Value;
+            if (Stack.Token.Type == "Keyword"){
+                Var = FromToken(Var);
+            }
+            this.ChunkAdd(Chunk,Var);
             Value = this.FinishExpression(Stack,Chunk,NoMath,NoCond);
             Value = this.FinishComplexExpression(Stack,Value,NoMath,NoCond);
             return Value;
@@ -1368,6 +1376,8 @@ const AST = Object.freeze({
                     this.Next(Stack);
                 } else if (Var.Type == "Constant" || Var.Type == "Identifier"){
                 	Inner = Var.Value
+                } else if (Var.Type == "Keyword"){
+                    Inner = FromToken(Var.Value);
                 }
                 if (this.CheckNext(Stack,"None","TK_COLON")){
                   this.Move(Stack,2);
@@ -2901,6 +2911,16 @@ const Interpreter = Object.freeze({
         let Tokens = Token[1];
         this.CondState(AST,Tokens);
     },
+    GetFromLibGlobal:function(AST,Value){
+        try{
+            let Checks = new Map();
+            Checks.set(AST.LibGlobals.string,String);
+            Checks.set(AST.LibGlobals.array,Array);
+            return Checks.get(Value)||Value;
+        }catch(e){
+            return Value;
+        }
+    },
     ParseUnpack:function(AST,Token){
         if (Token instanceof Array && Token[0]=="IN_UNPACK"){
     	    throw new CodeError(`Invalid unpack statement`);
@@ -3138,8 +3158,9 @@ const Interpreter = Object.freeze({
             let v1 = Token[1];
             let v2 = Token[2];
             let vv = v1;
+            v2 = this.GetFromLibGlobal(AST,v2);
             try {
-                vv=v1.constructor
+                vv=v1.constructor;
             }catch(e){}
             let ex = this.GetExtendingClasses(vv);
             let inst = ex.includes(v2);
@@ -3209,6 +3230,7 @@ const Interpreter = Object.freeze({
             StackCurrent:{},
             UsingExclude:[],
             GlobalSettings:{},
+            Library:Library,
             LibGlobals:Globals,
             Globals:new Proxy(Globals,{
             	get:function(_,Name){
