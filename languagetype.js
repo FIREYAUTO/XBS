@@ -927,6 +927,9 @@ const AST = Object.freeze({
         if (NoCond){
             return Value;
         }
+        if (this.IsPreciseToken(Stack.Token,"None","TK_LINEEND")||this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+            return Value;
+        }
         //Conditional
             let And = this.CheckNext(Stack,"Conditional","TK_AND") || this.IsPreciseToken(Stack.Token,"Conditional","TK_AND");
             let Or = this.CheckNext(Stack,"Conditional","TK_OR") || this.IsPreciseToken(Stack.Token,"Conditional","TK_OR");
