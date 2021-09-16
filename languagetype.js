@@ -1540,6 +1540,7 @@ const AST = Object.freeze({
             this.Next(Stack);
             this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
+            return this.FinishExpression(Stack,Result,true,true);
         } else if (this.IsPreciseToken(Token,"Operator","TK_SUB")){
         	let Chunk = this.NewChunk("IN_UNM");
             this.Next(Stack);
