@@ -812,7 +812,7 @@ const AST = Object.freeze({
             return ["IN_TYPEGET","null"];
         } else if (this.IsPreciseToken(Token,"Paren","TK_POPEN")){
             this.Next(Stack);
-            let Result = this.TypeExpression(Stack);
+            Result = this.TypeExpression(Stack);
             this.TestNext(Stack,"Paren","TK_PCLOSE");
             this.Next(Stack);
         } else if (this.IsPreciseToken(Token,"Brace","TK_IOPEN")){
