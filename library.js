@@ -80,6 +80,7 @@ const StandardLibrary = {
         	Interpreter.Start(vm);
         };
     },
+    number:Number,
     array:LibraryUtilities.ReadOnlyObject({
     	find:function(a,x){
         	return a.indexOf(x);
@@ -188,7 +189,15 @@ const StandardLibrary = {
     },
     rawset:function(x,n,v){
         x[n]=v;
-    }
+    },
+    json:LibraryUtilities.ReadOnlyObject({
+        encode:function(x){
+            return JSON.stringify(x);
+        },
+        decode:function(x){
+            return JSON.parse(x);
+        },
+    }),
 };
 
 StandardLibrary.env = StandardLibrary;
