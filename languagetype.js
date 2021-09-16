@@ -112,6 +112,7 @@ const Lex = {
 				"TK_PROPCALL":"TK_SUB",
                 "TK_BITZRSHIFT":"TK_GT",
                 "TK_BITRSHIFT":"TK_AND",
+                "TK_FORCEPARSE":"TK_EQ",
             }
         },
         "TK_LT":{
@@ -291,6 +292,10 @@ const Lex = {
         },
         "TK_AT":{
         	Token:"@",
+            Type:"None",
+        },
+        "TK_FORCEPARSE":{
+        	Token:"=>",
             Type:"None",
         },
         "TK_EOS":{
@@ -1488,6 +1493,17 @@ const AST = Object.freeze({
                 }
             }
             Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"None","TK_FORCEPARSE")){
+            let CLast = Stack.Chunk[Stack.Chunk.length-1];
+            let PChunk = Stack.Chunk;
+            this.Next(Stack);
+            this.ParseChunk(Stack);
+            let NLast = Stack.Chunk[Stack.Chunk.length-1];
+            let CChunk = Stack.Chunk;
+            if (NLast!=CLast&&PChunk==CChunk){
+                Result = NLast;
+                PChunk.pop();
+            }
         }
         Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
         return Result;
