@@ -447,6 +447,10 @@ const Lex = {
         	Token:"settype",
             Type:"Keyword",
         },
+        "TK_CHUNK":{
+        	Token:"chunk",
+            Type:"Keyword",
+        },
     },
     GetToken:function(x){
     	for(let k in this.Tokens){
@@ -1891,6 +1895,15 @@ const AST = Object.freeze({
         this.ChunkWrite(Stack,this.TypeExpression(Stack));
         this.CloseChunk(Stack);
     },
+    //{{ ChunkState }}\\
+    ChunkState:function(Stack){
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Next(Stack);
+        this.Next(Stack);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack){
         let Token = Stack.Token;
@@ -1975,6 +1988,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_SETTYPE");
                 this.SetTypeState(Stack);
+            } else if (Token.Value == "TK_CHUNK"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_CHUNK");
+                this.ChunkState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -2848,6 +2865,10 @@ const Interpreter = Object.freeze({
         AST.Broken=false;
     	AST.InLoop = PreLoop;
     },
+    ChunkState:function(AST,Token){
+        let Tokens = Token[1];
+        this.CondState(AST,Tokens);
+    },
     ParseUnpack:function(AST,Token){
         if (Token instanceof Array && Token[0]=="IN_UNPACK"){
     	    throw new CodeError(`Invalid unpack statement`);
@@ -2914,6 +2935,8 @@ const Interpreter = Object.freeze({
             } else {
                 return this.Parse(AST,Token[3]);
             }
+        } else if (Token[0]=="IN_CHUNK"){
+            return this.ChunkState(AST,Token);
         }
         this.ParseToken(AST,Token);
         //Parsed
