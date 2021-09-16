@@ -889,6 +889,12 @@ const AST = Object.freeze({
             this.ChunkAdd(Value,"modeq");
         }
     },
+    SkipEndings:function(Stack){
+        let Token = Stack.Token;
+        if (this.IsPreciseToken(Token,"None","TK_COMMA")||this.IsPreciseToken(Token,"None","TK_LINEEND")){
+            this.Next(Stack);
+        }
+    },
     FinishComplexExpression:function(Stack,Value,NoCond){
         if (NoCond){
             return Value;
@@ -1057,6 +1063,7 @@ const AST = Object.freeze({
                 this.Move(Stack,2);
                 this.ChunkAdd(Chunk,this.ParseExpression(Stack));
                 this.Next(Stack);
+                this.SkipEndings(Stack);
                 this.ChunkAdd(Chunk,this.ParseExpression(Stack));
                 Value = this.FinishExpression(Stack,Chunk);
                 Value = this.FinishComplexExpression(Stack,Value);
