@@ -3268,6 +3268,16 @@ const Interpreter = Object.freeze({
         }
         return Token;
     },
+    DeprecatedCall:function(AST,Name){
+        let Deps = AST.LibSettings.DeprecatedCalls;
+        if (!AST.DeprecatedCalls.includes(Name)&&(Deps&&Deps.includes(Name))){
+            let DepCall = AST.LibSettings.DeprecatedCallback;
+            if (DepCall && typeof DepCall == "function"){
+                DepCall(`The global ${Name} is deprecated, consider not using it.`);
+            }
+            AST.DeprecatedCalls.push(Name);
+        }
+    },
     New:function(Tokens,Library={}){
     	if (!Library.hasOwnProperty("Globals")){
     		Library.Globals={};
@@ -3290,6 +3300,8 @@ const Interpreter = Object.freeze({
             UsingExclude:[],
             GlobalSettings:{},
             Library:Library,
+            DeprecatedCalls:[],
+            LibSettings:Library.Settings||{},
             LibGlobals:Globals,
             Globals:new Proxy(Globals,{
             	get:function(_,Name){
@@ -3307,9 +3319,11 @@ const Interpreter = Object.freeze({
         				        if (NVM.Using[Name]){
         				            return NVM.Using[Name];
         				        } else {
+        				            Interpreter.DeprecatedCall(NVM,Name);
         				            return _[Name];
         				        }
         				    } else {
+        				        Interpreter.DeprecatedCall(NVM,Name);
         				        return _[Name];
         				    }
                         }
@@ -3321,9 +3335,11 @@ const Interpreter = Object.freeze({
         				    if (NVM.Using[Name]){
         				        return NVM.Using[Name];
         				    } else {
+        				        Interpreter.DeprecatedCall(NVM,Name);
         				        return _[Name];
         				    }
         				} else {
+        				    Interpreter.DeprecatedCall(NVM,Name);
         				    return _[Name];
         				}
                     }
