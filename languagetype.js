@@ -1063,6 +1063,7 @@ const AST = Object.freeze({
                 this.Move(Stack,2);
                 this.ChunkAdd(Chunk,this.ParseExpression(Stack));
                 this.Next(Stack);
+                this.SkipEndings(Stack);
                 this.ChunkAdd(Chunk,this.ParseExpression(Stack));
                 Value = this.FinishExpression(Stack,Chunk);
                 Value = this.FinishComplexExpression(Stack,Value);
@@ -1512,7 +1513,6 @@ const AST = Object.freeze({
             let PChunk = Stack.Chunk;
             this.Next(Stack);
             this.ParseChunk(Stack,true,true);
-            this.SkipEndings(Stack);
             let NLast = Stack.Chunk[Stack.Chunk.length-1];
             let CChunk = Stack.Chunk;
             if (NLast!=CLast&&PChunk==CChunk){
@@ -3322,7 +3322,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.1",
+    Version:"0.0.1.2",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
