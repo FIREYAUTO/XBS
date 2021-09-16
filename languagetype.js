@@ -1214,7 +1214,7 @@ const AST = Object.freeze({
             Value = this.FinishComplexExpression(Stack,Value);
             return Value;
         } else if (Calling){
-            if (!this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+            if (!this.IsPreciseToken(Stack.Token,"None","TK_COMMA")&&!this.IsPreciseToken(Stack.Token,"None","TK_LINEEND")){
             	let Chunk = this.NewChunk("IN_CALL");
                 this.ChunkAdd(Chunk,Value);
                 this.Next(Stack);
@@ -1501,13 +1501,14 @@ const AST = Object.freeze({
             let CLast = Stack.Chunk[Stack.Chunk.length-1];
             let PChunk = Stack.Chunk;
             this.Next(Stack);
-            this.ParseChunk(Stack);
+            this.ParseChunk(Stack,true,true);
             let NLast = Stack.Chunk[Stack.Chunk.length-1];
             let CChunk = Stack.Chunk;
             if (NLast!=CLast&&PChunk==CChunk){
                 Result = NLast;
                 PChunk.pop();
             }
+            return Result;
         }
         Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
         return Result;
@@ -1905,7 +1906,7 @@ const AST = Object.freeze({
         this.JumpBack(Stack);
     },
     //{{ ParseChunk }}\\
-    ParseChunk:function(Stack){
+    ParseChunk:function(Stack,NoMath,NoCond){
         let Token = Stack.Token;
         if (Token.Type == "Keyword"){
         	if (Token.Value == "TK_SET"){
@@ -2037,7 +2038,7 @@ const AST = Object.freeze({
             }
             if (Pass){
                 this.OpenChunk(Stack);
-                Stack.Chunk = this.ParseExpression(Stack);
+                Stack.Chunk = this.ParseExpression(Stack,NoMath,NoCond);
                 this.CloseChunk(Stack);    
             }
         }
