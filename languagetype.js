@@ -474,6 +474,10 @@ const Lex = {
         	Token:"finally",
             Type:"Keyword",
         },
+        "TK_DEFINE":{
+        	Token:"define",
+            Type:"Keyword",
+        },
     },
     GetToken:function(x){
     	for(let k in this.Tokens){
@@ -1531,6 +1535,11 @@ const AST = Object.freeze({
             this.Next(Stack);
             this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
+        } else if (this.IsPreciseToken(Token,"Bitwise","TK_BITZLSHIFT")){ //Placement Operator
+        	let Chunk = this.NewChunk("IN_PLACEMENT");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
+            Result = Chunk;
         } else if (this.IsPreciseToken(Token,"Operator","TK_SUB")){
         	let Chunk = this.NewChunk("IN_UNM");
             this.Next(Stack);
@@ -2007,6 +2016,19 @@ const AST = Object.freeze({
         this.JumpBack(Stack);
         this.CloseChunk(Stack);
     },
+    //{{ DefineState }}\\
+    DefineState:function(Stack){
+        this.TypeTestNext(Stack,"Identifier");
+        this.Next(Stack);
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.TestNext(Stack,"Keyword","TK_AS");
+        this.Next(Stack);
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Move(Stack,2);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack,NoMath,NoCond){
         let Token = Stack.Token;
@@ -2099,6 +2121,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_TRY");
                 this.TryState(Stack);
+            } else if (Token.Value == "TK_DEFINE"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_DEFINE");
+                this.DefineState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -2986,6 +3012,19 @@ const Interpreter = Object.freeze({
         let Tokens = Token[1];
         this.CondState(AST,Tokens);
     },
+    DefineState:function(AST,Token){
+        let Name = Token[1];
+        let Code = Token[2];
+        this.MakeVariable(AST,Name,{
+            toString:function(){
+                return "[Chunk]";
+            },
+            RunCode:function(){
+                let Clone = DeepCopy(Code);
+                Interpreter.CondState(AST,Clone);
+            }
+        },undefined,AST.Block);
+    },
     GetFromLibGlobal:function(AST,Value){
         try{
             let Checks = new Map();
@@ -3082,6 +3121,8 @@ const Interpreter = Object.freeze({
             return this.ChunkState(AST,Token);
         }else if(Token[0]=="IN_TRY"){
             return this.TryState(AST,Token);
+        }else if(Token[0]=="IN_DEFINE"){
+            return this.DefineState(AST,Token);
         }
         this.ParseToken(AST,Token);
         //Parsed
@@ -3302,6 +3343,11 @@ const Interpreter = Object.freeze({
         }else if(Token[0]=="IN_SETTYPE"){
             AST.Types[Token[1]]=Token[2];
             return;
+        }else if(Token[0]=="IN_PLACEMENT"){
+            let Variable = Token[1];
+            if ((Variable instanceof Object) && Variable.hasOwnProperty("RunCode") && typeof Variable.RunCode == "function"){
+                Variable.RunCode();
+            }
         }
         return Token;
     },
