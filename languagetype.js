@@ -496,8 +496,13 @@ const Lex = {
         }
     },
     GetTokenType:function(x){
-    	let v = this.Tokens[x];
-    	return v?v.Type:"Identifier";
+        for(let k in this.Tokens){
+            let v = this.Tokens[k];
+            if (k==x){
+                return v.Type;
+            }
+        }
+        return "Identifier";
     },
     IsToken:function(x){
     	return this.Tokens.hasOwnProperty(x);
@@ -1149,6 +1154,7 @@ const AST = Object.freeze({
                 this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             } else {
+                document.write(Token);
                 Lex.ThrowError(CodeError,`"${FromToken(Token.Value)}" is not a valid index name`,Stack);
             }
             Value = Chunk
