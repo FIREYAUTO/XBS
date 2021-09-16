@@ -1,0 +1,168 @@
+#>
+XBS
+Made by FIREYAUTO
+
+This file will NOT cover all of the XBS features. To learn more in depth about all the features, see the wiki page.
+
+Examples:
+<#
+
+#Basic Variables
+
+set String:string = "Hello, world!";
+set Number:number = 1.04;
+const Boolean:boolean = true; #Constants are variables that cannot be changed
+const Null:null = null;
+set Any = "Test" #You don't need a type to declare variables
+
+#Basic Functions
+
+func AddTwoNumbers(Number1:number,Number2:number){
+    send Number1 + Number2;
+}
+
+func AddThreeNumbers(Number1,Number2,Number3){ #You don't need a type to declare function parameters
+    send AddTwoNumbers(Number1,Number2)+Number3;
+}
+
+func Default(String:string="Missing"){ #Function defaults will be applied if a parameter isn't set when calling the function
+    log(String);
+}
+
+log(AddThreeNumbers(1,2,3)); #Result should be 6
+Default(); 
+
+#Basic Lists (Arrays & Objects)
+
+set Array:array = [1,2,3] #An array is a structure that holds data as numbered keys.
+set Object:object = { #An object is a structure that holds data as keys and values that you define.
+    Value1:string = "Hello, world!",
+    Value2:number = 3.14,
+    Value3 = false,
+}
+
+log(Array[0]); #1
+log(Array[2]); #3
+
+log(Object.Value2); #3.14
+
+#Setting indexes in lists
+
+log(Array[1]); #2
+Array:1 = "Hello"; #You can also use ":[<Expression>]" as a way to set an index. Object:["Value2"] = 100;
+log(Array[1]); #Hello
+
+#Types of calling
+
+#Self-Calling example
+set Person:object = {
+    Name:string = "John Doe",
+    GetName:function = func(self){
+        send self.Name;
+    }
+}
+
+log(Person::GetName()); #Self-Calling requires "::", and will invisibly set the first parameter of the calling function to the object.
+
+#Prop-Calling example
+
+set Answer:string = window->prompt("What's your name?"); #Prop-Calling was added to prevent issues with JS references.
+
+#Classes
+
+class Dog {
+    construct:function = func(self,Name:string="Dog",Age:number=0){
+        self:Name = Name;
+        self:Age = Age;
+    },
+    Bark:function = func(self){
+        log(self.Name+": *Barks*");
+    }
+}
+
+set MyDog = new Dog("Spots",10);
+MyDog::Bark();
+
+#If statements
+
+set Temperature = 30;
+
+if (Temperature >= 30){
+    log("It's HOT outside today!")
+} elif (Temperature >= 0){
+    log("It's WARM outside today!");
+} else {
+    log("It's COLD outside today!")
+}
+
+#Loops
+
+#For Loop
+
+for(i=1;10;1){
+    log(i);
+}
+
+#Repeat Loop
+
+repeat 10 as i {
+    log(i);
+}
+
+#While Loop
+
+set i = 1;
+while (true){
+    log(i);
+    i++;
+    if (i>10){
+        del i;
+        stop;
+    }
+}
+
+#Foreach Loop
+
+set Names = ["John","Jane","Test"];
+
+foreach(k,v as Names){
+    log(k+": "+v);
+}
+
+foreach(v of Names){
+    log(v)
+}
+
+foreach(k in Names){
+    log(k);
+}
+
+#Global Settings
+
+@ThisIsAGlobalSetting = true; #Global settings allow for external customization of XBS
+#Note: You can only set global settings in XBS, you can't get them at all.
+
+#>
+Advanced XBS Examples
+<#
+
+#Vararg and Array Unpacking
+
+func Add(*Numbers:[number]=[]):number{ #The "*" operator infront of function parameters will make it a vararg parameter. A vararg parameter must be the last parameter in a function
+    set x = 0;
+    foreach(v of Numbers){
+        x+=v;
+    }
+    send x;
+}
+set Numbers:[number] = [1,2,3];
+log(Add(*Numbers)) #Output should be "6"; The "*" operator in front of an array will unpack its contents into the expression.
+
+#Advanced Chunk Parsing Operator
+
+func EqualsValue(a:any,b:any):boolean {
+    (a==b)&=>send true;send false; #The "=>" operator parses the code in front as if it were a chunk, so you can do anything in XBS after it. Although, it's a risky feature to use.
+}
+
+log(EqualsValue(1,1))
+log(EqualsValue(1,2))
