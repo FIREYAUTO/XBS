@@ -192,6 +192,13 @@ const Lex = {
         "TK_MOD":{
         	Token:"%",
             Type:"Operator",
+            Combinations:{
+                "TK_POF":"TK_MOD",
+            }
+        },
+        "TK_POF":{
+        	Token:"%of",
+            Type:"Operator",
         },
         "TK_ROUND":{
         	Token:"~",
@@ -795,7 +802,7 @@ const AST = Object.freeze({
     },
     TypeTestNext:function(Stack,Type){
         if (!this.TypeCheckNext(Stack,Type)){
-            Lex.ThrowError(CodeError,`Expected type "${Type}"", got type "${this.Next(Stack).Type}"`,Stack);
+            Lex.ThrowError(CodeError,`Expected type "${Type}", got type "${this.Next(Stack).Type}"`,Stack);
         }
     },
     //{{ Type Handling }}\\
@@ -1103,6 +1110,7 @@ const AST = Object.freeze({
         let Div = this.CheckNext(Stack,"Operator","TK_DIV") || this.IsPreciseToken(Stack.Token,"Operator","TK_DIV");
         let Pow = this.CheckNext(Stack,"Operator","TK_POW") || this.IsPreciseToken(Stack.Token,"Operator","TK_POW");
         let Mod = this.CheckNext(Stack,"Operator","TK_MOD") || this.IsPreciseToken(Stack.Token,"Operator","TK_MOD");
+        let POf = this.CheckNext(Stack,"Operator","TK_POF") || this.IsPreciseToken(Stack.Token,"Operator","TK_POF");
         
         
         
@@ -1337,6 +1345,17 @@ const AST = Object.freeze({
                 	let Chunk = this.NewChunk("IN_MOD");
             		this.ChunkAdd(Chunk,Value);
                 	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_MOD")){
+                		this.Next(Stack);
+                	}
+            		this.Next(Stack);
+            		this.ChunkAdd(Chunk,this.ParseExpression(Stack,undefined,true));
+            		Value = this.FinishExpression(Stack,Chunk);
+            		Value = this.FinishComplexExpression(Stack,Value);
+            		return Value;
+                } else if (POf){
+                	let Chunk = this.NewChunk("IN_POF");
+            		this.ChunkAdd(Chunk,Value);
+                	if (!this.IsPreciseToken(Stack.Token,"Operator","TK_POF")){
                 		this.Next(Stack);
                 	}
             		this.Next(Stack);
@@ -2093,8 +2112,17 @@ const AST = Object.freeze({
         } else if (this.IsPreciseToken(Token,"None","TK_AT")){
             this.OpenChunk(Stack);
             this.ChunkWrite(Stack,"IN_GLOBALASSIGN");
-            this.TypeTestNext(Stack,"Identifier");
             this.Next(Stack);
+            let Name = Stack.Token.Value;
+            if (Stack.Token.Type == "Identifier"||Stack.Token.Type=="Keyword"){
+                if (Stack.Token.Type=="Keyword"){
+                    Name=FromToken(Name);
+                }
+            } else {
+                this.JumpBack(Stack);
+                this.TypeTestNext(Stack,"Identifier");
+                
+            }
             this.ChunkWrite(Stack,Stack.Token.Value);
             this.TestNext(Stack,"Assignment","TK_EQ");
             this.Next(Stack);
@@ -3125,6 +3153,9 @@ const Interpreter = Object.freeze({
                 Result = Token[1]%Token[2];
             }
         	return Result;
+        } else if (Token[0]=="IN_POF"){
+            let P = Token[1]/100;
+            return Token[2]*P;
         } else if (Token[0]=="IN_NOT"){
         	return !Token[1];
         } else if (Token[0]=="IN_EQ"){
