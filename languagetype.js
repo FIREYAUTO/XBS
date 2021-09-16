@@ -451,6 +451,10 @@ const Lex = {
         	Token:"chunk",
             Type:"Keyword",
         },
+        "TK_EXCLUDE":{
+        	Token:"exclude",
+            Type:"Keyword",
+        },
     },
     GetToken:function(x){
     	for(let k in this.Tokens){
@@ -1779,10 +1783,29 @@ const AST = Object.freeze({
     UsingState:function(Stack){
         this.Next(Stack);
         this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        let Excludes=[];
+        if (this.CheckNext(Stack,"Keyword","TK_EXCLUDE")){
+            this.Next(Stack);
+            this.TestNext(Stack,"Brace","TK_IOPEN");
+            this.Move(Stack,2);
+            let Args = [];
+        	if (!this.IsPreciseToken(Stack.Token,"Brace","TK_ICLOSE")){
+                while(!this.IsPreciseToken(Stack.Token,"Brace","TK_ICLOSE")){
+                    this.ErrorIfTokenNotType(Stack,"Identifier");
+                    Args.push(Stack.Token.Value);
+                    this.Next(Stack);
+                    if (this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                        this.Next(Stack);
+                    }
+                }
+            }
+            Excludes=Args;
+        }
         this.TestNext(Stack,"Bracket","TK_BOPEN");
         this.Next(Stack);
         this.Next(Stack);
         this.CodeBlock(Stack);
+        Stack.Chunk[10]=Excludes;
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
@@ -2784,6 +2807,7 @@ const Interpreter = Object.freeze({
         let PreUse = AST.Using;
         AST.InUsing = true;
         AST.Using = this.ParseUnpack(AST,Token[1]);
+        AST.UsingExclude = Token[10];
         this.CondState(AST,Token[2]);
         AST.InUsing = PreUsing;
         AST.Using = PreUse;
@@ -3176,6 +3200,7 @@ const Interpreter = Object.freeze({
             Using:null,
             Types:{},
             StackCurrent:{},
+            UsingExclude:[],
             GlobalSettings:{},
             LibGlobals:Globals,
             Globals:new Proxy(Globals,{
@@ -3190,7 +3215,7 @@ const Interpreter = Object.freeze({
 				        if (Var){
         					return Var.Value;
         				} else {
-        				    if (NVM.InUsing && NVM.Using){
+        				    if (NVM.InUsing && NVM.Using && !NVM.UsingExclude.includes(Name)){
         				        if (NVM.Using[Name]){
         				            return NVM.Using[Name];
         				        } else {
@@ -3204,7 +3229,7 @@ const Interpreter = Object.freeze({
 				    if (Var){
     					return Var.Value;
     				} else {
-                    	if (NVM.InUsing && NVM.Using){
+                    	if (NVM.InUsing && NVM.Using && !NVM.UsingExclude.includes(Name)){
         				    if (NVM.Using[Name]){
         				        return NVM.Using[Name];
         				    } else {
