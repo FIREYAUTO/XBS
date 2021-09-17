@@ -1,16 +1,9 @@
-# Project XBS
-###  What is XBS?
-  > XBS is a compiled programming language, which is interpreted as easier-to-understand arrays containing information about the code; the AST.
-  > XBS will be written in javascript first, then ported to other languages when necessary.
-### What is the purpose of XBS?
-  > The purpose of XBS is to create a flexible, easy-to-use programming language with similarities between multiple programming languages.
-  > A side purpose for XBS is to be a fun and challenging project to work on, which will help expand my knowledge on creating programming languages.
-### What will XBS be used for?
-  > XBS could be used mainly for *games*, *backend systems*, or *server-sided* code.
-  > I don't restrict what you can do with XBS; push the limits if you want.
-### Challenges to overcome
-  > * The main challenge that I face is giving up, something that isn't good but I've done it before on things similar to this. I see hope for XBS, as I will allow myself to scrap parts of my code that are not good for workflow and are not easy to use/edit.
-  > * I will have to overcome many difficult tasks, like creating a succesful *parser*. There will be several generations of steps in creating this programming languages.
-### Notes
-  > * XBS shouldn't really be used for it's main purposes as it has little to no error handling and errors can be very vague and won't provide information about the line. I'm still trying to think of a method to do errors
+#XBS
+## What is XBS?
+  > XBS is an intepreted programming language written in JavaScript. XBS is my first "working" programming language. Currently, the state of main XBS components isn't great; the AST is a good example of this. XBS isn't really informative about errors, and you can sometimes break it. In the future, I plan on rewriting XBS entirely once I have a good idea on how to make a good AST and paraser.
+## What is the purpose of XBS?
+  > XBS doesn't really have any main purpose, as I created it mainly as a test to see if I could finally make a programming language. You can use XBS for anything you want, as long as you can run JavaScript and have a proper library.
+## Big Issues
+  > Some big issues in XBS include the structure of the AST. The AST uses arrays instead of objects to make interpreted code. This has already shown its downsides, and plans for a new AST and parser will be constructed as time goes on.
+## Notes
   > * XBS is not finished.
