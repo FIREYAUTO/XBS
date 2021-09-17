@@ -1,4 +1,4 @@
-#XBS
+# XBS
 ## What is XBS?
   > XBS is an intepreted programming language written in JavaScript. XBS is my first "working" programming language. Currently, the state of main XBS components isn't great; the AST is a good example of this. XBS isn't really informative about errors, and you can sometimes break it. In the future, I plan on rewriting XBS entirely once I have a good idea on how to make a good AST and paraser.
 ## What is the purpose of XBS?
