@@ -2204,6 +2204,25 @@ const AST = Object.freeze({
 
 // {{-=~}} Interpreter {{~=-}} \\\
 
+class DefineBlock {
+    constructor(AST,Tokens){
+        if (!AST){
+            throw new CodeError(`An AST is required for a DefineBlock`);
+        }
+        if (!(Tokens instanceof Array)){
+            throw new CodeError(`Invalid DefineBlock Tokens`);
+        }
+        this.AST=AST;
+        this.Tokens=Tokens;
+    }
+    RunCode(){
+        Interpreter.CondState(this.AST,DeepCopy(this.Tokens));
+    }
+    toString(){
+        return "[Chunk]";
+    }
+}
+
 
 const DeepCopy = (inObject) => {
   let outObject, value, key
@@ -3019,15 +3038,7 @@ const Interpreter = Object.freeze({
     DefineState:function(AST,Token){
         let Name = Token[1];
         let Code = Token[2];
-        this.MakeVariable(AST,Name,{
-            toString:function(){
-                return "[Chunk]";
-            },
-            RunCode:function(){
-                let Clone = DeepCopy(Code);
-                Interpreter.CondState(AST,Clone);
-            }
-        },undefined,AST.Block);
+        this.MakeVariable(AST,Name,new DefineBlock(AST,Code),undefined,AST.Block);
     },
     GetFromLibGlobal:function(AST,Value){
         try{
@@ -3349,8 +3360,10 @@ const Interpreter = Object.freeze({
             return;
         }else if(Token[0]=="IN_PLACEMENT"){
             let Variable = Token[1];
-            if ((Variable instanceof Object) && Variable.hasOwnProperty("RunCode") && typeof Variable.RunCode == "function"){
+            if (Variable instanceof DefineBlock){
                 Variable.RunCode();
+            } else {
+                throw new CodeError(`Attempt to use the placement operator on a non-DefineBlock class`);
             }
         }
         return Token;
@@ -3506,7 +3519,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.2",
+    Version:"0.0.1.3",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
