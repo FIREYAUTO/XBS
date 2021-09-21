@@ -2621,6 +2621,12 @@ const Interpreter = Object.freeze({
         let Idx = Token[2];
         let Res = Value[Idx];
         let ty = this.GetType(Value);
+        let Method="__index";
+        if ((Value instanceof Object) && Object.prototype.hasOwnProperty.call(Value,Method)){
+            Res = Value[Method](Value,Idx);
+        } else {
+            Res = Value[Idx];
+        }
         if (ty == "object"){
             return Res;
         }
@@ -3233,13 +3239,7 @@ const Interpreter = Object.freeze({
         } else if (Token[0]=="IN_LT"){
         	return Token[1]<Token[2];
         } else if (Token[0]=="IN_INDEX"){
-            let Result=null,Method="__index";
-            if ((Token[1] instanceof Object) && Object.prototype.hasOwnProperty.call(Token[1],Method)){
-                Result = Token[1][Method](Token[1],Token[2]);
-            } else {
-                Result = this.IndexState(AST,Token);
-            }
-        	return Result;
+            return this.IndexState(AST,Token);
         } else if (Token[0]=="IN_SETINDEX"){
             let Type = Token[3];
             if (Type=="eq"){
@@ -3519,7 +3519,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.3",
+    Version:"0.0.1.4",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
