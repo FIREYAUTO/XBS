@@ -1108,6 +1108,9 @@ const AST = Object.freeze({
         	this.Next(Stack);
             return Value;
         }
+        if (this.IsPreciseToken(Stack.Token,"None","TK_LINEEND")||this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+            return Value;
+        }
     	let Indexing = this.CheckNext(Stack,"Brace","TK_IOPEN");
         let AddInc = this.CheckNext(Stack,"Incremental","TK_INC");
         let SubInc = this.CheckNext(Stack,"Incremental","TK_DEINC");
@@ -1123,8 +1126,6 @@ const AST = Object.freeze({
         let Pow = this.CheckNext(Stack,"Operator","TK_POW") || this.IsPreciseToken(Stack.Token,"Operator","TK_POW");
         let Mod = this.CheckNext(Stack,"Operator","TK_MOD") || this.IsPreciseToken(Stack.Token,"Operator","TK_MOD");
         let POf = this.CheckNext(Stack,"Operator","TK_POF") || this.IsPreciseToken(Stack.Token,"Operator","TK_POF");
-        
-        
         
         let In = this.CheckNext(Stack,"Keyword","TK_IN") || this.IsPreciseToken(Stack.Token,"Keyword","TK_IN");
         if (Indexing){
@@ -1579,6 +1580,15 @@ const AST = Object.freeze({
                 Result = NLast;
                 PChunk.pop();
             }
+            return Result;
+        }else if(this.IsPreciseToken(Token,"None","TK_SELFCALL")){
+            let Chunk = this.NewChunk("IN_INTERNAL");
+            this.TypeTestNext(Stack,"Identifier");
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,Stack.Token.Value);
+            this.Next(Stack);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
+            Result = Chunk;
             return Result;
         }
         Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
@@ -2296,12 +2306,12 @@ const Interpreter = Object.freeze({
             }
         }
     },
-    Next:function(AST,Stack){
+    Next:function(AST,Stack,Amount=1){
         if (!this.GetStack(AST,Stack)){
         	this.NewStack(AST,Stack);
         }
     	let ParseStack = this.GetStack(AST,Stack);
-        ParseStack.Current++;
+        ParseStack.Current+=Amount;
         ParseStack.PToken=ParseStack.Token;
         ParseStack.Token=ParseStack.Tokens[ParseStack.Current];
         AST.CStack = Stack
@@ -3365,6 +3375,15 @@ const Interpreter = Object.freeze({
             } else {
                 throw new CodeError(`Attempt to use the placement operator on a non-DefineBlock class`);
             }
+        }else if(Token[0]=="IN_INTERNAL"){
+            let State = Token[1];
+            if (State=="move"){
+                let Stack = this.GetStack(AST,AST.CStack);
+                this.Next(AST,Stack.Tokens,...Token[2]);
+            }else if(State=="gv"){
+                return AST.Globals[Token[2][0]];
+            }
+            return
         }
         return Token;
     },
@@ -3519,7 +3538,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.4",
+    Version:"0.0.1.5",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
