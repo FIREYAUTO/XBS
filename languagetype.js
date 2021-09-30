@@ -1036,18 +1036,6 @@ const AST = Object.freeze({
         if (this.IsPreciseToken(Stack.Token,"None","TK_LINEEND")||this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
             return Value;
         }
-        let Res=this.IsCustomSyntax(Stack,"CE",Stack.Token);
-        if (Res[0]){
-            let Chunk = this.NewChunk("IN_CUSTOMSYNTAX");
-            this.ChunkAdd(Chunk,Token.Value);
-            this.ChunkAdd(Chunk,eval(Res[2]).bind(Interpreter));
-            this.ChunkAdd(Chunk,eval(Res[1]).bind(this)(Stack,Value,Res[3],Res[4]));
-            Value = Chunk;
-            NoMath=Res[3];
-            NoCond=Res[4];
-            Value = this.FinishComplexExpression(Stack,Value,NoMath,NoCond);
-            return Value;
-        }
         //Conditional
             let And = this.CheckNext(Stack,"Conditional","TK_AND") || this.IsPreciseToken(Stack.Token,"Conditional","TK_AND");
             let Or = this.CheckNext(Stack,"Conditional","TK_OR") || this.IsPreciseToken(Stack.Token,"Conditional","TK_OR");
@@ -1227,18 +1215,6 @@ const AST = Object.freeze({
             return Value;
         }
         if (this.IsPreciseToken(Stack.Token,"None","TK_LINEEND")||this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
-            return Value;
-        }
-        let Res=this.IsCustomSyntax(Stack,"SE",Stack.Token);
-        if (Res[0]){
-            let Chunk = this.NewChunk("IN_CUSTOMSYNTAX");
-            this.ChunkAdd(Chunk,Token.Value);
-            this.ChunkAdd(Chunk,eval(Res[2]).bind(Interpreter));
-            this.ChunkAdd(Chunk,eval(Res[1]).bind(this)(Stack,Value,Res[3],Res[4]));
-            Value = Chunk;
-            NoMath=Res[3];
-            NoCond=Res[4];
-            Value = this.FinishComplexExpression(Stack,Value,NoMath,NoCond);
             return Value;
         }
     	let Indexing = this.CheckNext(Stack,"Brace","TK_IOPEN");
