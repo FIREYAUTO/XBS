@@ -603,6 +603,15 @@ const Lex = {
         	if (!Token){return false}
         	return TypeToken(Token,Type)&&Token.Value==Value;
         }
+        function TokenRaw(Value){
+            for(let k in Lex.Tokens){
+                let v = Lex.Tokens[k];
+                if (k==Value){
+                    return v.Token;
+                }
+            }
+            return Value;
+        }
         function From(Token){
         	let v = Lex.Tokens[Token.Value];
             if (v&&v.Type==Token.Type){
@@ -637,6 +646,9 @@ const Lex = {
                 }
             }
             throw new CodeError(`Invalid number sequence at line ${Token.Line}`);
+        }
+        function MakeTypeToken(v){
+            return v.Value;
         }
         function Read(){
         	let CT = Token;
@@ -704,14 +716,51 @@ const Lex = {
                 return;
             } else if (PreciseToken(CT,"Comment","TK_COMMENTLONGOPEN")){
             	Next();
+            	let NewSyntax=[];
+            	let IsNewSyntax = false;
             	while (!IsEnd()){
+            	    if (PreciseToken(Token,"Identifier","newsyntax")){
+            	        IsNewSyntax = true;
+            	        Next();
+            	    }
                 	if (PreciseToken(Token,"None","TK_BACKSLASH")){
                     	Next();
-                    }
+                    	if(IsNewSyntax){
+            	            NewSyntax.push(Token);
+            	        }
+                	}
                     Next();
                     if (PreciseToken(Token,"Comment","TK_COMMENTLONGCLOSE")){
                     	break;
                     }
+                    if(IsNewSyntax){
+            	        NewSyntax.push(Token);
+            	    }
+                }
+                if(IsNewSyntax){
+                    NewSyntax=Lex.MakeConstants(NewSyntax);
+                    let Obj = {};
+                    let c=-1;
+                    let t=undefined;
+                    let n=a=>{c+=a||1;t=NewSyntax[c];return t}
+                    let r=()=>{
+                        if(PreciseToken(t,"None","TK_AT")){
+                            let v=n();
+                            n();
+                            if(PreciseToken(t,"None","TK_COLON")){
+                                let vv=n();
+                                Obj[TokenRaw(v.Value)]=TokenRaw(MakeTypeToken(vv));
+                            }
+                        }
+                    }
+                    n();
+                    while(c<=NewSyntax.length-1){
+                        r();
+                        n();
+                    }
+                    CT.Type = "CustomSyntax";
+                    CT.Value = Obj;
+                    return CT;
                 }
                 return;
             }
@@ -751,6 +800,12 @@ const AST = Object.freeze({
             CurrentLine:1,
            	Chunk:[],
             Result:[],
+            CustomSyntaxes:{
+                CH:[],
+                PE:[],
+                SE:[],
+                CE:[],
+            },
         };
         for (let k in Options){
         	if (!Stack.hasOwnProperty(k)){
@@ -801,6 +856,15 @@ const AST = Object.freeze({
         } else {
         	Stack.Chunk[Place] = Value;
         }
+    },
+    //{{ CustomSyntax }}\\
+    IsCustomSyntax:function(Stack,Type,Token){
+        for(let v of Stack.CustomSyntaxes[Type]){
+            if(v.Token==Token.Value){
+                return [true,`(${v.Value})`,`(${v.Interpret})`,v.NoMath,v.NoCond];
+            }
+        }
+        return [false];
     },
     //{{ Next }}\\
     Next:function(Stack){
@@ -1204,7 +1268,6 @@ const AST = Object.freeze({
                 this.Next(Stack);
             	this.ChunkAdd(Chunk,this.ParseExpression(Stack));
             } else {
-                document.write(Token);
                 Lex.ThrowError(CodeError,`"${FromToken(Token.Value)}" is not a valid index name`,Stack);
             }
             Value = Chunk
@@ -1432,6 +1495,18 @@ const AST = Object.freeze({
         let Result = null;
         if (!Token){
             return Result;   
+        }
+        let Res=this.IsCustomSyntax(Stack,"PE",Token);
+        if (Res[0]){
+            let Chunk = this.NewChunk("IN_CUSTOMSYNTAX");
+            this.ChunkAdd(Chunk,Token.Value);
+            this.ChunkAdd(Chunk,eval(Res[2]).bind(Interpreter));
+            this.ChunkAdd(Chunk,eval(Res[1]).bind(this)(Stack,Res[3],Res[4]));
+            Result = Chunk;
+            NoMath=Res[3];
+            NoCond=Res[4];
+            Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
+            return Result;
         }
         if (Token.Type == "Constant"){
         	Result = Token.Value;
@@ -2209,6 +2284,30 @@ const AST = Object.freeze({
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
         } else if (Token.Type == "Identifier"){
+            let Res=this.IsCustomSyntax(Stack,"PE",Token);
+            if (Res[0]){
+                let Chunk = this.NewChunk("IN_CUSTOMSYNTAX");
+                this.ChunkAdd(Chunk,Token.Value);
+                this.ChunkAdd(Chunk,eval(Res[2]).bind(Interpreter));
+                this.ChunkAdd(Chunk,eval(Res[1]).bind(this)(Stack,Res[3],Res[4]));
+                Result = Chunk;
+                NoMath=Res[3];
+                NoCond=Res[4];
+                Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
+                this.OpenChunk(Stack);
+                Stack.Chunk=Chunk;
+                this.CloseChunk(Stack);
+            }
+            Res=this.IsCustomSyntax(Stack,"CH",Token);
+            if (Res[0]){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_CUSTOMSYNTAX");
+                this.ChunkWrite(Stack,Token.Value);
+                this.ChunkWrite(Stack,eval(Res[2]).bind(Interpreter));
+                this.ChunkWrite(Stack,eval(Res[1]).bind(this)(Stack));
+                this.CloseChunk(Stack);
+                return; 
+            }
         	if (this.TypeCheckNext(Stack,"Assignment")){
             	this.OpenChunk(Stack);
             	this.ChunkWrite(Stack,"IN_SET");
@@ -2241,6 +2340,15 @@ const AST = Object.freeze({
             this.Next(Stack);
             this.ChunkWrite(Stack,this.ParseExpression(Stack));
             this.CloseChunk(Stack);
+        }else if(Token.Type=="CustomSyntax"){
+            let Value=Token.Value;
+            Stack.CustomSyntaxes[Value.in].push({
+                Token:Value.token,
+                Value:Value[Value.in],
+                Interpret:Value.Interpret,
+                NoMath:Value.NoMath||false,
+                NoCond:Value.NoCond||false,
+            });
         } else {
             let NoChecks={
                 "None":["TK_LINEEND","TK_COMMA"],
@@ -3246,6 +3354,11 @@ const Interpreter = Object.freeze({
             return this.DefineState(AST,Token);
         }else if(Token[0]=="IN_ISTYPE"){
             return this.IsTypeState(AST,Token);
+        }else if(Token[0]=="IN_CUSTOMSYNTAX"){
+            let Callback = Token[2];
+            if (Callback){
+                Callback(AST,Token);
+            }
         }
         this.ParseToken(AST,Token);
         //Parsed
@@ -3630,7 +3743,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.5",
+    Version:"0.0.1.6",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
