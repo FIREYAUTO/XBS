@@ -614,6 +614,29 @@ const Lex = {
         	if (!TypeToken(Token,"String")){return -1}
         	return Token.Value=="TK_STRING1"?0:1;
         }
+        function IsENumeric(Value){
+            let Lower = Value.toLowerCase();
+            if (Lower.endsWith("e")){
+                let Start = Lower.substr(0,Lower.length-1);
+                return !isNaN(+Start);
+            }
+            return false;
+        }
+        function ParseENumber(){
+            Next();
+            if (PreciseToken(Token,"Operator","TK_ADD")){
+                Next();
+                if (!isNaN(+Token.Value)){
+                    return `+${Token.Value}`;
+                }
+            } else if (PreciseToken(Token,"Operator","TK_SUB")){
+                Next();
+                if (!isNaN(+Token.Value)){
+                    return `-${Token.Value}`;
+                }
+            }
+            throw new CodeError(`Invalid number sequence at line ${Token.Line}`);
+        }
         function Read(){
         	let CT = Token;
         	if (CT.Type == "String"){
@@ -640,17 +663,27 @@ const Lex = {
                 Next();
                 if (PreciseToken(Token,"None","TK_DOT")){
                 	Next();
-                    if (Token&&!isNaN(+Token.Value)){
-                    	Num += `.${Token.Value}`;
-                    } else {
-                    	Jump(2);
-                    }
+                	if (Token){
+                	    let IsENum = IsENumeric(Token.Value);
+                	    if (!isNaN(+Token.Value)){
+                	        Num += `.${Token.Value}`;    
+                	    } else if (IsENum){
+                	        Num += `.${Token.Value}${ParseENumber()}`;
+                	    }
+                	}else{
+                	    Jump(2);
+                	}
                 } else {
                 	Jump();
                 }
                 CT.Type="Constant";
                 CT.Value=+Num;
                 CT.CType="Number";
+            } else if (IsENumeric(CT.Value)){
+                CT.Type="Constant";
+                CT.Value=+`${CT.Value}${ParseENumber()}`;
+                CT.CType="Number";
+                return CT;
             } else if (TypeToken(CT,"Bool")){
             	CT.Value=CT.Value=="TK_TRUE"?true:false;
                 CT.CType="Bool";
