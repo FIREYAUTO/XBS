@@ -616,6 +616,7 @@ const Lex = {
         }
         function IsENumeric(Value){
             let Lower = Value.toLowerCase();
+            if (Lower.length<2){return false}
             if (Lower.endsWith("e")){
                 let Start = Lower.substr(0,Lower.length-1);
                 return !isNaN(+Start);
