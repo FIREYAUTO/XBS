@@ -478,6 +478,14 @@ const Lex = {
         	Token:"define",
             Type:"Keyword",
         },
+        "TK_ISTYPE":{
+        	Token:"istype",
+            Type:"Keyword",
+        },
+        "TK_DOERROR":{
+        	Token:"doerror",
+            Type:"Keyword",
+        },
     },
     GetToken:function(x){
     	for(let k in this.Tokens){
@@ -2043,6 +2051,26 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
+    //{{ IsTypeState }}\\
+    IsTypeState:function(Stack){
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.TestNext(Stack,"Keyword","TK_AS");
+        this.Move(Stack,2);
+        this.ChunkWrite(Stack,this.TypeExpression(Stack));
+        let Res = false;
+        if (this.CheckNext(Stack,"Keyword","TK_DOERROR")){
+            Res=true
+            this.Next(Stack);
+        }
+        if (this.CheckNext(Stack,"Bracket","TK_BOPEN")){
+            this.Move(Stack,2);
+            this.CodeBlock(Stack);
+            this.JumpBack(Stack);
+        }
+        Stack.Chunk[10]=Res;
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk:function(Stack,NoMath,NoCond){
         let Token = Stack.Token;
@@ -2139,6 +2167,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_DEFINE");
                 this.DefineState(Stack);
+            } else if (Token.Value == "TK_ISTYPE"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_ISTYPE");
+                this.IsTypeState(Stack);
             } else {
                 Lex.ThrowError(CodeError,`Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`,Stack);
             }
@@ -2457,7 +2489,7 @@ const Interpreter = Object.freeze({
             return Ty;
         }
     },
-    TypeCheck:function(AST,x,t){
+    TypeCheck:function(AST,x,t,NoError){
         let ts = AST.Types;
         let type = this.TypeParse(AST,t);
         function Check(a,b){
@@ -2500,9 +2532,10 @@ const Interpreter = Object.freeze({
         }
         let Result = Check(x,type);
         let ta = this.GetType(x);
-        if (!Result){
+        if (!Result&&!NoError){
             throw new CodeError(`"${String(x)}" of type "${this.GetType(x)}" does not match type "${String(type)}"`);
         }
+        return !!Result;
     },
     MakeVariable:function(AST,Name,Value,Extra,ForceBlock){
     	let Variable = this.GetHighestVariable(AST,Name);
@@ -3090,6 +3123,29 @@ const Interpreter = Object.freeze({
             }
         }
     },
+    IsTypeState:function(AST,Token){
+        let Exp = this.Parse(AST,Token[1]);
+        let Type = Token[2];
+        let DoError = Token[10];
+        let Code = Token[3];
+        let Result = this.TypeCheck(AST,Exp,Type,!DoError);
+        if(!Code){return}
+        let CStack = AST.CStack;
+        if (Result){
+            this.CondState(AST,Code);
+            this.Next(AST,CStack);
+              this.SkipIfState(AST,CStack);
+              return;
+        } else {
+            this.Next(AST,CStack);
+            let NStack = this.GetStack(AST,CStack);
+            if (!NStack.Token){return}
+            if (NStack.Token[0]=="IN_ELSE"){
+                return this.CondState(AST,NStack.Token);
+            }
+            return this.Parse(AST,NStack.Token);
+        }
+    },
     Parse:function(AST,Token){
     	if (!(Token instanceof Array)){
         	return Token
@@ -3154,6 +3210,8 @@ const Interpreter = Object.freeze({
             return this.TryState(AST,Token);
         }else if(Token[0]=="IN_DEFINE"){
             return this.DefineState(AST,Token);
+        }else if(Token[0]=="IN_ISTYPE"){
+            return this.IsTypeState(AST,Token);
         }
         this.ParseToken(AST,Token);
         //Parsed
