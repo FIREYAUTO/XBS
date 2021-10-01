@@ -1707,6 +1707,16 @@ const AST = Object.freeze({
             this.ChunkAdd(Chunk,this.ParseExpression(Stack,true,true));
             Result = Chunk;
             return Result;
+        }else if(this.IsPreciseToken(Token,"Keyword","TK_DEFINE")){
+            let Chunk = this.NewChunk("IN_FASTDEFINE");
+            this.OpenChunk(Stack);
+            this.TestNext(Stack,"Bracket","TK_BOPEN");
+            this.Move(Stack,2);
+            this.CodeBlock(Stack);
+            this.JumpBack(Stack);
+            this.ChunkAdd(Chunk,Stack.Chunk[0])
+            Stack.Chunk=Stack.OpenChunks.pop();
+            return Chunk;
         }
         Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
         return Result;
@@ -3226,10 +3236,13 @@ const Interpreter = Object.freeze({
         let Tokens = Token[1];
         this.CondState(AST,Tokens);
     },
+    FastDefineState:function(AST,Code){
+        return new DefineBlock(AST,Code);
+    },
     DefineState:function(AST,Token){
         let Name = Token[1];
         let Code = Token[2];
-        this.MakeVariable(AST,Name,new DefineBlock(AST,Code),undefined,AST.Block);
+        this.MakeVariable(AST,Name,this.FastDefineState(AST,Code),undefined,AST.Block);
     },
     GetFromLibGlobal:function(AST,Value){
         try{
@@ -3352,6 +3365,8 @@ const Interpreter = Object.freeze({
             return this.TryState(AST,Token);
         }else if(Token[0]=="IN_DEFINE"){
             return this.DefineState(AST,Token);
+        }else if(Token[0]=="IN_FASTDEFINE"){
+            return this.FastDefineState(AST,Token[1]);
         }else if(Token[0]=="IN_ISTYPE"){
             return this.IsTypeState(AST,Token);
         }else if(Token[0]=="IN_CUSTOMSYNTAX"){
