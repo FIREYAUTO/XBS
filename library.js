@@ -176,6 +176,9 @@ const StandardLibrary = {
             let m = 10**y;
             return Math.floor(x*m+0.5)/m;
         },
+        abs:function(x){
+            return Math.abs(x);
+        }
     }),
     rnd:function(mi,ma){
     	return Math.floor(Math.random() * (ma-mi+1) + mi);
