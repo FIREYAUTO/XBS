@@ -694,7 +694,10 @@ const Lex = {
         	        if (TypeToken(Token,"Whitespace")){
         	            Token.IsPerm=true;
         	        }
-        	        Result.push(Token);
+        	        let Res = Read();
+        	        if (Res){
+        	            Result.push(Res);
+        	        }
         	        Next();
         	        if(TypeToken(Token,"ExpressionString")){
         	            break;
@@ -1766,9 +1769,10 @@ const AST = Object.freeze({
                     Res.push(this.ParseExpression(Stack));
                     this.TestNext(Stack,"Bracket","TK_BCLOSE");
                     this.Move(Stack,2);
+                    continue;
                 }
                 if (this.IsPreciseToken(Stack.Token,"ExpressionString","TK_ESTRING")){
-                    break
+                    break;
                 }
                 if (this.IsPreciseToken(Stack.Token,"None","TK_BACKSLASH")){
                     this.Next(Stack);
@@ -3366,7 +3370,7 @@ const Interpreter = Object.freeze({
         let Res = Token[1];
         let Str = "";
         for(let v of Res){
-            Str+=this.Parse(AST,v);
+            Str+=String(this.Parse(AST,v));
         }
         return Str;
     },
