@@ -172,6 +172,10 @@ const StandardLibrary = {
         log10:function(x){
             return Math.log10(x);
         },
+        nround:function(x,y=0){
+            let m = 10**y;
+            return Math.floor(x*m+0.5)/m;
+        },
     }),
     rnd:function(mi,ma){
     	return Math.floor(Math.random() * (ma-mi+1) + mi);
