@@ -683,6 +683,25 @@ const Lex = {
                 CT.Type="Constant";
                 CT.Value=New;
                 CT.CType="String";
+        	} else if (CT.Type == "ExpressionString"){
+        	    Result.push(CT);
+        	    Next();
+        	    while(!IsEnd()){
+        	        if (PreciseToken(Token,"None","TK_BACKSLASH")){
+        	            Result.push(Token);
+        	            Next();
+        	        }
+        	        if (TypeToken(Token,"Whitespace")){
+        	            Token.IsPerm=true;
+        	        }
+        	        Result.push(Token);
+        	        Next();
+        	        if(TypeToken(Token,"ExpressionString")){
+        	            break;
+        	        }
+        	    }
+        	    Result.push(Token);
+        	    return;
             } else if (!isNaN(+CT.Value)){
             	let Num = CT.Value;
                 Next();
@@ -789,7 +808,15 @@ const Lex = {
         return Result;
     },
     RemoveWhitespace:function(Tokens){
-    	return Tokens.filter(x=>x.Type!="Whitespace");
+    	return Tokens.filter(x=>{
+    	    if (x.Type=="Whitespace"){
+    	        if(x.IsPerm==true){
+    	            return true;
+    	        }
+    	        return false;
+    	    }
+    	    return true;
+    	});
     },
     ThrowError:function(Class,Message,Stack){
         let Result = Message;
