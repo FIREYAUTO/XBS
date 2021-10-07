@@ -30,6 +30,14 @@ function FromToken(x){
     return x;
 }
 
+function SmartFromToken(Token){
+    let v = Lex.Tokens[Token.Value];
+    if (v&&v.Type==Token.Type){
+        return v.Token;
+    }
+    return Token.Value;
+}
+
 // {{-=~}} Tokenizer {{~=-}} \\
 
 const Lex = {
@@ -63,6 +71,10 @@ const Lex = {
         "TK_STRING2":{
         	Token:"'",
             Type:"String",
+        },
+        "TK_ESTRING":{
+        	Token:"`",
+            Type:"ExpressionString",
         },
         "TK_ADDEQ":{
         	Token:"+=",
@@ -1717,6 +1729,28 @@ const AST = Object.freeze({
             this.ChunkAdd(Chunk,Stack.Chunk[0])
             Stack.Chunk=Stack.OpenChunks.pop();
             return Chunk;
+        }else if(this.IsPreciseToken(Token,"ExpressionString","TK_ESTRING")){
+            let Chunk = ["IN_ESTRING"];
+            let Res = [];
+            this.Next(Stack);
+            while(!this.IsPreciseToken(Stack.Token,"ExpressionString","TK_ESTRING")){
+                if (this.IsPreciseToken(Stack.Token,"Bracket","TK_BOPEN")){
+                    this.Next(Stack);
+                    Res.push(this.ParseExpression(Stack));
+                    this.TestNext(Stack,"Bracket","TK_BCLOSE");
+                    this.Move(Stack,2);
+                }
+                if (this.IsPreciseToken(Stack.Token,"ExpressionString","TK_ESTRING")){
+                    break
+                }
+                if (this.IsPreciseToken(Stack.Token,"None","TK_BACKSLASH")){
+                    this.Next(Stack);
+                }
+                Res.push(SmartFromToken(Stack.Token));
+                this.Next(Stack);
+            }
+            Chunk.push(Res);
+            Result = Chunk;
         }
         Result = this.FinishExpression(Stack,Result,NoMath,NoCond);
         return Result;
@@ -3301,6 +3335,14 @@ const Interpreter = Object.freeze({
             return this.Parse(AST,NStack.Token);
         }
     },
+    EStringState:function(AST,Token){
+        let Res = Token[1];
+        let Str = "";
+        for(let v of Res){
+            Str+=this.Parse(AST,v);
+        }
+        return Str;
+    },
     Parse:function(AST,Token){
     	if (!(Token instanceof Array)){
         	return Token
@@ -3374,6 +3416,8 @@ const Interpreter = Object.freeze({
             if (Callback){
                 Callback(AST,Token);
             }
+        }else if(Token[0]=="IN_ESTRING"){
+            return this.EStringState(AST,Token);
         }
         this.ParseToken(AST,Token);
         //Parsed
@@ -3758,7 +3802,7 @@ function Print(Table,Arr,Tabs){
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version:"0.0.1.6",
+    Version:"0.0.1.7",
   Parse:function(Code){
     return AST.StartParser(Code);
   },
