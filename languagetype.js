@@ -3132,8 +3132,8 @@ const Interpreter = Object.freeze({
     	let PreLoop = AST.InLoop;
     	AST.InLoop = true;
     	for(let i=Start;;i+=Inc){
-    		if (Start<End && i>End){break}
-    		if (Start>End&&i<End){break}
+    		if (Start<=End && i>End){break}
+    		if (Start>=End&&i<End){break}
     		this.MakeVariable(AST,VName,i,undefined,AST.Block+1);
     		let NewStack = DeepCopy(Stack);
     		this.CondState(AST,NewStack);
@@ -3445,7 +3445,7 @@ const Interpreter = Object.freeze({
         }else if(Token[0]=="IN_CUSTOMSYNTAX"){
             let Callback = Token[2];
             if (Callback){
-                Callback(AST,Token);
+                return Callback(AST,Token);
             }
         }else if(Token[0]=="IN_ESTRING"){
             return this.EStringState(AST,Token);
