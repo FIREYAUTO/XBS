@@ -171,6 +171,13 @@ const Lex = {
         "TK_DOT": {
             Token: ".",
             Type: "None",
+            Combinations: {
+                "TK_NUMRANGE": "TK_DOT",
+            }
+        },
+        "TK_NUMRANGE": {
+            Token: "..",
+            Type: "None",
         },
         "TK_ADD": {
             Token: "+",
@@ -500,6 +507,14 @@ const Lex = {
         },
         "TK_CONTINUE": {
             Token: "continue",
+            Type: "Keyword",
+        },
+        "TK_EACH": {
+            Token: "each",
+            Type: "Keyword",
+        },
+        "TK_LOCKVAR": {
+            Token: "lockvar",
             Type: "Keyword",
         },
     },
@@ -1278,6 +1293,7 @@ const AST = Object.freeze({
         let SelfCalling = this.CheckNext(Stack, "None", "TK_SELFCALL");
         let PropCalling = this.CheckNext(Stack, "None", "TK_PROPCALL");
         let SetIndex = this.CheckNext(Stack, "None", "TK_COLON");
+        let NumRange = this.CheckNext(Stack, "None", "TK_NUMRANGE");
         let Add = this.CheckNext(Stack, "Operator", "TK_ADD") || this.IsPreciseToken(Stack.Token, "Operator", "TK_ADD");
         let Sub = this.CheckNext(Stack, "Operator", "TK_SUB") || this.IsPreciseToken(Stack.Token, "Operator", "TK_SUB");
         let Mul = this.CheckNext(Stack, "Operator", "TK_MUL") || this.IsPreciseToken(Stack.Token, "Operator", "TK_MUL");
@@ -1453,6 +1469,14 @@ const AST = Object.freeze({
             }
             this.Next(Stack);
             this.ChunkAdd(Chunk, this.ParseExpression(Stack, true, true));
+            Value = this.FinishExpression(Stack, Chunk);
+            Value = this.FinishComplexExpression(Stack, Value);
+            return Value;
+        }else if(NumRange){
+            let Chunk = this.NewChunk("IN_NUMRANGE");
+            this.ChunkAdd(Chunk,Value);
+            this.Move(Stack,2);
+            this.ChunkAdd(Chunk,this.ParseExpression(Stack,false,true));
             Value = this.FinishExpression(Stack, Chunk);
             Value = this.FinishComplexExpression(Stack, Value);
             return Value;
@@ -1872,6 +1896,24 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
+    EachState:function(Stack){
+        this.Next(Stack);
+        let Arr = this.ParseExpression(Stack);
+        this.TestNext(Stack,"Keyword","TK_AS");
+        this.Move(Stack,2);
+        this.ErrorIfTokenNotType(Stack, "Identifier");
+        this.ChunkWrite(Stack, Stack.Token.Value);
+        this.TestNext(Stack,"None","TK_COMMA");
+        this.Move(Stack,2);
+        this.ErrorIfTokenNotType(Stack, "Identifier");
+        this.ChunkWrite(Stack, Stack.Token.Value);
+        this.ChunkWrite(Stack,Arr);
+        this.TestNext(Stack, "Bracket", "TK_BOPEN");
+        this.Move(Stack, 2);
+        this.CodeBlock(Stack);
+        this.CloseChunk(Stack);
+        this.JumpBack(Stack);
+    },
     //{{ ForEachState }}\\
     ForEachState: function (Stack) {
         this.TestNext(Stack, "Paren", "TK_POPEN")
@@ -2270,6 +2312,13 @@ const AST = Object.freeze({
         Stack.Chunk[10] = Res;
         this.CloseChunk(Stack);
     },
+    //{{ LockVarState }}\\
+    LockVarState:function(Stack){
+        this.TypeTestNext(Stack,"Identifier");
+        this.Next(Stack);
+        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk: function (Stack, NoMath, NoCond) {
         let Token = Stack.Token;
@@ -2374,6 +2423,14 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack, "IN_CONTINUE");
                 this.CloseChunk(Stack);
+            } else if (Token.Value == "TK_EACH") {
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack, "IN_FORALL");
+                this.EachState(Stack);
+            } else if (Token.Value == "TK_LOCKVAR") {
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack, "IN_LOCKVAR");
+                this.LockVarState(Stack);
             } else {
                 Lex.ThrowError(CodeError, `Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`, Stack);
             }
@@ -3716,6 +3773,21 @@ const Interpreter = Object.freeze({
                 return AST.Globals[Token[2][0]];
             }
             return
+        }else if(Token[0]=="IN_LOCKVAR"){
+            let Var = this.GetHighestVariable(AST,Token[1]);
+            if (Var){
+                Var.Const = true;
+            } else {
+                console.log(Token);
+            }
+        }else if(Token[0]=="IN_NUMRANGE"){
+            let Min=Token[1];
+            let Max=Token[2];
+            let Result = [];
+            for(let i=Min;i<=Max;i++){
+                Result.push(i);
+            }
+            return Result;
         }
         return Token;
     },
