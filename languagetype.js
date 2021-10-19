@@ -517,6 +517,10 @@ const Lex = {
             Token: "lockvar",
             Type: "Keyword",
         },
+        "TK_UPVAR": {
+            Token: "upvar",
+            Type: "Keyword",
+        },
     },
     GetToken: function (x) {
         for (let k in this.Tokens) {
@@ -1860,6 +1864,31 @@ const AST = Object.freeze({
         }
         this.CloseChunk(Stack);
     },
+    //{{ UpVarState }}\\
+    UpVarState: function (Stack) {
+        let Name = this.Next(Stack);
+        this.ErrorIfTokenNotType(Stack, "Identifier");
+        this.ChunkWrite(Stack, Name.Value);
+        let Type = null;
+        if (this.CheckNext(Stack, "None", "TK_COLON")) {
+            this.Next(Stack);
+            this.Next(Stack);
+            Type = this.TypeExpression(Stack);
+
+        }
+        let Result = this.CheckNext(Stack, "Assignment", "TK_EQ");
+        if (Result) {
+            this.Next(Stack);
+            this.Next(Stack);
+            this.ChunkWrite(Stack, this.ParseExpression(Stack));
+        } else {
+            this.ChunkWrite(Stack, null);
+        }
+        if (Type) {
+            this.ChunkWrite(Stack, Type)
+        }
+        this.CloseChunk(Stack);
+    },
     //{{ CodeBlock }}\\
     CodeBlock: function (Stack) {
         this.OpenChunk(Stack);
@@ -2432,6 +2461,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack, "IN_LOCKVAR");
                 this.LockVarState(Stack);
+            }else if(Token.Value=="TK_UPVAR"){
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack,"IN_UPVAR");
+                this.UpVarState(Stack);
             } else {
                 Lex.ThrowError(CodeError, `Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`, Stack);
             }
@@ -2945,6 +2978,14 @@ const Interpreter = Object.freeze({
             this.TypeCheck(AST, Token[2], Extra.Type);
         }
         this.MakeVariable(AST, Token[1], Token[2], Extra);
+    },
+    UpVarState: function (AST, Token) {
+        let Extra = {};
+        if (Token[3]) {
+            Extra.Type = Token[3];
+            this.TypeCheck(AST, Token[2], Extra.Type);
+        }
+        this.MakeVariable(AST, Token[1], Token[2], Extra,AST.Block-1);
     },
     ConstState: function (AST, Token) {
         let Extra = {
@@ -3551,6 +3592,8 @@ const Interpreter = Object.freeze({
             return this.SetState(AST, Token);
         } else if (Token[0] == "IN_NEW") {
             return this.NewState(AST, Token);
+        } else if (Token[0] == "IN_UPVAR") {
+            return this.UpVarState(AST, Token);
         } else if (Token[0] == "IN_CONST") {
             return this.ConstState(AST, Token);
         } else if (Token[0] == "IN_CALL") {
