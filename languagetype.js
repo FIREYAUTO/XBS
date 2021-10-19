@@ -2284,8 +2284,9 @@ const AST = Object.freeze({
         this.TypeTestNext(Stack, "Identifier");
         this.Next(Stack);
         this.ChunkWrite(Stack, Stack.Token.Value);
-        this.TestNext(Stack, "Keyword", "TK_AS");
-        this.Next(Stack);
+        if (this.CheckNext(Stack,"Keyword","TK_AS")){
+            this.Next(Stack);
+        }
         this.TestNext(Stack, "Bracket", "TK_BOPEN");
         this.Move(Stack, 2);
         this.CodeBlock(Stack);
