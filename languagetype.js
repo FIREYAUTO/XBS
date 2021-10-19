@@ -498,6 +498,10 @@ const Lex = {
             Token: "doerror",
             Type: "Keyword",
         },
+        "TK_CONTINUE": {
+            Token: "continue",
+            Type: "Keyword",
+        },
     },
     GetToken: function (x) {
         for (let k in this.Tokens) {
@@ -2366,6 +2370,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack, "IN_ISTYPE");
                 this.IsTypeState(Stack);
+            } else if (Token.Value == "TK_CONTINUE") {
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack, "IN_CONTINUE");
+                this.CloseChunk(Stack);
             } else {
                 Lex.ThrowError(CodeError, `Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`, Stack);
             }
@@ -3055,6 +3063,7 @@ const Interpreter = Object.freeze({
         this.NewStack(AST, Token);
         let Stack = this.GetStack(AST, Token);
         do {
+            if (AST.Continued==true){break}
             this.Next(AST, Stack.Tokens);
             if (!Stack.Token) { break }
             if (Stack.Token[0] == "IN_RETURN" && AST.InBlock) {
@@ -3064,6 +3073,9 @@ const Interpreter = Object.freeze({
             } else if (Stack.Token[0] == "IN_STOP" && AST.InLoop) {
                 AST.InLoop = false;
                 AST.Broken = true;
+                break;
+            } else if (Stack.Token[0] == "IN_CONTINUE" && AST.InLoop){
+                AST.Continued = true;
                 break;
             }
             this.Parse(AST, Stack.Token);
@@ -3077,6 +3089,7 @@ const Interpreter = Object.freeze({
         let Stack = Token[2];
         if (Comp) {
             this.CondState(AST, Stack);
+            if (AST.Continued==true){return}
             this.Next(AST, CStack);
             this.SkipIfState(AST, CStack);
             return;
@@ -3103,6 +3116,7 @@ const Interpreter = Object.freeze({
             this.CondState(AST, NewStack);
             NewComp = DeepCopy(Comp);
             if (!AST.InLoop || AST.Returned) { break }
+            if (AST.Continued){AST.Continued=false;continue}
         }
         AST.Broken = false;
         AST.InLoop = PreLoop;
@@ -3120,6 +3134,7 @@ const Interpreter = Object.freeze({
             let NewStack = DeepCopy(Stack);
             this.CondState(AST, NewStack);
             if (!AST.InLoop || AST.Returned) { break }
+            if (AST.Continued) { AST.Continued = false; continue }
         }
         AST.Broken = false;
         AST.InLoop = PreLoop;
@@ -3138,6 +3153,7 @@ const Interpreter = Object.freeze({
             let NewStack = DeepCopy(Stack);
             this.CondState(AST, NewStack);
             if (!AST.InLoop || AST.Returned) { break }
+            //if (AST.Continued) { AST.Continued = false; continue }
         }
         AST.Broken = false;
         AST.InLoop = PreLoop;
@@ -3157,6 +3173,7 @@ const Interpreter = Object.freeze({
             let NewStack = DeepCopy(Stack);
             this.CondState(AST, NewStack);
             if (!AST.InLoop || AST.Returned) { break }
+            if (AST.Continued) { AST.Continued = false; continue }
         }
         AST.Broken = false;
         AST.InLoop = PreLoop;
@@ -3312,6 +3329,7 @@ const Interpreter = Object.freeze({
             }
             this.CondState(AST, NewStack);
             if (!AST.InLoop || AST.Returned) { break }
+            if (AST.Continued) { AST.Continued = false; continue }
         }
         AST.Broken = false;
         AST.InLoop = PreLoop;
@@ -3725,6 +3743,7 @@ const Interpreter = Object.freeze({
             Returned: false,
             InBlock: false,
             InLoop: false,
+            Continued: false,
             Result: null,
             InUsing: false,
             Using: null,
