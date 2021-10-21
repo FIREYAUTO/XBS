@@ -1809,8 +1809,8 @@ const AST = Object.freeze({
                     Stack.InString = false;
                     Res.push(this.ParseExpression(Stack));
                     this.TestNext(Stack, "Bracket", "TK_BCLOSE");
-                    this.Move(Stack, 2);
                     Stack.InString = true;
+                    this.Move(Stack, 2);
                     continue;
                 }
                 if (this.IsPreciseToken(Stack.Token, "ExpressionString", "TK_ESTRING")) {
