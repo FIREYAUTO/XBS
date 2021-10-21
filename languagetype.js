@@ -1760,7 +1760,7 @@ const AST = Object.freeze({
         } else if (this.IsPreciseToken(Token, "Operator", "TK_ROUND")) {
             let Chunk = this.NewChunk("IN_ROUND");
             this.Next(Stack);
-            this.ChunkAdd(Chunk, this.ParseExpression(Stack, true, true));
+            this.ChunkAdd(Chunk, this.ParseExpression(Stack, false, true));
             Result = Chunk;
         } else if (this.IsPreciseToken(Token, "Bitwise", "TK_BITZLSHIFT")) { //Placement Operator
             let Chunk = this.NewChunk("IN_PLACEMENT");
