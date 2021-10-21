@@ -3542,7 +3542,7 @@ const Interpreter = Object.freeze({
         this.NewStack(AST, Code);
         let Stack = this.GetStack(AST, Code);
         do {
-            if(!this.Parse(NewExpression)){
+            if(!this.Parse(AST,NewExpression)){
                 break;
             }
             NewExpression = DeepCopy(Expression);
