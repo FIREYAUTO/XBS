@@ -3535,9 +3535,9 @@ const Interpreter = Object.freeze({
         return Str;
     },
     AsState:function(AST,Token){
-        let Expression = Token[0];
+        let Expression = Token[1];
         let NewExpression = DeepCopy(Expression);
-        let Code = Token[1];
+        let Code = Token[2];
         this.OpenBlock(AST);
         this.NewStack(AST, Code);
         let Stack = this.GetStack(AST, Code);
