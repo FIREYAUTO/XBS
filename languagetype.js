@@ -3185,6 +3185,14 @@ const Interpreter = Object.freeze({
         this.NewStack(AST, Token);
         let Stack = this.GetStack(AST, Token);
         do {
+            if (AST.InAs==true){
+                let NewExpression = DeepCopy(AST.AsExpression);
+                if(!this.Parse(NewExpression)){
+                    AST.AsExpression = undefined;
+                    AST.InAs = false;
+                    break;
+                }
+            }
             if (AST.Continued==true||AST.Returned==true||AST.Broken==true){break}
             if (AST.Exited==true){AST.Exited=false;break}
             this.Next(AST, Stack.Tokens);
@@ -3541,7 +3549,11 @@ const Interpreter = Object.freeze({
         this.OpenBlock(AST);
         this.NewStack(AST, Code);
         let Stack = this.GetStack(AST, Code);
+        let PreAs = AST.InAs;
+        AST.InAs = true;
+        AST.AsExpression = Expression;
         do {
+            if(!AST.InAs){break}
             if(!this.Parse(AST,NewExpression)){
                 break;
             }
@@ -3564,6 +3576,7 @@ const Interpreter = Object.freeze({
             }
             this.Parse(AST, Stack.Token);
         } while (Stack.Current < Stack.Tokens.length - 1);
+        AST.InAs = PreAs;
         this.CloseBlock(AST);
         this.RemoveStack(AST, Code);
     },
@@ -3925,6 +3938,8 @@ const Interpreter = Object.freeze({
             InUsing: false,
             Exited:false,
             Using: null,
+            InAs:false,
+            AsExpression:undefined,
             Types: {},
             StackCurrent: {},
             UsingExclude: [],
