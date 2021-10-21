@@ -3177,7 +3177,7 @@ const Interpreter = Object.freeze({
         this.SetVariable(AST, Name, Callback, Block);
     },
     SkipIfState: function (AST, Token) {
-        if ((AST.Returned && AST.InBlock) || (AST.Broken)) { return }
+        if ((AST.Returned && AST.InBlock) || (AST.Broken)) { return this.Next(AST, Token, -1); }
         let Stack = this.GetStack(AST, Token);
         if (!Stack.Token) {
             return
