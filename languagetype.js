@@ -521,6 +521,10 @@ const Lex = {
             Token: "upvar",
             Type: "Keyword",
         },
+        "TK_EXIT": {
+            Token: "exit",
+            Type: "Keyword",
+        },
     },
     GetToken: function (x) {
         for (let k in this.Tokens) {
@@ -2453,6 +2457,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack, "IN_CONTINUE");
                 this.CloseChunk(Stack);
+            } else if (Token.Value == "TK_EXIT") {
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack, "IN_EXIT");
+                this.CloseChunk(Stack);
             } else if (Token.Value == "TK_EACH") {
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack, "IN_FORALL");
@@ -3090,6 +3098,7 @@ const Interpreter = Object.freeze({
             CS.Upper = Stack.Upper;
             if (Stack.Tokens.length > 0) {
                 do {
+                    if (AST.Exited == true) { AST.Exited = false; break }
                     Interpreter.Next(AST, Stack.Tokens);
                     if (Stack.Token[0] == "IN_RETURN") {
                         Result = Interpreter.Parse(AST, Stack.Token);
@@ -3163,6 +3172,7 @@ const Interpreter = Object.freeze({
         let Stack = this.GetStack(AST, Token);
         do {
             if (AST.Continued==true||AST.Returned==true||AST.Broken==true){break}
+            if (AST.Exited==true){AST.Exited=false;break}
             this.Next(AST, Stack.Tokens);
             if (!Stack.Token) { break }
             if (Stack.Token[0] == "IN_RETURN" && AST.InBlock) {
@@ -3832,6 +3842,8 @@ const Interpreter = Object.freeze({
                 Result.push(i);
             }
             return Result;
+        }else if (Token[0]=="IN_EXIT"){
+            AST.Exited = true;
         }
         return Token;
     },
@@ -3862,6 +3874,7 @@ const Interpreter = Object.freeze({
             Continued: false,
             Result: null,
             InUsing: false,
+            Exited:false,
             Using: null,
             Types: {},
             StackCurrent: {},
@@ -3924,6 +3937,7 @@ const Interpreter = Object.freeze({
         AST.CStack = AST.MainStack;
         let Stack = this.GetStack(AST, AST.MainStack);
         do {
+            if (AST.Exited == true) { AST.Exited = false; break }
             this.Next(AST, AST.MainStack);
             this.Parse(AST, Stack.Token);
             Stack = this.GetStack(AST, AST.MainStack);
@@ -3987,7 +4001,7 @@ function Print(Table, Arr, Tabs) {
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version: "0.0.1.8",
+    Version: "0.0.1.9",
     Parse: function (Code) {
         return AST.StartParser(Code);
     },
