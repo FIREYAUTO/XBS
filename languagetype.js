@@ -714,14 +714,16 @@ const Lex = {
                 Result.push(CT);
                 Next();
                 while (!IsEnd()) {
+                        let Back = false;
                     if (PreciseToken(Token, "None", "TK_BACKSLASH")) {
                         Result.push(Token);
                         Next();
+                        Back = true;
                     }
                     if (TypeToken(Token, "Whitespace")) {
                         Token.IsPerm = true;
                     }
-                    let Res = Read();
+                    let Res = Back ? Token : Read();
                     if (Res) {
                         Result.push(Res);
                     }
