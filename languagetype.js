@@ -3185,11 +3185,13 @@ const Interpreter = Object.freeze({
         this.NewStack(AST, Token);
         let Stack = this.GetStack(AST, Token);
         do {
+            if(AST.BreakCond==true){break}
             if (AST.InAs==true){
                 let NewExpression = DeepCopy(AST.AsExpression);
                 if(!this.Parse(AST,NewExpression)){
                     AST.AsExpression = undefined;
                     AST.InAs = false;
+                    AST.BreakCond = true;
                     break;
                 }
             }
@@ -3546,39 +3548,16 @@ const Interpreter = Object.freeze({
         let Expression = Token[1];
         let NewExpression = DeepCopy(Expression);
         let Code = Token[2];
-        this.OpenBlock(AST);
-        this.NewStack(AST, Code);
-        let Stack = this.GetStack(AST, Code);
         let PreAs = AST.InAs;
+        let PreAsExpression = AST.AsExpression;
+        let PreBreakCond = AST.BreakCond;
         AST.InAs = true;
         AST.AsExpression = Expression;
-        do {
-            if(!AST.InAs){break}
-            if(!this.Parse(AST,NewExpression)){
-                break;
-            }
-            NewExpression = DeepCopy(Expression);
-            if (AST.Continued == true || AST.Returned == true || AST.Broken == true) { break }
-            if (AST.Exited == true) { AST.Exited = false; break }
-            this.Next(AST, Stack.Tokens);
-            if (!Stack.Token) { break }
-            if (Stack.Token[0] == "IN_RETURN" && AST.InBlock) {
-                AST.Result = this.Parse(AST, Stack.Token);
-                AST.Returned = true;
-                break;
-            } else if (Stack.Token[0] == "IN_STOP" && AST.InLoop) {
-                AST.InLoop = false;
-                AST.Broken = true;
-                break;
-            } else if (Stack.Token[0] == "IN_CONTINUE" && AST.InLoop) {
-                AST.Continued = true;
-                break;
-            }
-            this.Parse(AST, Stack.Token);
-        } while (Stack.Current < Stack.Tokens.length - 1);
+        AST.BreakCond = false;
+        this.CondState(AST,Code);
         AST.InAs = PreAs;
-        this.CloseBlock(AST);
-        this.RemoveStack(AST, Code);
+        AST.AsExpression = PreAsExpression;
+        AST.BreakCond = PreBreakCond;
     },
     Parse: function (AST, Token) {
         if (!(Token instanceof Array)) {
@@ -3939,6 +3918,7 @@ const Interpreter = Object.freeze({
             Exited:false,
             Using: null,
             InAs:false,
+            BreakCond:false,
             AsExpression:undefined,
             Types: {},
             StackCurrent: {},
