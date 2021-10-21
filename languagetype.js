@@ -3188,7 +3188,7 @@ const Interpreter = Object.freeze({
         let Stack = Token[2];
         if (Comp) {
             this.CondState(AST, Stack);
-            if (AST.Continued==true){return}
+            if (AST.Continued==true||AST.Returned==true||AST.Broken==true){return}
             this.Next(AST, CStack);
             this.SkipIfState(AST, CStack);
             return;
