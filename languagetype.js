@@ -3162,7 +3162,7 @@ const Interpreter = Object.freeze({
         this.NewStack(AST, Token);
         let Stack = this.GetStack(AST, Token);
         do {
-            if (AST.Continued==true){break}
+            if (AST.Continued==true||AST.Returned||AST.Broken){break}
             this.Next(AST, Stack.Tokens);
             if (!Stack.Token) { break }
             if (Stack.Token[0] == "IN_RETURN" && AST.InBlock) {
