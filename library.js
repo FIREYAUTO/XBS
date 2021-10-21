@@ -95,6 +95,15 @@ const StandardLibrary = {
             	a.splice(x,0,y);
             }
         },
+	append:function(a,b){
+		a.push(b);	
+	},
+	prepend:function(a,b){
+		a.unshift(b);	
+	},
+	delete:function(a,b){
+		a.splice(a.indexOf(b),1);	
+	},
         reverse:function(a){
             return [...a].reverse();
         },
@@ -109,7 +118,7 @@ const StandardLibrary = {
         },
         has:function(a,b){
             return a.includes(b);
-        }
+        },
     }),
     object:Object,
     math:LibraryUtilities.ReadOnlyObject({
