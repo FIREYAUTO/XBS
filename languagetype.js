@@ -2353,6 +2353,16 @@ const AST = Object.freeze({
         this.ChunkWrite(Stack,Stack.Token.Value);
         this.CloseChunk(Stack);
     },
+    //{{ AsState }}\\
+    AsState:function(Stack){
+        this.Next(Stack);
+        this.ChunkWrite(Stack,this.ParseExpression(Stack));
+        this.TestNext(Stack,"Bracket","TK_BOPEN");
+        this.Move(Stack,2);
+        this.CodeBlock(Stack);
+        this.JumpBack(Stack);
+        this.CloseChunk(Stack);
+    },
     //{{ ParseChunk }}\\
     ParseChunk: function (Stack, NoMath, NoCond) {
         let Token = Stack.Token;
@@ -2473,6 +2483,10 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack,"IN_UPVAR");
                 this.UpVarState(Stack);
+            } else if (Token.Value == "TK_AS") {
+                this.OpenChunk(Stack);
+                this.ChunkWrite(Stack, "IN_AS");
+                this.AsState(Stack);
             } else {
                 Lex.ThrowError(CodeError, `Unexpected ${String(Token.Type).toLowerCase()} "${Token.Value}"`, Stack);
             }
@@ -3520,6 +3534,39 @@ const Interpreter = Object.freeze({
         }
         return Str;
     },
+    AsState:function(AST,Token){
+        let Expression = Token[0];
+        let NewExpression = DeepCopy(Expression);
+        let Code = Token[1];
+        this.OpenBlock(AST);
+        this.NewStack(AST, Code);
+        let Stack = this.GetStack(AST, Code);
+        do {
+            if(!this.Parse(NewExpression)){
+                break;
+            }
+            NewExpression = DeepCopy(Expression);
+            if (AST.Continued == true || AST.Returned == true || AST.Broken == true) { break }
+            if (AST.Exited == true) { AST.Exited = false; break }
+            this.Next(AST, Stack.Tokens);
+            if (!Stack.Token) { break }
+            if (Stack.Token[0] == "IN_RETURN" && AST.InBlock) {
+                AST.Result = this.Parse(AST, Stack.Token);
+                AST.Returned = true;
+                break;
+            } else if (Stack.Token[0] == "IN_STOP" && AST.InLoop) {
+                AST.InLoop = false;
+                AST.Broken = true;
+                break;
+            } else if (Stack.Token[0] == "IN_CONTINUE" && AST.InLoop) {
+                AST.Continued = true;
+                break;
+            }
+            this.Parse(AST, Stack.Token);
+        } while (Stack.Current < Stack.Tokens.length - 1);
+        this.CloseBlock(AST);
+        this.RemoveStack(AST, Code);
+    },
     Parse: function (AST, Token) {
         if (!(Token instanceof Array)) {
             return Token
@@ -3595,6 +3642,8 @@ const Interpreter = Object.freeze({
             }
         } else if (Token[0] == "IN_ESTRING") {
             return this.EStringState(AST, Token);
+        } else if (Token[0]=="IN_AS"){
+            return this.AsState(AST,Token);
         }
         this.ParseToken(AST, Token);
         //Parsed
