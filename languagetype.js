@@ -3187,7 +3187,7 @@ const Interpreter = Object.freeze({
         do {
             if (AST.InAs==true){
                 let NewExpression = DeepCopy(AST.AsExpression);
-                if(!this.Parse(NewExpression)){
+                if(!this.Parse(AST,NewExpression)){
                     AST.AsExpression = undefined;
                     AST.InAs = false;
                     break;
