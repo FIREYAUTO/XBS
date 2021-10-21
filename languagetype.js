@@ -200,6 +200,13 @@ const Lex = {
         "TK_DIV": {
             Token: "/",
             Type: "Operator",
+            Combinations: {
+                "TK_FLOORDIV":"TK_DIV",
+            },
+        },
+        "TK_FLOORDIV": {
+            Token: "//",
+            Type: "Operator",
         },
         "TK_POW": {
             Token: "^",
@@ -714,7 +721,7 @@ const Lex = {
                 Result.push(CT);
                 Next();
                 while (!IsEnd()) {
-                        let Back = false;
+                    let Back = false;
                     if (PreciseToken(Token, "None", "TK_BACKSLASH")) {
                         Result.push(Token);
                         Next();
@@ -877,7 +884,7 @@ const AST = Object.freeze({
                 SE: [],
                 CE: [],
             },
-            InString:false,
+            InString: false,
         };
         for (let k in Options) {
             if (!Stack.hasOwnProperty(k)) {
@@ -944,7 +951,7 @@ const AST = Object.freeze({
         Stack.PToken = Stack.Token;
         Stack.Token = Stack.Tokens[Stack.Current];
         Stack.CurrentLine = Stack.Token?.Line;
-        if (!Stack.InString&&Stack.Token&&Stack.Token.Type=="Whitespace"){
+        if (!Stack.InString && Stack.Token && Stack.Token.Type == "Whitespace") {
             this.Next(Stack);
         }
         return Stack.Token;
@@ -954,7 +961,7 @@ const AST = Object.freeze({
         Stack.PToken = Stack.Token;
         Stack.Token = Stack.Tokens[Stack.Current];
         Stack.CurrentLine = Stack.Token?.Line;
-        if (!Stack.InString &&Stack.Token && Stack.Token.Type == "Whitespace") {
+        if (!Stack.InString && Stack.Token && Stack.Token.Type == "Whitespace") {
             this.Next(Stack);
         }
         return Stack.Token;
@@ -1311,6 +1318,7 @@ const AST = Object.freeze({
         let Pow = this.CheckNext(Stack, "Operator", "TK_POW") || this.IsPreciseToken(Stack.Token, "Operator", "TK_POW");
         let Mod = this.CheckNext(Stack, "Operator", "TK_MOD") || this.IsPreciseToken(Stack.Token, "Operator", "TK_MOD");
         let POf = this.CheckNext(Stack, "Operator", "TK_POF") || this.IsPreciseToken(Stack.Token, "Operator", "TK_POF");
+        let FloorDiv = this.CheckNext(Stack, "Operator", "TK_FLOORDIV") || this.IsPreciseToken(Stack.Token, "Operator", "TK_FLOORDIV");
 
         let In = this.CheckNext(Stack, "Keyword", "TK_IN") || this.IsPreciseToken(Stack.Token, "Keyword", "TK_IN");
         if (Indexing) {
@@ -1482,11 +1490,11 @@ const AST = Object.freeze({
             Value = this.FinishExpression(Stack, Chunk);
             Value = this.FinishComplexExpression(Stack, Value);
             return Value;
-        }else if(NumRange){
+        } else if (NumRange) {
             let Chunk = this.NewChunk("IN_NUMRANGE");
-            this.ChunkAdd(Chunk,Value);
-            this.Move(Stack,2);
-            this.ChunkAdd(Chunk,this.ParseExpression(Stack,false,true));
+            this.ChunkAdd(Chunk, Value);
+            this.Move(Stack, 2);
+            this.ChunkAdd(Chunk, this.ParseExpression(Stack, false, true));
             Value = this.FinishExpression(Stack, Chunk);
             Value = this.FinishComplexExpression(Stack, Value);
             return Value;
@@ -1562,6 +1570,17 @@ const AST = Object.freeze({
                 let Chunk = this.NewChunk("IN_POF");
                 this.ChunkAdd(Chunk, Value);
                 if (!this.IsPreciseToken(Stack.Token, "Operator", "TK_POF")) {
+                    this.Next(Stack);
+                }
+                this.Next(Stack);
+                this.ChunkAdd(Chunk, this.ParseExpression(Stack, undefined, true));
+                Value = this.FinishExpression(Stack, Chunk);
+                Value = this.FinishComplexExpression(Stack, Value);
+                return Value;
+            } else if (FloorDiv) {
+                let Chunk = this.NewChunk("IN_FLOORDIV");
+                this.ChunkAdd(Chunk, Value);
+                if (!this.IsPreciseToken(Stack.Token, "Operator", "TK_FLOORDIV")) {
                     this.Next(Stack);
                 }
                 this.Next(Stack);
@@ -1931,18 +1950,18 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
         this.JumpBack(Stack);
     },
-    EachState:function(Stack){
+    EachState: function (Stack) {
         this.Next(Stack);
         let Arr = this.ParseExpression(Stack);
-        this.TestNext(Stack,"Keyword","TK_AS");
-        this.Move(Stack,2);
+        this.TestNext(Stack, "Keyword", "TK_AS");
+        this.Move(Stack, 2);
         this.ErrorIfTokenNotType(Stack, "Identifier");
         this.ChunkWrite(Stack, Stack.Token.Value);
-        this.TestNext(Stack,"None","TK_COMMA");
-        this.Move(Stack,2);
+        this.TestNext(Stack, "None", "TK_COMMA");
+        this.Move(Stack, 2);
         this.ErrorIfTokenNotType(Stack, "Identifier");
         this.ChunkWrite(Stack, Stack.Token.Value);
-        this.ChunkWrite(Stack,Arr);
+        this.ChunkWrite(Stack, Arr);
         this.TestNext(Stack, "Bracket", "TK_BOPEN");
         this.Move(Stack, 2);
         this.CodeBlock(Stack);
@@ -2319,7 +2338,7 @@ const AST = Object.freeze({
         this.TypeTestNext(Stack, "Identifier");
         this.Next(Stack);
         this.ChunkWrite(Stack, Stack.Token.Value);
-        if (this.CheckNext(Stack,"Keyword","TK_AS")){
+        if (this.CheckNext(Stack, "Keyword", "TK_AS")) {
             this.Next(Stack);
         }
         this.TestNext(Stack, "Bracket", "TK_BOPEN");
@@ -2349,18 +2368,18 @@ const AST = Object.freeze({
         this.CloseChunk(Stack);
     },
     //{{ LockVarState }}\\
-    LockVarState:function(Stack){
-        this.TypeTestNext(Stack,"Identifier");
+    LockVarState: function (Stack) {
+        this.TypeTestNext(Stack, "Identifier");
         this.Next(Stack);
-        this.ChunkWrite(Stack,Stack.Token.Value);
+        this.ChunkWrite(Stack, Stack.Token.Value);
         this.CloseChunk(Stack);
     },
     //{{ AsState }}\\
-    AsState:function(Stack){
+    AsState: function (Stack) {
         this.Next(Stack);
-        this.ChunkWrite(Stack,this.ParseExpression(Stack));
-        this.TestNext(Stack,"Bracket","TK_BOPEN");
-        this.Move(Stack,2);
+        this.ChunkWrite(Stack, this.ParseExpression(Stack));
+        this.TestNext(Stack, "Bracket", "TK_BOPEN");
+        this.Move(Stack, 2);
         this.CodeBlock(Stack);
         this.JumpBack(Stack);
         this.CloseChunk(Stack);
@@ -2481,9 +2500,9 @@ const AST = Object.freeze({
                 this.OpenChunk(Stack);
                 this.ChunkWrite(Stack, "IN_LOCKVAR");
                 this.LockVarState(Stack);
-            }else if(Token.Value=="TK_UPVAR"){
+            } else if (Token.Value == "TK_UPVAR") {
                 this.OpenChunk(Stack);
-                this.ChunkWrite(Stack,"IN_UPVAR");
+                this.ChunkWrite(Stack, "IN_UPVAR");
                 this.UpVarState(Stack);
             } else if (Token.Value == "TK_AS") {
                 this.OpenChunk(Stack);
@@ -3009,7 +3028,7 @@ const Interpreter = Object.freeze({
             Extra.Type = Token[3];
             this.TypeCheck(AST, Token[2], Extra.Type);
         }
-        this.MakeVariable(AST, Token[1], Token[2], Extra,AST.Block-1);
+        this.MakeVariable(AST, Token[1], Token[2], Extra, AST.Block - 1);
     },
     ConstState: function (AST, Token) {
         let Extra = {
@@ -3164,7 +3183,7 @@ const Interpreter = Object.freeze({
             return
         }
         if (Stack.Token[0] != "IN_ELIF" && Stack.Token[0] != "IN_ELSE") {
-            return this.Parse(AST, Stack.Token);
+            return this.Next(AST,Token,-1);
         }
         do {
             this.Next(AST, Token);
@@ -3180,25 +3199,25 @@ const Interpreter = Object.freeze({
         if (Stack.Token[0] == "IN_ELIF" || Stack.Token[0] == "IN_ELSE") {
             this.Next(AST, Token);
         }
-        return this.Parse(AST, Stack.Token);
+        return this.Next(AST, Token, -1);
     },
     CondState: function (AST, Token) {
         this.OpenBlock(AST);
         this.NewStack(AST, Token);
         let Stack = this.GetStack(AST, Token);
         do {
-            if(AST.BreakCond==true){break}
-            if (AST.InAs==true){
+            if (AST.BreakCond == true) { break }
+            if (AST.InAs == true) {
                 let NewExpression = DeepCopy(AST.AsExpression);
-                if(!this.Parse(AST,NewExpression)){
+                if (!this.Parse(AST, NewExpression)) {
                     AST.AsExpression = undefined;
                     AST.InAs = false;
                     AST.BreakCond = true;
                     break;
                 }
             }
-            if (AST.Continued==true||AST.Returned==true||AST.Broken==true){break}
-            if (AST.Exited==true){AST.Exited=false;break}
+            if (AST.Continued == true || AST.Returned == true || AST.Broken == true) { break }
+            if (AST.Exited == true) { AST.Exited = false; break }
             this.Next(AST, Stack.Tokens);
             if (!Stack.Token) { break }
             if (Stack.Token[0] == "IN_RETURN" && AST.InBlock) {
@@ -3209,7 +3228,7 @@ const Interpreter = Object.freeze({
                 AST.InLoop = false;
                 AST.Broken = true;
                 break;
-            } else if (Stack.Token[0] == "IN_CONTINUE" && AST.InLoop){
+            } else if (Stack.Token[0] == "IN_CONTINUE" && AST.InLoop) {
                 AST.Continued = true;
                 break;
             }
@@ -3224,7 +3243,7 @@ const Interpreter = Object.freeze({
         let Stack = Token[2];
         if (Comp) {
             this.CondState(AST, Stack);
-            if (AST.Continued==true||AST.Returned==true||AST.Broken==true){return}
+            if (AST.Continued == true || AST.Returned == true || AST.Broken == true) { return }
             this.Next(AST, CStack);
             this.SkipIfState(AST, CStack);
             return;
@@ -3237,7 +3256,7 @@ const Interpreter = Object.freeze({
             } else if (NStack.Token[0] == "IN_ELSE") {
                 return this.CondState(AST, NStack.Token);
             }
-            return this.Parse(AST, NStack.Token);
+            this.Next(AST,NStack.Token,-1);
         }
     },
     WhileState: function (AST, Token) {
@@ -3251,7 +3270,7 @@ const Interpreter = Object.freeze({
             this.CondState(AST, NewStack);
             NewComp = DeepCopy(Comp);
             if (!AST.InLoop || AST.Returned) { break }
-            if (AST.Continued){AST.Continued=false;continue}
+            if (AST.Continued) { AST.Continued = false; continue }
         }
         AST.Broken = false;
         AST.InLoop = PreLoop;
@@ -3546,7 +3565,7 @@ const Interpreter = Object.freeze({
         }
         return Str;
     },
-    AsState:function(AST,Token){
+    AsState: function (AST, Token) {
         let Expression = Token[1];
         let NewExpression = DeepCopy(Expression);
         let Code = Token[2];
@@ -3556,7 +3575,7 @@ const Interpreter = Object.freeze({
         AST.InAs = true;
         AST.AsExpression = Expression;
         AST.BreakCond = false;
-        this.CondState(AST,Code);
+        this.CondState(AST, Code);
         AST.InAs = PreAs;
         AST.AsExpression = PreAsExpression;
         AST.BreakCond = PreBreakCond;
@@ -3636,8 +3655,8 @@ const Interpreter = Object.freeze({
             }
         } else if (Token[0] == "IN_ESTRING") {
             return this.EStringState(AST, Token);
-        } else if (Token[0]=="IN_AS"){
-            return this.AsState(AST,Token);
+        } else if (Token[0] == "IN_AS") {
+            return this.AsState(AST, Token);
         }
         this.ParseToken(AST, Token);
         //Parsed
@@ -3695,6 +3714,16 @@ const Interpreter = Object.freeze({
                 Result = Token[2][Method](Token[2], Token[1]);
             } else {
                 Result = Token[1] / Token[2];
+            }
+            return Result;
+        } else if (Token[0] == "IN_FLOORDIV") {
+            let Result = null, Method = "__fdiv";
+            if (Token[1] instanceof Object && Token[1].hasOwnProperty(Method)) {
+                Result = Token[1][Method](Token[1], Token[2]);
+            } else if (Token[2] instanceof Object && Token[2].hasOwnProperty(Method)) {
+                Result = Token[2][Method](Token[2], Token[1]);
+            } else {
+                Result = Math.floor(Token[1] / Token[2]);
             }
             return Result;
         } else if (Token[0] == "IN_POW") {
@@ -3870,22 +3899,22 @@ const Interpreter = Object.freeze({
                 return AST.Globals[Token[2][0]];
             }
             return
-        }else if(Token[0]=="IN_LOCKVAR"){
-            let Var = this.GetHighestVariable(AST,Token[1]);
-            if (Var){
+        } else if (Token[0] == "IN_LOCKVAR") {
+            let Var = this.GetHighestVariable(AST, Token[1]);
+            if (Var) {
                 Var.Const = true;
             } else {
                 console.log(Token);
             }
-        }else if(Token[0]=="IN_NUMRANGE"){
-            let Min=Token[1];
-            let Max=Token[2];
+        } else if (Token[0] == "IN_NUMRANGE") {
+            let Min = Token[1];
+            let Max = Token[2];
             let Result = [];
-            for(let i=Min;i<=Max;i++){
+            for (let i = Min; i <= Max; i++) {
                 Result.push(i);
             }
             return Result;
-        }else if (Token[0]=="IN_EXIT"){
+        } else if (Token[0] == "IN_EXIT") {
             AST.Exited = true;
         }
         return Token;
@@ -3917,11 +3946,11 @@ const Interpreter = Object.freeze({
             Continued: false,
             Result: null,
             InUsing: false,
-            Exited:false,
+            Exited: false,
             Using: null,
-            InAs:false,
-            BreakCond:false,
-            AsExpression:undefined,
+            InAs: false,
+            BreakCond: false,
+            AsExpression: undefined,
             Types: {},
             StackCurrent: {},
             UsingExclude: [],
