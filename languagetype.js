@@ -1632,6 +1632,13 @@ const AST = Object.freeze({
             return Result;
         } else if (this.IsPreciseToken(Token, "Bracket", "TK_BOPEN")) {
             let Arr = {};
+            Arr.toString = function(){
+                if(this.hasOwnProperty("__tostring")){
+                    return this.__tostring(this);   
+                } else {
+                    return `[xbs object]`;   
+                }
+            }
             let ArrTypes = {};
             this.Next(Stack);
             while (!this.IsPreciseToken(Stack.Token, "Bracket", "TK_BCLOSE")) {
