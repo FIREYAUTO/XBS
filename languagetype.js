@@ -866,6 +866,14 @@ const Lex = {
     },
 }
 
+const XBSObjectToString = function(){
+                if(this.hasOwnProperty("__tostring")){
+                    return this.__tostring(this);   
+                } else {
+                    return `[xbs object]`;   
+                }
+            }
+
 // {{-=~}} AST Class {{~=-}} \\
 
 const AST = Object.freeze({
@@ -1632,13 +1640,7 @@ const AST = Object.freeze({
             return Result;
         } else if (this.IsPreciseToken(Token, "Bracket", "TK_BOPEN")) {
             let Arr = {};
-            Arr.toString = function(){
-                if(this.hasOwnProperty("__tostring")){
-                    return this.__tostring(this);   
-                } else {
-                    return `[xbs object]`;   
-                }
-            }
+            Arr.toString = XBSObjectToString.bind(Arr);
             let ArrTypes = {};
             this.Next(Stack);
             while (!this.IsPreciseToken(Stack.Token, "Bracket", "TK_BCLOSE")) {
@@ -3363,6 +3365,7 @@ const Interpreter = Object.freeze({
         const HasSuper = Token[4];
         const RClass = function (...a) {
             let New = this;
+            New.toString = XBSObjectToString.bind(New);
             if (Extends && !HasSuper) {
                 let Result = new Extends(...a);
                 for (k in Result) {
