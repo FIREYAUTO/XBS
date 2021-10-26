@@ -167,10 +167,15 @@ const Lex = {
             Type: "Conditional",
             Combinations: {
                 "TK_BITOR": "TK_OR",
+                "TK_EPIPE":"TK_LT",
             },
         },
         "TK_PIPE":{
             Token:"|>",
+            Type:"None",
+        },
+        "TK_EPIPE":{
+            Token:"<|",
             Type:"None",
         },
         "TK_DOT": {
@@ -1885,6 +1890,28 @@ const AST = Object.freeze({
             let EResult = this.FinishExpression(Stack,Expressions);
             let Idx = EResult.indexOf(Expressions);
             EResult[Idx]="IN_PIPEREPLACE";
+            Chunk.push(Expressions);
+            Chunk.push(EResult);
+            Result = Chunk;
+        } else if(this.IsPreciseToken(Token,"None","TK_EPIPE")){
+            let Chunk = ["IN_EPIPE"];
+            let Expressions = [];
+            this.TestNext(Stack,"Paren","TK_POPEN");
+            this.Move(Stack,2);
+            while(true){
+                let Exp = this.ParseExpression(Stack);
+                Expressions.push(Exp);
+                if(this.CheckNext(Stack,"None","TK_COMMA")){
+                    this.Move(Stack,2);
+                }else if(this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                    this.Next(Stack);   
+                }else{
+                    break;
+                }
+            }
+            this.TestNext(Stack,"Paren","TK_PCLOSE");
+            this.Next(Stack);
+            let EResult = this.ParseExpression(Stack);
             Chunk.push(Expressions);
             Chunk.push(EResult);
             Result = Chunk;
@@ -3632,6 +3659,21 @@ const Interpreter = Object.freeze({
         }
         return Results;
     },
+    EPipeState:function(AST,Token){
+        let Results = [];
+        let Expressions = Token[1];
+        let Code = Token[2];
+        this.ParseToken(AST,Expressions);
+        this.OpenBlock(AST)
+        for(let v of Expressions){
+            this.MakeVariable(AST,"_",v,undefined,AST.Block);
+            let Copy = DeepCopy(Code);
+            Results.push(this.Parse(AST,Copy));
+            this.RemoveVariable(AST,"_");
+        }
+        this.CloseBlock(AST);
+        return Results;
+    },
     Parse: function (AST, Token) {
         if (!(Token instanceof Array)) {
             return Token
@@ -3711,6 +3753,8 @@ const Interpreter = Object.freeze({
             return this.AsState(AST, Token);
         } else if (Token[0]=="IN_PIPE"){
             return this.PipeState(AST,Token);   
+        } else if (Token[0]=="IN_EPIPE"){
+            return this.EPipeState(AST,Token);   
         }
         this.ParseToken(AST, Token);
         //Parsed
