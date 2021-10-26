@@ -3315,7 +3315,7 @@ const Interpreter = Object.freeze({
         } else {
             this.Next(AST, CStack);
             let NStack = this.GetStack(AST, CStack);
-            if (!NStack.Token) { return }
+            if (!NStack.Token) { return this.Next(AST,CStack,-1); }
             if (NStack.Token[0] == "IN_ELIF") {
                 return this.IfState(AST, NStack.Token);
             } else if (NStack.Token[0] == "IN_ELSE") {
