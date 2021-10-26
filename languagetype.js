@@ -3659,7 +3659,7 @@ const Interpreter = Object.freeze({
         }
         return Results;
     },
-    :function(AST,Token){
+    EPipeState:function(AST,Token){
         let Results = [];
         let Expressions = Token[1];
         let Code = Token[2];
