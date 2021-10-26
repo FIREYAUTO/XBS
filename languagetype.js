@@ -3321,7 +3321,7 @@ const Interpreter = Object.freeze({
             } else if (NStack.Token[0] == "IN_ELSE") {
                 return this.CondState(AST, NStack.Token);
             }
-            this.Next(AST,NStack.Token,-1);
+            this.Next(AST,CStack,-1);
         }
     },
     WhileState: function (AST, Token) {
