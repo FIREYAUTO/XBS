@@ -1910,7 +1910,7 @@ const AST = Object.freeze({
                 }
             }
             this.TestNext(Stack,"Paren","TK_PCLOSE");
-            this.Next(Stack);
+            this.Move(Stack,2);
             let EResult = this.ParseExpression(Stack);
             Chunk.push(Expressions);
             Chunk.push(EResult);
@@ -3659,7 +3659,7 @@ const Interpreter = Object.freeze({
         }
         return Results;
     },
-    EPipeState:function(AST,Token){
+    :function(AST,Token){
         let Results = [];
         let Expressions = Token[1];
         let Code = Token[2];
