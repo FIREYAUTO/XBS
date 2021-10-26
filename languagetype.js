@@ -3623,6 +3623,7 @@ const Interpreter = Object.freeze({
         let Results = [];
         let Expressions = Token[1];
         let Code = Token[2];
+        this.ParseToken(AST,Expressions);
         for(let v of Expressions){
             let Copy = DeepCopy(Code);
             let Idx = Copy.indexOf("IN_PIPEREPLACE");
