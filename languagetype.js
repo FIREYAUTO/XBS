@@ -1870,15 +1870,15 @@ const AST = Object.freeze({
             this.TestNext(Stack,"Paren","TK_POPEN");
             this.Move(Stack,2);
             while(true){
-                   let Exp = this.ParseExpression(Stack);
-                    if(this.CheckNext(Stack,"None","TK_COMMA")){
-                        this.Move(Stack,2);
-                    }else if(this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
-                        this.Next(Stack);   
-                    }else{
-                        break;
-                    }
+                let Exp = this.ParseExpression(Stack);
                 Expressions.push(Exp);
+                if(this.CheckNext(Stack,"None","TK_COMMA")){
+                    this.Move(Stack,2);
+                }else if(this.IsPreciseToken(Stack.Token,"None","TK_COMMA")){
+                    this.Next(Stack);   
+                }else{
+                    break;
+                }
             }
             this.TestNext(Stack,"Paren","TK_PCLOSE");
             this.Next(Stack);
