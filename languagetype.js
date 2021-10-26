@@ -1881,7 +1881,7 @@ const AST = Object.freeze({
                 Expressions.push(Exp);
             }
             this.TestNext(Stack,"Paren","TK_PCLOSE");
-            this.Move(Stack,2);
+            this.Next(Stack);
             let EResult = this.FinishExpression(Stack,Expressions);
             let Idx = EResult.indexOf(Expressions);
             EResult[Idx]="IN_PIPEREPLACE";
