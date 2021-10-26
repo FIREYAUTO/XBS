@@ -125,6 +125,7 @@ const Lex = {
                 "TK_BITZRSHIFT": "TK_GT",
                 "TK_BITRSHIFT": "TK_AND",
                 "TK_FORCEPARSE": "TK_EQ",
+                "TK_PIPE":"TK_OR",
             }
         },
         "TK_LT": {
@@ -167,6 +168,10 @@ const Lex = {
             Combinations: {
                 "TK_BITOR": "TK_OR",
             },
+        },
+        "TK_PIPE":{
+            Token:"|>",
+            Type:"None",
         },
         "TK_DOT": {
             Token: ".",
@@ -1150,7 +1155,7 @@ const AST = Object.freeze({
         let BitZLShift = this.CheckNext(Stack, "Bitwise", "TK_BITZLSHIFT") || this.IsPreciseToken(Stack.Token, "Bitwise", "TK_BITZLSHIFT");
         let BitZRShift = this.CheckNext(Stack, "Bitwise", "TK_BITZRSHIFT") || this.IsPreciseToken(Stack.Token, "Bitwise", "TK_BITZRSHIFT");
         let BitRShift = this.CheckNext(Stack, "Bitwise", "TK_BITRSHIFT") || this.IsPreciseToken(Stack.Token, "Bitwise", "TK_BITRSHIFT");
-
+        
         let Ques = this.CheckNext(Stack, "None", "TK_LEN");
         if (And) {
             let Chunk = this.NewChunk("IN_AND");
@@ -1858,6 +1863,30 @@ const AST = Object.freeze({
             }
             Chunk.push(Res);
             Stack.InString = false;
+            Result = Chunk;
+        } else if(this.IsPreciseToken(Token,"None","TK_PIPE")){
+            let Chunk = ["IN_PIPE"];
+            let Expressions = [];
+            this.TestNext(Stack,"Paren","TK_POPEN");
+            this.Move(Stack,2);
+            while(true){
+                   let Exp = this.ParseExpression(Stack);
+                    if(this.CheckNext(Stack,"TK_NONE","TK_COMMA")){
+                        this.Move(Stack,2);
+                    }else if(this.IsPreciseToken(Stack.Token,"TK_NONE","TK_COMMA")){
+                        this.Next(Stack);   
+                    }else{
+                        break;
+                    }
+                Expressions.push(Exp);
+            }
+            this.TestNext(Stack,"Paren","TK_PCLOSE");
+            this.Move(Stack,2);
+            let EResult = this.FinishExpression(Stack,Expressions);
+            let Idx = EResult.indexOf(Expressions);
+            EResult[Idx]="IN_PIPEREPLACE";
+            Chunk.push(Expressions);
+            Chunk.push(EResult);
             Result = Chunk;
         }
         Result = this.FinishExpression(Stack, Result, NoMath, NoCond);
@@ -3590,6 +3619,18 @@ const Interpreter = Object.freeze({
         AST.AsExpression = PreAsExpression;
         AST.BreakCond = PreBreakCond;
     },
+    PipeState:function(AST,Token){
+        let Results = [];
+        let Expressions = Token[1];
+        let Code = Token[2];
+        for(let v of Expressions){
+            let Copy = DeepCopy(Code);
+            let Idx = Copy.indexOf("IN_PIPEREPLACE");
+            Copy[Idx] = v;
+            Results.push(this.Parse(AST,Copy));
+        }
+        return Results;
+    },
     Parse: function (AST, Token) {
         if (!(Token instanceof Array)) {
             return Token
@@ -3667,6 +3708,8 @@ const Interpreter = Object.freeze({
             return this.EStringState(AST, Token);
         } else if (Token[0] == "IN_AS") {
             return this.AsState(AST, Token);
+        } else if (Token[0]=="IN_PIPE"){
+            return this.PipeState(AST,Token);   
         }
         this.ParseToken(AST, Token);
         //Parsed
@@ -4086,7 +4129,7 @@ function Print(Table, Arr, Tabs) {
 //{{ XBS Proxy }}\\
 
 const XBS = Object.freeze({
-    Version: "0.0.1.9",
+    Version: "0.0.1.10",
     Parse: function (Code) {
         return AST.StartParser(Code);
     },
