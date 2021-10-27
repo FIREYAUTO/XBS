@@ -69,6 +69,9 @@ const StandardLibrary = {
         at:function(x,b){
             return x.charAt(b);
         },
+	repeat:function(x,a){
+		return x.repeat(a);	
+	},
     }),
     load:function(x,g){
     	if (!g){
