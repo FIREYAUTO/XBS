@@ -1065,6 +1065,7 @@ const XBS = ((DebugMode=false)=>{
                 Stop:false,
                 Priority:1000,
                 Call:function(Value,Priority){
+			this.Next();
                 	let Node = this.NewNode("Call");
                    	Node.Write("Call",Value);
                     Node.Write("Arguments",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
