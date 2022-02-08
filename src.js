@@ -1240,7 +1240,7 @@ const XBS = ((DebugMode=false)=>{
             }while(true);
             return List;
         }
-	ExpressionListInide(Start,End,Priority){
+	ExpressionListInside(Start,End,Priority){
 		if(AST.IsToken(this.Token,Start.Value,Start.Type)){
 			this.Next();
 			let List = this.ExpressionList(Priority);
