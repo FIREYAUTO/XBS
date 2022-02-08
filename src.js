@@ -1615,8 +1615,8 @@ const XBS = ((DebugMode=false)=>{
 			this.Data.IsUsing=true;
 			this.Data.UsingObject=Parent.Data.UsingObject;
 			this.Data.Excludes=Parent.Data.Excludes;
-		}else if(Parent.Data.IsAs){
-			this.Data.IsAs=true;
+		}else if(Parent.Data.InAs){
+			this.Data.InAs=true;
 			this.Data.AsExpression=Parent.Data.AsExpression;
 		}
             }
@@ -2078,7 +2078,7 @@ const XBS = ((DebugMode=false)=>{
         }
         ParseState(State,Unpack=false){
         	while(!State.IsEnd()){
-			if(State.Read("IsAs")){
+			if(State.Read("InAs")===true){
 				if(!this.Parse(State,State.Read("AsExpression"))){
 					break;
 				}
