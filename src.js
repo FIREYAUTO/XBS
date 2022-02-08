@@ -708,7 +708,36 @@ const XBS = ((DebugMode=false)=>{
 			Node.Write("Body",this.ParseBlock());
                     return Node;
                 },
-		}
+		},
+		{
+            	Value:"FOREACH",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Foreach");
+                    	this.TestNext("POPEN","Bracket");
+			this.Next(2);
+			Node.Write("Names",this.IdentifierList());
+			if(this.CheckNext("IN","Keyword")){
+				this.Next();
+				Node.Write("Type","In");
+			}else if(this.CheckNext("OF","Keyword")){
+				this.Next();
+				Node.Write("Type","Of");
+			}else if(this.CheckNext("AS","Keyword")){
+				this.Next();
+				Node.Write("Type","As");
+			}else{
+				this.ErrorIfEOS();
+				ErrorHandler.AError(this,"Expected","as, of, in keywords",`${this.Token.Type.ToLowerCase} ${this.Token.RawValue}`);
+			}
+			this.Next();
+			this.Write("Iterator",this.ParseExpression());
+			this.TestNext("PCLOSE","Bracket");
+			this.Next(2);
+			this.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -1880,6 +1909,30 @@ const XBS = ((DebugMode=false)=>{
 				this.ParseState(NewState);
 				if(!NewState.Read("InLoop"))break;
 				this.Parse(_State,Increment);
+			}
+		},
+		"Foreach":function(State,Token){
+			let Body = Token.Read("Body");
+			let Names = Token.Read("Name");
+			let Iterator = this.Parse(State,Token.Read("Iterator"));
+			let Type = Token.Read("Type");
+			for(let k in Iterator){
+				let v = Iterator[k];
+				let NewState = new IState(Body,State,{InLoop:true,IsLoop:true});
+				if(Type==="In"){
+					NewState.NewVariable(Names[0].Name,k);	
+				}else if(Type==="Of"){
+					NewState.NewVariable(Names[0].Name,v);	
+				}else if(Type==="As"){
+					let Vars=[k,v];
+					for(let x in Vars){
+						let n = Names[x];
+						if(!n)break;
+						NewState.NewVariable(n.Name,Vars[x])
+					}
+				}
+				this.ParseState(NewState);
+				if(!NewState.Read("InLoop"))break;	
 			}
 		},
         },
