@@ -654,6 +654,37 @@ const XBS = ((DebugMode=false)=>{
                     return Node;
                 },
             },
+		{
+            	Value:"WHILE",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("While");
+                    	this.TestNext("POPEN","Bracket");
+			this.Next();
+			Node.Write("Expression",this.ExpressionInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
+			this.Next();
+			Node.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+            },
+		{
+            	Value:"REPEAT",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Repeat");
+                    	this.Next();
+			Node.Write("Amount",this.ParseExpression());
+			if(this.CheckNext("AS","Keyword")){
+				this.Next();
+				this.TypeTestNext("Identifier");
+				this.Next();
+				Node.Write("Name",this.Token.Value);
+			}
+			this.Next();
+			Node.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -1323,6 +1354,9 @@ const XBS = ((DebugMode=false)=>{
             }while(true);
             return List;
         }
+	    ErrorIfEOS(){
+			this.AError(this,"Unexpected","end of script");    
+	    }
 	ExpressionListInside(Start,End,Priority){
 		if(AST.IsToken(this.Token,Start.Value,Start.Type)){
 			this.Next();
@@ -1330,6 +1364,9 @@ const XBS = ((DebugMode=false)=>{
 			this.TestNext(End.Value,End.Type);
 			this.Next();
 			return List;
+		}else{
+			this.ErrorIfEOS();
+			this.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
 		}
 	}
 	ExpressionInside(Start,End,Priority,AllowComma){
@@ -1339,12 +1376,16 @@ const XBS = ((DebugMode=false)=>{
 			this.TestNext(End.Value,End.Type);
 			this.Next();
 			return List;
+		}else{
+			this.ErrorIfEOS();
+			this.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
 		}
 	}
 	IdentifierList(Options={}){
 		let List = [];
 		do{
 			let Token = this.Token;
+			this.ErrorIfEOS();
 			if(!AST.IsType(Token,"Identifier")){
 				ErrorHandler.AError(this,"Expected","identifier",Token.Type.toLowerCase());	
 			}
@@ -1450,7 +1491,11 @@ const XBS = ((DebugMode=false)=>{
                 	if(!this.Read("IsLoop")){
                     	this.Parent.Write(Name,Value);
                     }
-                }
+                }else if(Name==="Continued"){
+			if(!this.Read("IsLoop")){
+				this.Parent.Write(Name,Value);	
+			}
+		}
             }
         }
         Read(Name){
@@ -1754,6 +1799,26 @@ const XBS = ((DebugMode=false)=>{
 						break;
 					}
 				}
+			}
+		},
+		"While":function(State,Token){
+			let Expression = Token.Read("Expression");
+			let Body = Token.Read("Body");
+			while(this.Parse(State,Expression)){
+				let NewState = new IState(Body,State,{InLoop:true,IsLoop:true});
+				this.ParseState(NewState);
+				if(!NewState.Read("InLoop"))break;
+			}
+		},
+		"Repeat":function(State,Token){
+			let Amount = this.Parse(State,Token.Read("Amount"));
+			let Body = Token.Read("Body");
+			let Name = Token.Read("Name");
+			for(let i=1;i<=Amount;i++){
+				let NewState = new IState(Body,State,{InLoop:true,IsLoop:true});
+				if(Name!==undefined)NewState.NewVariable(Name,i);
+				this.ParseState(NewState);
+				if(!NewState.Read("InLoop"))break;	
 			}
 		},
         },
