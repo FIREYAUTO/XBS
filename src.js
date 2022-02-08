@@ -906,6 +906,47 @@ const XBS = ((DebugMode=false)=>{
                     return [Node,Priority];
                 },
             },
+		{
+                Value:"BOPEN",
+                Type:"Bracket",
+                Stop:false,
+                Call:function(Priority){
+                    let Node = this.NewNode("Object");
+                    let List = [];
+			this.Next();
+			do{
+				if(AST.IsToken(this.Token,"BCLOSE","Bracket"))break;
+				this.ErrorIfEOS();
+				let Result = {Name:undefined,Value:undefined,Type:undefined};
+				let Token = this.Token;
+				if(Token.Type==="Identifier"||Token.Type==="Constant"||Token.Type==="Keyword"){
+					let n = Token.Type==="Keyword"?Token.RawValue:Token.Value;
+					Result.Name = n;
+				}else if(AST.IsToken(Token,"IOPEN","Bracket")){
+					this.Next();
+					Result.Name = this.ParseExpression();
+					this.TestNext("ICLOSE","Bracket");
+				}else{
+					ErrorHandler.AError(this,"Unexpected",`${Token.Type.toLowerCase()} ${Token.RawValue} while parsing object`);	
+				}
+				this.TestNext("EQ","Assignment");
+				this.Next(2);
+				Result.Value = this.ParseExpression();
+				List.push(Result);
+				if(this.CheckNext("COMMA","Operator")){
+					this.Next(2);
+					continue;
+				}
+				break;
+			}while(true);
+			if(!AST.IsToken(this.Token,"BCLOSE","Bracket")){
+				this.ErrorIfEOS();
+				ErrorHandler.AError(this,"Expected","} to close object",`${this.Token.Type.toLowerCase()} ${this.Token.Value}`);
+			}
+			Node.Write("Object",List);
+                    return [Node,Priority];
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -2087,6 +2128,14 @@ const XBS = ((DebugMode=false)=>{
 				}
 			}
 			return List;
+		},
+		Object:function(State,Token){
+			let O = Token.Read("Object");
+			let R = {};
+			for(let v of O){
+				R[this.Parse(State,v.Name)]=this.Parse(State,v.Value);	
+			}
+			return R;
 		},
         },
     };
