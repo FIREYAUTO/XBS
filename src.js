@@ -1355,7 +1355,7 @@ const XBS = ((DebugMode=false)=>{
             return List;
         }
 	    ErrorIfEOS(){
-			ErrorHandler.AError(this,"Unexpected","end of script");    
+		    if(this.IsEnd())ErrorHandler.AError(this,"Unexpected","end of script");    
 	    }
 	ExpressionListInside(Start,End,Priority){
 		if(AST.IsToken(this.Token,Start.Value,Start.Type)){
