@@ -1611,8 +1611,8 @@ const XBS = ((DebugMode=false)=>{
             for(let k in Data)this.Data[k]=Data[k];
             if(Parent&&Parent instanceof IState){
             	Parent.Children.push(this);
-		if(Parent.Data.IsUsing){
-			this.Data.IsUsing=true;
+		if(Parent.Data.InUsing){
+			this.Data.InUsing=true;
 			this.Data.UsingObject=Parent.Data.UsingObject;
 			this.Data.Excludes=Parent.Data.Excludes;
 		}else if(Parent.Data.InAs){
@@ -1704,7 +1704,7 @@ const XBS = ((DebugMode=false)=>{
         }
         GetVariable(Name){
         	if(this.IsVariable(Name)){
-			if(this.Read("IsUsing")===true){
+			if(this.Read("InUsing")===true){
 				if(!this.Read("Excludes").includes(Name)){
 					let O = this.Read("UsingObject");
 					if(Object.prototype.hasOwnProperty.call(O,Name)){
