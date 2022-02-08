@@ -782,6 +782,32 @@ const XBS = ((DebugMode=false)=>{
                     return Node;
                 },
             },
+		{
+            	Value:"SEND",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Send");
+                    	this.Next();
+			Node.Write("Expression",this.ParseExpression());
+                    return Node;
+                },
+            },
+		{
+            	Value:"STOP",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Stop");
+                    return Node;
+                },
+            },
+		{
+            	Value:"CONTINUE",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Continue");
+                    return Node;
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -814,6 +840,14 @@ const XBS = ((DebugMode=false)=>{
                 Stop:false,
                 Call:function(Priority){
                     return [this.Token.Value,Priority];
+                },
+            },
+		{
+		Value:"LINEEND",
+                Type:"Operator",
+                Stop:true,
+                Call:function(Priority){
+                    return [null,Priority];
                 },
             },
             {
@@ -859,6 +893,16 @@ const XBS = ((DebugMode=false)=>{
                 	this.Next();
                     let Node = this.NewNode("Negative");
                     Node.Write("V1",this.ParseExpression(400));
+                    return [Node,Priority];
+                },
+            },
+		{
+                Value:"IOPEN",
+                Type:"Bracket",
+                Stop:false,
+                Call:function(Priority){
+                    let Node = this.NewNode("Array");
+                    Node.Write("Array",this.ExpressionListInside({Value:"IOPEN",Type:"Bracket"},{Value:"ICLOSE",Type:"Bracket"}));
                     return [Node,Priority];
                 },
             },
@@ -1611,11 +1655,7 @@ const XBS = ((DebugMode=false)=>{
             for(let k in Data)this.Data[k]=Data[k];
             if(Parent&&Parent instanceof IState){
             	Parent.Children.push(this);
-		if(Parent.Data.InUsing){
-			this.Data.InUsing=true;
-			this.Data.UsingObject=Parent.Data.UsingObject;
-			this.Data.Excludes=Parent.Data.Excludes;
-		}else if(Parent.Data.InAs){
+		if(Parent.Data.InAs){
 			this.Data.InAs=true;
 			this.Data.AsExpression=Parent.Data.AsExpression;
 		}
@@ -1704,14 +1744,6 @@ const XBS = ((DebugMode=false)=>{
         }
         GetVariable(Name){
         	if(this.IsVariable(Name)){
-			if(this.Read("InUsing")===true){
-				if(!this.Read("Excludes").includes(Name)){
-					let O = this.Read("UsingObject");
-					if(Object.prototype.hasOwnProperty.call(O,Name)){
-						return O[Name];	
-					}
-				}
-			}
             	return this.GetRawVariable(Name).Value;
             }else if(this.Parent){
             	return this.Parent.GetVariable(Name);
@@ -2019,8 +2051,41 @@ const XBS = ((DebugMode=false)=>{
 			for(let v of Excludes){
 				Ex.push(v.Name);
 			}
-			let NewState = new IState(Token.Read("Body"),State,{UsingObject:Expression,Excludes:Ex,InUsing:true});
+			let NewState = new IState(Token.Read("Body"),State);
+			for(let k in Expression){
+				if(Ex.includes(k))continue;
+				let v = Expression[k];
+				NewState.NewVariable(k,v);
+			}
 			this.ParseState(NewState);
+		},
+		Send:function(State,Token){
+			if(!State.Read("InFunction"))ErrorHandler.IError(Token,"Unexpected","send statement");
+			let Return = this.Parse(State,Token.Read("Expression"));
+			State.Write("Return",Return);
+			State.Write("Returned",true);
+		},
+		Stop:function(State,Token){
+			if(!State.Read("InLoop"))ErrorHandler.IError(Token,"Unexpected","stop statement");
+			State.Write("Stopped",true);
+		},
+		Continue:function(State,Token){
+			if(!State.Read("InLoop"))ErrorHandler.IError(Token,"Unexpected","continue statement");
+			State.Write("Continued",true);
+		},
+		Array:function(State,Token){
+			let Array = Token.Read("Array");
+			let List = [];
+			for(let v of Array){
+				let Result = this.Parse(State,v,true);
+				if(Result instanceof UnpackState){
+					for(let x of Result.List){
+						List.push(x);	
+					}
+				}else{
+					List.push(Result);	
+				}
+			}
 		},
         },
     };
