@@ -2086,6 +2086,7 @@ const XBS = ((DebugMode=false)=>{
 					List.push(Result);	
 				}
 			}
+			return List;
 		},
         },
     };
