@@ -2102,17 +2102,14 @@ const XBS = ((DebugMode=false)=>{
 			this.ParseState(NewState);
 		},
 		Send:function(State,Token){
-			if(!State.Read("InFunction"))ErrorHandler.IError(Token,"Unexpected","send statement");
 			let Return = this.Parse(State,Token.Read("Expression"));
 			State.Write("Return",Return);
 			State.Write("Returned",true);
 		},
 		Stop:function(State,Token){
-			if(!State.Read("InLoop"))ErrorHandler.IError(Token,"Unexpected","stop statement");
 			State.Write("Stopped",true);
 		},
 		Continue:function(State,Token){
-			if(!State.Read("InLoop"))ErrorHandler.IError(Token,"Unexpected","continue statement");
 			State.Write("Continued",true);
 		},
 		Array:function(State,Token){
