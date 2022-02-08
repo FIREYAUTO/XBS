@@ -653,7 +653,7 @@ const XBS = ((DebugMode=false)=>{
                     if(AST.IsToken(this.Token,"PCLOSE","Bracket")){
                         ErrorHandler.AError(this,"Expected","expression inside ()","none");
                     }
-                    let Result = this.ParseExpresion(-1,true);
+                    let Result = this.ParseExpression(-1,true);
                     this.TestNext("PCLOSE","Bracket");
                     return [Result,Priority];
                 },
@@ -1552,6 +1552,10 @@ const XBS = ((DebugMode=false)=>{
             "Not":function(State,Token){
             	let V1 = this.Parse(State,Token.Read("V1"));
                 return !V1;
+            },
+		"Negative":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1"));
+                return -V1;
             },
             "GetIndex":function(State,Token){
                 let Object = this.Parse(State,Token.Read("Object")),
