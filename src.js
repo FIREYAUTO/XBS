@@ -731,10 +731,10 @@ const XBS = ((DebugMode=false)=>{
 				ErrorHandler.AError(this,"Expected","as, of, in keywords",`${this.Token.Type.ToLowerCase} ${this.Token.RawValue}`);
 			}
 			this.Next();
-			this.Write("Iterator",this.ParseExpression());
+			Node.Write("Iterator",this.ParseExpression());
 			this.TestNext("PCLOSE","Bracket");
 			this.Next(2);
-			this.Write("Body",this.ParseBlock());
+			Node.Write("Body",this.ParseBlock());
                     return Node;
                 },
             },
