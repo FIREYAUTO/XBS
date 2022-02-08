@@ -1073,6 +1073,34 @@ const XBS = ((DebugMode=false)=>{
                     return new ASTExpression(Node,Priority);
                 },
             },
+		{
+            	Value:"INC",
+                Type:"Operator",
+                Stop:false,
+                Priority:50,
+                Call:function(Value,Priority){
+                	this.Next();
+                	let Node = this.NewNode("Assignment");
+			Node.Write("Type",9);
+                   	Node.Write("Name",Value);
+			Node.Write("Value",null);
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+		{
+            	Value:"DEINC",
+                Type:"Operator",
+                Stop:false,
+                Priority:50,
+                Call:function(Value,Priority){
+                	this.Next();
+                	let Node = this.NewNode("Assignment");
+			Node.Write("Type",10);
+                   	Node.Write("Name",Value);
+			Node.Write("Value",null);
+                    return new ASTExpression(Node,Priority);
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -1250,6 +1278,32 @@ const XBS = ((DebugMode=false)=>{
 			this.Next();
 			return List;
 		}
+	}
+	IdentifierList(Options={}){
+		let List = [];
+		do{
+			let Token = this.Token;
+			if(AST.IsType(Token,"Identifier")){
+				ErrorHandler.AError(this,"Expected","identifier",Token.Type.toLowerCase());	
+			}
+			let Identifier = {
+				Name:Token.Value,
+				Value:undefined,
+				Type:undefined,
+			}
+			if(Options.AllowDefault===true){
+				this.TestNext("EQ","Assignment");
+				this.Next(2);
+				Identifier.Value = this.ParseExpression(Options.Priority);
+			}
+			List.push(Identifier);
+			if(this.CheckNext("COMMA","Operator")){
+				this.Next(2);
+				continue;
+			}
+			break;
+		}while(true);
+		return List;
 	}
         ParseChunk(){
         	let Token = this.Token;
@@ -1435,11 +1489,21 @@ const XBS = ((DebugMode=false)=>{
             6:(a,b)=>a**b,
             7:(a,b)=>Math.floor(a/b),
             8:(a,b)=>(b/100)*a,
+		9:(a,b)=>a+1,
+		10:(a,b)=>a-1,
         },
     	ParseStates:{
         	"GetVariable":function(State,Token){
             	return State.GetVariable(Token.Read("Name"));
             },
+		"NewVariable":function(State,Token){
+			let Name = Token.Read("Name");
+			let Value = this.Parse(State,Token.Read("Value"));
+			let IsConstant = Token.Read("Constant");
+			State.NewVariable(Name,Value,{
+				Constant:IsConstant,	
+			});
+		},
             "Assignment":function(State,Token){
             	let Name = Token.Read("Name");
                 let Value = this.Parse(State,Token.Read("Value"));
@@ -1447,7 +1511,11 @@ const XBS = ((DebugMode=false)=>{
                 if(Name instanceof ASTBase){
                 	if(Name.Type==="GetVariable"){
                     	Name = Name.Read("Name");
-                        State.SetVariable(Name,Call(State.GetVariable(Name),Value));
+			let Variable = State.GetGlobalRawVariable(Name);
+			if(Variable.Constant===true){
+				ErrorHandler.IError(Token,"Attempt",`modify constant variable ${Variable.Name}`);	
+			}
+                        State.SetVariable(Name,Call(Variable.Value,Value));
                     }else if(Name.Type==="GetIndex"){
                     	let Object = this.Parse(State,Name.Read("Object")),
                         	Index = this.Parse(State,Name.Read("Index")),
