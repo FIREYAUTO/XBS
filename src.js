@@ -1563,7 +1563,7 @@ const XBS = ((DebugMode=false)=>{
             },
 		"Call":function(State,Token){
 			let Call = this.Parse(State,Token.Read("Call"));
-			let Arguments = this.ParseArray(State,Token.Read("Arguments");
+			let Arguments = this.ParseArray(State,Token.Read("Arguments"));
 			if(!(Call instanceof Function)){
 				ErrorHandler.IError(Token,"Attempt","call non-function");
 			}
