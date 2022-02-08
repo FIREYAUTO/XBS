@@ -738,6 +738,50 @@ const XBS = ((DebugMode=false)=>{
                     return Node;
                 },
             },
+		{
+            	Value:"EACH",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Foreach");
+			Node.Write("Type","As");
+			this.Next();
+			Node.Write("Iterator",this.ParseExpression());
+			this.TestNext("AS","Keyword");
+			this.Next(2);
+			Node.Write("Names",this.IdentifierList());
+			this.Next();
+			Node.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+            },
+		{
+            	Value:"AS",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("As");
+			this.Next();
+			Node.Write("Expression",this.ParseExpression());
+			this.Next();
+			Node.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+            },
+		{
+            	Value:"USING",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("Using");
+			this.Next();
+			Node.Write("Object",this.ParseExpression());
+			if(this.CheckNext("EXCLUDES","Keyword")){
+				this.Next(2);
+				Node.Write("Excludes",this.IdentifierListInside({Value:"IOPEN",Type:"Bracket"},{Value:"ICLOSE",Type:"Bracket"}));
+			}
+			this.Next();
+			Node.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -1461,6 +1505,18 @@ const XBS = ((DebugMode=false)=>{
 		}while(true);
 		return List;
 	}
+	    IdentifierListInside(Start,End,Options){
+		if(AST.IsToken(this.Token,Start.Value,Start.Type)){
+			this.Next();
+			let List = this.IdentifierList(Options);
+			this.TestNext(End.Value,End.Type);
+			this.Next();
+			return List;
+		}else{
+			this.ErrorIfEOS();
+			ErrorHandler.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
+		}
+	}
 	    ParseBlock(){
 		    let Token = this.Token;
 		    this.OpenChunk();
@@ -1555,6 +1611,14 @@ const XBS = ((DebugMode=false)=>{
             for(let k in Data)this.Data[k]=Data[k];
             if(Parent&&Parent instanceof IState){
             	Parent.Children.push(this);
+		if(Parent.Data.IsUsing){
+			this.Data.IsUsing=true;
+			this.Data.UsingObject=Parent.Data.UsingObject;
+			this.Data.Excludes=Parent.Data.Excludes;
+		}else if(Parent.Data.IsAs){
+			this.Data.IsAs=true;
+			this.Data.AsExpression=Parent.Data.AsExpression;
+		}
             }
         }
         Write(Name,Value){
@@ -1640,6 +1704,14 @@ const XBS = ((DebugMode=false)=>{
         }
         GetVariable(Name){
         	if(this.IsVariable(Name)){
+			if(this.Read("IsUsing")===true){
+				if(!this.Read("Excludes").includes(Name)){
+					let O = this.Read("UsingObject");
+					if(Object.prototype.hasOwnProperty.call(O,Name)){
+						return O[Name];	
+					}
+				}
+			}
             	return this.GetRawVariable(Name).Value;
             }else if(this.Parent){
             	return this.Parent.GetVariable(Name);
@@ -1935,6 +2007,21 @@ const XBS = ((DebugMode=false)=>{
 				if(!NewState.Read("InLoop"))break;	
 			}
 		},
+		As:function(State,Token){
+			let Expression=Token.Read("Expression");
+			let NewState = new IState(Token.Read("Body"),State,{AsExpression:Expression,InAs:true});
+			this.ParseState(NewState);
+		},
+		Using:function(State,Token){
+			let Expression = this.Parse(State,Token.Read("Object"));
+			let Excludes = Token.Read("Excludes")||[];
+			let Ex = [];
+			for(let v of Excludes){
+				Ex.push(v.Name);
+			}
+			let NewState = new IState(Token.Read("Body"),State,{UsingObject:Expression,Excludes:Ex,InUsing:true});
+			this.ParseState(NewState);
+		},
         },
     };
     
@@ -1991,6 +2078,11 @@ const XBS = ((DebugMode=false)=>{
         }
         ParseState(State,Unpack=false){
         	while(!State.IsEnd()){
+			if(State.Read("IsAs")){
+				if(!this.Parse(State,State.Read("AsExpression"))){
+					break;
+				}
+			}
             	let Result = this.Parse(State,State.Token,Unpack);
                 if(this.IsEvaluation){
                 	this.Evaluation = Result;
