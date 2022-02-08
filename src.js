@@ -773,7 +773,7 @@ const XBS = ((DebugMode=false)=>{
                 	let Node = this.NewNode("Using");
 			this.Next();
 			Node.Write("Object",this.ParseExpression());
-			if(this.CheckNext("EXCLUDES","Keyword")){
+			if(this.CheckNext("EXCLUDE","Keyword")){
 				this.Next(2);
 				Node.Write("Excludes",this.IdentifierListInside({Value:"IOPEN",Type:"Bracket"},{Value:"ICLOSE",Type:"Bracket"}));
 			}
