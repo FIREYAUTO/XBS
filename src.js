@@ -643,6 +643,42 @@ const XBS = ((DebugMode=false)=>{
                     return [Node,Priority];
                 },
             },
+            {
+                Value:"POPEN",
+                Type:"Bracket",
+                Stop:false,
+                Call:function(Priority){
+                	this.Next();
+                    if(AST.IsToken(this.Token,"PCLOSE","Bracket")){
+                        ErrorHandler.AError(this,"Expected","expression inside ()","none");
+                    }
+                    let Result = this.ParseExpresion(-1,true);
+                    this.TestNext("PCLOSE","Bracket");
+                    return [Result,Priority];
+                },
+            },
+            {
+                Value:"NOT",
+                Type:"Operator",
+                Stop:false,
+                Call:function(Priority){
+                	this.Next();
+                    let Node = this.NewNode("Not");
+                    Node.Write("V1",this.ParseExpression(400));
+                    return [Node,Priority];
+                },
+            },
+            {
+                Value:"SUB",
+                Type:"Operator",
+                Stop:false,
+                Call:function(Priority){
+                	this.Next();
+                    let Node = this.NewNode("Negative");
+                    Node.Write("V1",this.ParseExpression(400));
+                    return [Node,Priority];
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -915,6 +951,110 @@ const XBS = ((DebugMode=false)=>{
                     Node.Write("Type",8);
                    	Node.Write("Name",Value);
                     Node.Write("Value",this.ParseExpression());
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"EQS",
+                Type:"Operator",
+                Stop:false,
+                Priority:200,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Eqs");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"LT",
+                Type:"Operator",
+                Stop:false,
+                Priority:200,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Lt");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"LEQ",
+                Type:"Operator",
+                Stop:false,
+                Priority:200,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Leq");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"GT",
+                Type:"Operator",
+                Stop:false,
+                Priority:200,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Gt");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"GEQ",
+                Type:"Operator",
+                Stop:false,
+                Priority:200,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Geq");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"NEQ",
+                Type:"Operator",
+                Stop:false,
+                Priority:200,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Neq");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"AND",
+                Type:"Operator",
+                Stop:false,
+                Priority:150,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("And");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
+            {
+            	Value:"OR",
+                Type:"Operator",
+                Stop:false,
+                Priority:151,
+                Call:function(Value,Priority){
+                	this.Next(2);
+                	let Node = this.NewNode("Or");
+                   	Node.Write("V1",Value);
+                    Node.Write("V2",this.ParseExpression(Priority));
                     return new ASTExpression(Node,Priority);
                 },
             },
@@ -1325,6 +1465,58 @@ const XBS = ((DebugMode=false)=>{
             	let V1 = this.Parse(State,Token.Read("V1")),
                 	V2 = this.Parse(State,Token.Read("V2"));
                 return (V1/100)*V2;
+            },
+            "Eqs":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1")),
+                	V2 = this.Parse(State,Token.Read("V2"));
+                return V1==V2;
+            },
+            "Leq":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1")),
+                	V2 = this.Parse(State,Token.Read("V2"));
+                return V1<=V2;
+            },
+            "Lt":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1")),
+                	V2 = this.Parse(State,Token.Read("V2"));
+                return V1<V2;
+            },
+            "Geq":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1")),
+                	V2 = this.Parse(State,Token.Read("V2"));
+                return V1>=V2;
+            },
+            "Gt":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1")),
+                	V2 = this.Parse(State,Token.Read("V2"));
+                return V1>V2;
+            },
+            "Neq":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1")),
+                	V2 = this.Parse(State,Token.Read("V2"));
+                return V1!=V2;
+            },
+            "And":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1"));
+                if(V1){
+                    let V2 = this.Parse(State,Token.Read("V2"));
+                    return V1&&V2;
+                }else{
+                    return false;
+                }
+            },
+            "Or":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1"));
+                if(V1){
+                    return V1;
+                }else{
+                    let V2 = this.Parse(State,Token.Read("V2"));
+                    return V1||V2;
+                }
+            },
+            "Not":function(State,Token){
+            	let V1 = this.Parse(State,Token.Read("V1"));
+                return !V1;
             },
             "GetIndex":function(State,Token){
                 let Object = this.Parse(State,Token.Read("Object")),
