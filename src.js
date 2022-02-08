@@ -1870,7 +1870,7 @@ const XBS = ((DebugMode=false)=>{
 			}
 		},
 		"For":function(State,Token){
-			let _State = new IState(new ASTBlock("Chunk"),State);
+			let _State = new IState({Data:[],Line:Token.Line,Index:Token.Index},State);
 			this.Parse(_State,Token.Read("Variable"));
 			let Body = Token.Read("Body");
 			let Condition = Token.Read("Condition");
