@@ -1278,7 +1278,7 @@ const XBS = ((DebugMode=false)=>{
 		let List = [];
 		do{
 			let Token = this.Token;
-			if(AST.IsType(Token,"Identifier")){
+			if(!AST.IsType(Token,"Identifier")){
 				ErrorHandler.AError(this,"Expected","identifier",Token.Type.toLowerCase());	
 			}
 			let Identifier = {
