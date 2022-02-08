@@ -937,6 +937,7 @@ const XBS = ((DebugMode=false)=>{
 					this.Next(2);
 					continue;
 				}
+				this.Next();
 				break;
 			}while(true);
 			if(!AST.IsToken(this.Token,"BCLOSE","Bracket")){
