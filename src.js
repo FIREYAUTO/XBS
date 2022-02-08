@@ -1355,7 +1355,7 @@ const XBS = ((DebugMode=false)=>{
             return List;
         }
 	    ErrorIfEOS(){
-			this.AError(this,"Unexpected","end of script");    
+			ErrorHandler.AError(this,"Unexpected","end of script");    
 	    }
 	ExpressionListInside(Start,End,Priority){
 		if(AST.IsToken(this.Token,Start.Value,Start.Type)){
@@ -1366,7 +1366,7 @@ const XBS = ((DebugMode=false)=>{
 			return List;
 		}else{
 			this.ErrorIfEOS();
-			this.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
+			ErrorHandler.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
 		}
 	}
 	ExpressionInside(Start,End,Priority,AllowComma){
@@ -1378,7 +1378,7 @@ const XBS = ((DebugMode=false)=>{
 			return List;
 		}else{
 			this.ErrorIfEOS();
-			this.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
+			ErrorHandler.AError(this,"Expected",`${Start.Type.toLowerCase} ${Start.Value}`,`${this.Token.Type.toLowerCase} ${this.Token.Value}`);	
 		}
 	}
 	IdentifierList(Options={}){
