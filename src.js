@@ -1913,7 +1913,7 @@ const XBS = ((DebugMode=false)=>{
 		},
 		"Foreach":function(State,Token){
 			let Body = Token.Read("Body");
-			let Names = Token.Read("Name");
+			let Names = Token.Read("Names");
 			let Iterator = this.Parse(State,Token.Read("Iterator"));
 			let Type = Token.Read("Type");
 			for(let k in Iterator){
