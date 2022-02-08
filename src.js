@@ -14,6 +14,7 @@ const XBS = ((DebugMode=false)=>{
     	ErrorTypes:{
         	"Unexpected":(a)=>`Unexpected ${a}`,
             "Expected":(a,b)=>`Expected ${a}, got ${b} instead`,
+		"Attempt":(a)=>`Attempt to ${a}`,
         },
         RawError:function(Type,StartMessage="",EndMessage="",...Parameters){
         	let Result = this.ErrorTypes[Type];
@@ -1058,6 +1059,18 @@ const XBS = ((DebugMode=false)=>{
                     return new ASTExpression(Node,Priority);
                 },
             },
+		{
+            	Value:"POPEN",
+                Type:"Bracket",
+                Stop:false,
+                Priority:1000,
+                Call:function(Value,Priority){
+                	let Node = this.NewNode("Call");
+                   	Node.Write("Call",Value);
+                    Node.Write("Arguments",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
+                    return new ASTExpression(Node,Priority);
+                },
+            },
         	/*
         	{
             	Value:"Value",
@@ -1215,6 +1228,27 @@ const XBS = ((DebugMode=false)=>{
             }
             return Result;
         }
+        ExpressionList(Priority){
+            let List = [];
+            do{
+                List.push(this.ParseExpression(Priority));
+		if(this.CheckNext("COMMA","Operator")){
+			this.Next(2);
+			continue;
+		}
+                break;
+            }while(true);
+            return List;
+        }
+	ExpressionListInide(Start,End,Priority){
+		if(AST.IsToken(this.Token,Start.Value,Start.Type)){
+			this.Next();
+			let List = this.ExpressionList(Priority);
+			this.TestNext(End.Value,End.Type);
+			this.Next();
+			return List;
+		}
+	}
         ParseChunk(){
         	let Token = this.Token;
             for(let Type in AST.Chunks){
@@ -1527,6 +1561,14 @@ const XBS = ((DebugMode=false)=>{
                 }
                 return Value;
             },
+		"Call":function(State,Token){
+			let Call = this.Parse(State,Token.Read("Call"));
+			let Arguments = this.ParseArray(State,Token.Read("Arguments");
+			if(!(Call instanceof Function)){
+				ErrorHandler.IError(Token,"Attempt","call non-function");
+			}
+			return Call(...Arguments);
+		},
         },
     };
     
@@ -1548,6 +1590,26 @@ const XBS = ((DebugMode=false)=>{
             this.ParseStates={};
             for(let Name in Interpreter.ParseStates)this.ParseStates[Name]=Interpreter.ParseStates[Name].bind(this);
         }
+	ParseArray(State,List){
+		let Result = [];
+		for(let k in List){
+			let v = List[k];
+			let r;
+			if(typeof v==="object"&&!(v instanceof ASTBase)){
+				r=this.ParseArray(State,v);	
+			}else{
+				r=this.Parse(State,v,true);	
+			}
+			if(r instanceof UnpackState){
+				for(let x of r.List){
+					Result.push(x);	
+				}
+			}else{
+				Result.push(r);	
+			}
+		}
+		return Result;
+	}
         Parse(State,Token,Unpack=false){
         	if(!(Token instanceof ASTBase))return Token;
             for(let Name in this.ParseStates){
