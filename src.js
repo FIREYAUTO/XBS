@@ -1740,7 +1740,7 @@ const XBS = ((DebugMode=false)=>{
 				let NewState = new IState(Token.Read("Body"),State);
 				this.ParseState(NewState);
 			}else if(Conditions.length>0){
-				for(let Condition in Conditions){
+				for(let Condition of Conditions){
 					if(Condition.Type==="Elif"){
 						let CExpression = this.Parse(State,Condition.Read("Expression"));
 						if(CExpression){
