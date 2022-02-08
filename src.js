@@ -942,7 +942,7 @@ const XBS = ((DebugMode=false)=>{
 			}while(true);
 			if(!AST.IsToken(this.Token,"BCLOSE","Bracket")){
 				this.ErrorIfEOS();
-				ErrorHandler.AError(this,"Expected","} to close object",`${this.Token.Type.toLowerCase()} ${this.Token.Value}`);
+				ErrorHandler.AError(this,"Expected","} to close object",`${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
 			}
 			Node.Write("Object",List);
                     return [Node,Priority];
