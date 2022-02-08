@@ -655,6 +655,7 @@ const XBS = ((DebugMode=false)=>{
                     }
                     let Result = this.ParseExpression(-1,true);
                     this.TestNext("PCLOSE","Bracket");
+			this.Next();
                     return [Result,Priority];
                 },
             },
