@@ -685,6 +685,30 @@ const XBS = ((DebugMode=false)=>{
                     return Node;
                 },
             },
+		{
+            	Value:"FOR",
+                Type:"Keyword",
+                Call:function(){
+                	let Node = this.NewNode("For");
+                    	this.TestNext("POPEN","Bracket");
+			this.Next(2);
+			let Result = this.ParseRChunk();
+			if(!(Result instanceof ASTBase)||Result.Type!="NewVariable"){
+				ErrorHandler.AError(this,"Unexpected","statement, expected variable declaration for loop");
+			}
+			Node.Write("Variable",Result);
+			this.TestNext("LINEEND","Operator");
+			this.Next(2);
+			Node.Write("Condition",this.ParseExpression());
+			this.TestNext("LINEEND","Operator");
+			this.Next(2);
+			Node.Write("Increment",this.ParseExpression());
+			this.TestNext("PCLOSE","Bracket");
+			this.Next(2);
+			Node.Write("Body",this.ParseBlock());
+                    return Node;
+                },
+		}
         	/*
         	{
             	Value:"Value",
@@ -1428,15 +1452,39 @@ const XBS = ((DebugMode=false)=>{
 		    this.Chunk=this.OpenChunks.pop();
 		    return Block;
 	    }
+	SkipLineEnd(){
+		if(this.CheckNext("LINEEND","Operator")){
+                    	this.Next();
+                    }
+	}
+	ParseSpecificChunk(Value,Type){
+		let Token = this.Token;
+		for(let Chunk of AST.Chunks){
+			if(Chunk.Type===Type&&Chunk.Value===Value){
+				if(AST.IsToken(Token,Chunk.Value,Chunk.Type)){
+					return Chunk.Call.bind(this)();
+				}else{
+					this.ErrorIfEOS();
+					ErrorHandler.AError(this,"Expected",`${Type.toLowerCase()} ${Tokenizer.ValueFromName(Value)}`,`${Token.Type.toLowerCase()} ${Token.RawValue}`);	
+				}
+			}
+		}
+	}
+	ParseRChunk(){
+		let Token = this.Token;
+		for(let Chunk of AST.Chunks){
+			if(AST.IsToken(Token,Chunk.Value,Chunk.Type)){
+				return Chunk.Call.bind(this)();
+			}
+		}
+	}
         ParseChunk(){
         	let Token = this.Token;
             for(let Type in AST.Chunks){
             	let Chunk = AST.Chunks[Type];
                 if(AST.IsToken(Token,Chunk.Value,Chunk.Type)){
                 	let Result = Chunk.Call.bind(this)();
-                    if(this.CheckNext("LINEEND","Operator")){
-                    	this.Next();
-                    }
+                    this.SkipLineEnd();
                     this.ChunkWrite(Result);
                     return;
                 }
@@ -1819,6 +1867,19 @@ const XBS = ((DebugMode=false)=>{
 				if(Name!==undefined)NewState.NewVariable(Name,i);
 				this.ParseState(NewState);
 				if(!NewState.Read("InLoop"))break;	
+			}
+		},
+		"For":function(State,Token){
+			let _State = new IState(State.AStack,State);
+			this.Parse(_State,Token.Read("Variable"));
+			let Body = Token.Read("Body");
+			let Condition = Token.Read("Condition");
+			let Increment = Token.Read("Increment");
+			while(this.Parse(_State,Condition)){
+				let NewState = new IState(Body,_State,{InLoop:true,IsLoop:true});
+				this.ParseState(NewState);
+				if(!NewState.Read("InLoop"))break;
+				this.Parse(_State,Increment);
 			}
 		},
         },
