@@ -591,13 +591,8 @@ const XBS = ((DebugMode=false)=>{
                 Type:"Keyword",
                 Call:function(){
                 	let Node = this.NewNode("NewVariable");
-                   	this.TypeTestNext("Identifier");
                     this.Next();
-                    let Name = this.Token.Value;
-                    Node.Write("Name",Name);
-                    this.TestNext("EQ","Assignment");
-                    this.Next(2);
-                    Node.Write("Value",this.ParseExpression());
+                    Node.Write("Variables",this.IdentifierList({AllowDefault:true,Priority:-1}));
                     return Node;
                 },
             },
@@ -1497,12 +1492,15 @@ const XBS = ((DebugMode=false)=>{
             	return State.GetVariable(Token.Read("Name"));
             },
 		"NewVariable":function(State,Token){
-			let Name = Token.Read("Name");
-			let Value = this.Parse(State,Token.Read("Value"));
-			let IsConstant = Token.Read("Constant");
-			State.NewVariable(Name,Value,{
-				Constant:IsConstant,	
-			});
+			let Variables = Token.Read("Variables");
+			for(let Variable of Variables){
+				let Name = Variable.Name;
+				let Value = this.Parse(State,Variable.Value);
+				let IsConstant = Variable.Constant;
+				State.NewVariable(Name,Value,{
+					Constant:IsConstant,
+				});
+			};
 		},
             "Assignment":function(State,Token){
             	let Name = Token.Read("Name");
@@ -1515,7 +1513,9 @@ const XBS = ((DebugMode=false)=>{
 			if(Variable.Constant===true){
 				ErrorHandler.IError(Token,"Attempt",`modify constant variable ${Variable.Name}`);	
 			}
+			let Previous = Variable.Value;
                         State.SetVariable(Name,Call(Variable.Value,Value));
+			return Token.Read("Type")>=9?Previous:Variable.Value;
                     }else if(Name.Type==="GetIndex"){
                     	let Object = this.Parse(State,Name.Read("Object")),
                         	Index = this.Parse(State,Name.Read("Index")),
@@ -1528,7 +1528,6 @@ const XBS = ((DebugMode=false)=>{
                 }else{
                 	ErrorHandler.IError(Token,"Unexpected","assignment operator");
                 }
-                return Value;
             },
             "Add":function(State,Token){
             	let V1 = this.Parse(State,Token.Read("V1")),
