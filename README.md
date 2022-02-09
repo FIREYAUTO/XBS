@@ -38,9 +38,9 @@
 - [x] Range Operator
 - [x] Del & Unset Statements
 - [x] Chunk Statement
+- [x] Try Statement
+- [x] Switch Statement
 - [ ] Type System
-- [ ] Try Statement
-- [ ] Switch Statement
 - [ ] Isa operator
 - [ ] Classes
 - [ ] Global Settings
