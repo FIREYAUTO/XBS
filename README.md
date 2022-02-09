@@ -43,11 +43,11 @@
 - [x] In Operator
 - [x] Swap Statement 
 - [x] Lockvar Statement
+- [x] Global Settings
+- [x] New Statement
 - [ ] Type System
 - [ ] Isa operator
 - [ ] Classes
-- [ ] Global Settings
-- [ ] New Statement
 - [ ] Istype Statement
 - [ ] Exit Statement
 - [ ] Self-Calling Operator
