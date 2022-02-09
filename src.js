@@ -909,6 +909,43 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value:"SWITCH",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("Switch");
+				    	this.Next();
+					Node.Write("Expression",this.ExpressionInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
+					this.TestNext("BOPEN","Bracket");
+					this.Next();
+					let Cases = [];
+					while(!this.CheckNext("BCLOSE","Bracket")){
+						this.ErrorIfEOS();
+						if(this.CheckNext("CASE","Keyword")){
+							this.Next(2);
+							let Case = this.NewNode("Case");
+							Case.Write("Expression",this.ParseExpression());
+							this.Next();
+							Case.Write("Body",this.ParseBody());
+							Cases.push(Case);
+						}else if(this.CheckNext("DEFAULT","Keyword")){
+							this.Next(2);
+							let Def = this.NewNode("Default");
+							this.Next();
+							Def.Write("Body",this.ParseBody());
+							Node.Write("Default",Def);
+						}else{
+							this.Next();
+							this.ErrorIfEOS();
+							ErrorHandler.AError(this,"Expected","case or def for switch statement",`${this.Token.Type.toLowerCase()} ${this.Token.Value}`);
+						}
+					}
+					this.TestNext("BCLOSE","Bracket");
+					this.Next();
+					Node.Write("Cases",Cases);
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -2669,6 +2706,25 @@ const XBS = ((DebugMode = false) => {
 					if(FinallyBody){
 						let NewState = new IState(FinallyBody,State);
 						this.ParseState(NewState);	
+					}
+				}
+			},
+			Switch:function(State,Token){
+				let Expression = this.Parse(State,Token.Read("Expression"));
+				let Do = true;
+				for(let Case of Token.Read("Cases")){
+					if(Expression==this.Parse(State,Case.Read("Expression"))){
+						let NewState=new IState(Case.Read("Body"),State);
+						this.ParseState(NewState);
+						Do = false;
+						break;
+					}
+				}
+				if(Do){
+					let Def = Token.Read("Default");
+					if(Def){
+						let NewState=new IState(Def.Read("Body"),State);
+						this.ParseState(NewState);
 					}
 				}
 			},
