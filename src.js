@@ -931,7 +931,6 @@ const XBS = ((DebugMode = false) => {
 						}else if(this.CheckNext("DEFAULT","Keyword")){
 							this.Next(2);
 							let Def = this.NewNode("Default");
-							this.Next();
 							Def.Write("Body",this.ParseBlock());
 							Node.Write("Default",Def);
 						}else{
