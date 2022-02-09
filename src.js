@@ -888,6 +888,27 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value:"TRY",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("Try");
+				    	this.Next();
+					Node.Write("TryBody",this.ParseBlock());
+					this.TestNext("CATCH","Keyword");
+					this.Next();
+					this.TypeTestNext("Identifier");
+					this.Next();
+					Node.Write("CatchName",this.Token.Name);
+					this.Next();
+					Node.Write("CatchBody",this.ParseBlock());
+					if(this.CheckNext("FINALLY","Keyword")){
+						this.Next(2);
+						Node.Write("FinallyBody",this.ParseBlock());
+					}
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -2631,6 +2652,25 @@ const XBS = ((DebugMode = false) => {
 			},
 			Chunk:function(State,Token){
 				this.ParseState(new IState(Token.Read("Body"),State));
+			},
+			Try:function(State,Token){
+				let TryBody = Token.Read("TryBody");
+				let CatchBody = Token.Read("CatchBody");
+				let CatchName = Token.Read("CatchName");
+				let FinallyBody = Token.Read("FinallyBody");
+				try {
+					let NewState = new IState(TryBody,State);
+					this.ParseState(NewState);	
+				}catch(E){
+					let NewState = new IState(CatchBody,State);
+					NewState.NewVariable(CatchName,E);
+					this.ParseState(NewState);
+				}finally{
+					if(FinallyBody){
+						let NewState = new IState(FinallyBody,State);
+						this.ParseState(NewState);	
+					}
+				}
 			},
 		},
 	};
