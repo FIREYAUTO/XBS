@@ -959,6 +959,17 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value:"LOCKVAR",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("LockVariable");
+				    	this.TypeTestNext("Identifier");
+					this.Next();
+					Node.Write("Name",this.Token.Value);
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -2766,6 +2777,12 @@ const XBS = ((DebugMode = false) => {
 				let T=V1.Value;
 				V1.Value=V2.Value;
 				V2.Value=T;
+			},
+			LockVariable:function(State,Token){
+				let Name = Token.Read("Name");
+				let Variable = State.GetGlobalRawVariable(Name);
+				if(!Variable)ErrorHandler.IError(Token,"Attempt",`lock invalid variable ${Name}`);
+				Variable.Constant = true;
 			},
 			In:function(State,Token){
 				let V1 = this.Parse(State,Token.Read("V1"));
