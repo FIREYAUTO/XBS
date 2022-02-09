@@ -36,6 +36,7 @@
 - [x] Destructure Statement
 - [x] Comment Syntax 
 - [x] Range Operator
+- [x] Del & Unset Statements
 - [ ] Type System
 - [ ] Chunk Statement
 - [ ] Try Statement
@@ -43,7 +44,6 @@
 - [ ] Isa operator
 - [ ] Classes
 - [ ] Global Settings
-- [ ] Del & Unset Statements
 - [ ] New Statement
 - [ ] Swap Statement
 - [ ] Istype Statement
