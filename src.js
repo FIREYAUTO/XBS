@@ -1095,7 +1095,31 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Pipe");
 				    	this.Next();
 					Node.Write("Expressions",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
-					Node.Write("ComplexExpression",this.ParseComplexExpression(new ASTExpression("BLANK",Priority)));
+					let B = {BLANK:true}
+					let CE = this.ParseComplexExpression(new ASTExpression(B,Priority));
+					Node.Write("ComplexExpression",CE);
+					if(CE instanceof ASTNode&&CE.Read(CE.FirstData)!=B){
+						for(let Key in CE.Data){
+							let Value = CE.Data[Key];
+							if(Value==B){
+								CE.FirstData=Key;
+								break;
+							}
+						}	
+					}
+					return [Node,Priority];
+				},
+			},
+			{
+				Value:"EPIPE",
+				Type:"Operator",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("EPipe");
+				    	this.Next();
+					Node.Write("Expressions",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
+					this.Next();
+					Node.Write("Expression",this.ParseExpression());
 					return [Node,Priority];
 				},
 			},
@@ -2519,22 +2543,31 @@ const XBS = ((DebugMode = false) => {
 			Pipe:function(State,Token){
 				let Expressions = Token.Read("Expressions"),
 					ComplexExpression = Token.Read("ComplexExpression"),
-					Result = [];
-				let Ex = [];
-				for(let E of Expressions){
-					if(E instanceof ASTBase&&E.Type==="UnpackArray"){
-						let List = this.Parse(State,E.Read("V1"),true);
-						for(let x of List){
-							Ex.push(x);	
-						}
-					}else{
-						Ex.push(E);	
-					}
-				}
+					Result = [],
+					Ex = [];
+				for(let E of Expressions)
+					if(E instanceof ASTBase&&E.Type==="UnpackArray")for(let x of this.Parse(State,E.Read("V1"),true))Ex.push(x);
+					else Ex.push(E);
 				if(ComplexExpression.FirstData===undefined)ErrorHandler.IError(ComplexExpression,"Unexpected","complex expression for pipe operator");
 				for(let Expression of Ex){
 					ComplexExpression.Write(ComplexExpression.FirstData,Expression);
 					Result.push(this.Parse(State,ComplexExpression));
+				}
+				return Result;
+			},
+			EPipe:function(State,Token){
+				let Expressions = Token.Read("Expressions"),
+					X = Token.Read("Expression"),
+					Ex = [],
+				    	Result = [];
+				for(let E of Expressions)
+					if(E instanceof ASTBase&&E.Type==="UnpackArray")for(let x of this.Parse(State,E.Read("V1"),true))Ex.push(x);
+					else Ex.push(E);
+				let FakeBody = {Data:[],Line:Token.Line,Index:Token.Index};
+				for(let Expression of Ex){
+					let NewState = new IState(FakeBody,State);
+					State.NewVariable("_",this.Parse(State,Expression));
+					Result.push(this.Parse(NewState,X));
 				}
 				return Result;
 			},
