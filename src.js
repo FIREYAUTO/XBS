@@ -899,7 +899,7 @@ const XBS = ((DebugMode = false) => {
 					this.Next();
 					this.TypeTestNext("Identifier");
 					this.Next();
-					Node.Write("CatchName",this.Token.Name);
+					Node.Write("CatchName",this.Token.Value);
 					this.Next();
 					Node.Write("CatchBody",this.ParseBlock());
 					if(this.CheckNext("FINALLY","Keyword")){
