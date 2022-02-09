@@ -1797,7 +1797,7 @@ const XBS = ((DebugMode = false) => {
 				}
 			}
 			if(Result===undefined){
-				ErrorHandler.AError(this,"Unexpected",`${Token.Type.toLowerCase()} ${Token.Value} while parsing expression`);	
+				ErrorHandler.AError(this,"Unexpected",`${Token.Type.toLowerCase()} ${Token.RawValue} while parsing expression`);	
 			}
 			return this.ParseComplexExpression(new ASTExpression(Result, Priority));
 		}
