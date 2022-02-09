@@ -2771,7 +2771,7 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State,Token.Read("V1"));
 				let V2 = this.Parse(State,Token.Read("V2"));
 				let T = this.GetType(V2);
-				if(T==="string")return V2.match(Tokenizer.Escape(V1));
+				if(T==="string")return !!V2.match(Tokenizer.Escape(V1));
 				else if(T==="array")return V2.includes(V1);
 				else if(T==="object")return Object.prototype.hasOwnProperty.call(V2,V1);
 				return false;
