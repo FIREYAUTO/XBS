@@ -37,8 +37,8 @@
 - [x] Comment Syntax 
 - [x] Range Operator
 - [x] Del & Unset Statements
+- [x] Chunk Statement
 - [ ] Type System
-- [ ] Chunk Statement
 - [ ] Try Statement
 - [ ] Switch Statement
 - [ ] Isa operator
