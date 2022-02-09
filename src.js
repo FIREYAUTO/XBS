@@ -1765,6 +1765,7 @@ const XBS = ((DebugMode = false) => {
 			return Expression.Value;
 		}
 		ParseExpression(Priority = -1, AllowComma = false) {
+			this.ErrorIfEOS();
 			let Token = this.Token;
 			let Result = undefined;
 			for (let Chunk of AST.Expressions) {
@@ -1794,6 +1795,9 @@ const XBS = ((DebugMode = false) => {
 					Result.Write("List", List);
 					return Result;
 				}
+			}
+			if(Result===undefined){
+				ErrorHandler.AError(this,"Unexpected",`${Token.Type.toLowerCase()} ${Token.Value} while parsing expression`);	
 			}
 			return this.ParseComplexExpression(new ASTExpression(Result, Priority));
 		}
