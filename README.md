@@ -40,14 +40,15 @@
 - [x] Chunk Statement
 - [x] Try Statement
 - [x] Switch Statement
+- [x] In Operator
+- [x] Swap Statement 
+- [x] Lockvar Statement
 - [ ] Type System
 - [ ] Isa operator
 - [ ] Classes
 - [ ] Global Settings
 - [ ] New Statement
-- [ ] Swap Statement
 - [ ] Istype Statement
-- [ ] Lockvar Statement
 - [ ] Exit Statement
 - [ ] Self-Calling Operator
 - [ ] Expressional Strings
