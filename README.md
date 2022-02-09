@@ -45,11 +45,11 @@
 - [x] Lockvar Statement
 - [x] Global Settings
 - [x] New Statement
+- [x] Exit Statement
 - [ ] Type System
 - [ ] Isa operator
 - [ ] Classes
 - [ ] Istype Statement
-- [ ] Exit Statement
 - [ ] Self-Calling Operator
 - [ ] Expressional Strings
 ***
