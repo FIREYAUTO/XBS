@@ -1575,7 +1575,7 @@ const XBS = ((DebugMode = false) => {
 				Value:"QUESTION",
 				Type:"Operator",
 				Stop:false,
-				Priority:1300,
+				Priority:130,
 				Call:function(Value,Priority){
 					this.Next(2);
 					let Node = this.NewNode("Ternary");
