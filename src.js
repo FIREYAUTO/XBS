@@ -812,6 +812,14 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "STOP",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("Exit");
+					return Node;
+				},
+			},
+			{
 				Value: "CONTINUE",
 				Type: "Keyword",
 				Call: function () {
@@ -2153,6 +2161,7 @@ const XBS = ((DebugMode = false) => {
 					Return: undefined,
 					Stopped: false,
 					Continued: false,
+					Exited:false,
 				},
 				this.Variables = [],
 				this.Children = [],
@@ -2844,6 +2853,9 @@ const XBS = ((DebugMode = false) => {
 					State.GlobalVariables[Variable.Name]=this.Parse(State,Variable.Value);
 				}
 			},
+			Exit:function(State,Token){
+				State.Write("Exited",true);
+			},
 		},
 	};
 
@@ -2937,6 +2949,7 @@ const XBS = ((DebugMode = false) => {
 					break;
 				}
 				if (State.Read("Continued") === true) break;
+				if(State.Read("Exited")===true)break;
 			}
 			State.Close();
 		}
