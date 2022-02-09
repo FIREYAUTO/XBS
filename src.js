@@ -331,7 +331,7 @@ const XBS = ((DebugMode = false) => {
 		}
 		ENumberRead(Stack) {
 			let Token = Stack.Token;
-			if (Token.Value.toLowerCase().endsWith("e")) {
+			if (Token.Value.toLowerCase().endsWith("e")&&Token.Value.length>1) {
 				let Result = Token.Value.substr(0, Token.Value.length - 1);
 				if (!isNaN(+Result)) {
 					Result += "e";
@@ -549,7 +549,7 @@ const XBS = ((DebugMode = false) => {
 			this.FirstData = undefined;
 		}
 		Write(Name, Value) {
-			if(this.FirstData===undefined)this.FirstData=Name;
+			if (this.FirstData === undefined) this.FirstData = Name;
 			this.Data[Name] = Value;
 		}
 		Read(Name) {
@@ -825,11 +825,11 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Function");
 					this.TypeTestNext("Identifier");
 					this.Next();
-					Node.Write("Name",this.Token.Value);
+					Node.Write("Name", this.Token.Value);
 					this.Next();
-					Node.Write("Parameters",this.IdentifierListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"},{AllowDefault:true,AllowVarargs:true,SoftCheck:true}));
+					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
 					this.Next();
-					Node.Write("Body",this.ParseBlock());
+					Node.Write("Body", this.ParseBlock());
 					return Node;
 				},
 			},
@@ -840,9 +840,9 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Define");
 					this.TypeTestNext("Identifier");
 					this.Next();
-					Node.Write("Name",this.Token.Value);
+					Node.Write("Name", this.Token.Value);
 					this.Next();
-					Node.Write("Body",this.ParseBlock());
+					Node.Write("Body", this.ParseBlock());
 					return Node;
 				},
 			},
@@ -852,7 +852,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function () {
 					let Node = this.NewNode("RunDefine");
 					this.Next();
-					Node.Write("V1",this.ParseExpression());
+					Node.Write("V1", this.ParseExpression());
 					return Node;
 				},
 			},
@@ -869,104 +869,104 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
-				Value:"DEL",
-				Type:"Keyword",
-				Call:function(){
+				Value: "DEL",
+				Type: "Keyword",
+				Call: function () {
 					let Node = this.NewNode("Delete");
 					this.Next();
-					Node.Write("Names",this.IdentifierList());
+					Node.Write("Names", this.IdentifierList());
 					return Node;
 				},
 			},
 			{
-				Value:"UNSET",
-				Type:"Keyword",
-				Call:function(){
+				Value: "UNSET",
+				Type: "Keyword",
+				Call: function () {
 					let Node = this.NewNode("Unset");
 					this.Next();
-					Node.Write("Expressions",this.ExpressionList());
+					Node.Write("Expressions", this.ExpressionList());
 					return Node;
 				},
 			},
 			{
-				Value:"TRY",
-				Type:"Keyword",
-				Call:function(){
+				Value: "TRY",
+				Type: "Keyword",
+				Call: function () {
 					let Node = this.NewNode("Try");
-				    	this.Next();
-					Node.Write("TryBody",this.ParseBlock());
-					this.TestNext("CATCH","Keyword");
+					this.Next();
+					Node.Write("TryBody", this.ParseBlock());
+					this.TestNext("CATCH", "Keyword");
 					this.Next();
 					this.TypeTestNext("Identifier");
 					this.Next();
-					Node.Write("CatchName",this.Token.Value);
+					Node.Write("CatchName", this.Token.Value);
 					this.Next();
-					Node.Write("CatchBody",this.ParseBlock());
-					if(this.CheckNext("FINALLY","Keyword")){
+					Node.Write("CatchBody", this.ParseBlock());
+					if (this.CheckNext("FINALLY", "Keyword")) {
 						this.Next(2);
-						Node.Write("FinallyBody",this.ParseBlock());
+						Node.Write("FinallyBody", this.ParseBlock());
 					}
 					return Node;
 				},
 			},
 			{
-				Value:"SWITCH",
-				Type:"Keyword",
-				Call:function(){
+				Value: "SWITCH",
+				Type: "Keyword",
+				Call: function () {
 					let Node = this.NewNode("Switch");
-				    	this.Next();
-					Node.Write("Expression",this.ParseExpression());
-					this.TestNext("BOPEN","Bracket");
+					this.Next();
+					Node.Write("Expression", this.ParseExpression());
+					this.TestNext("BOPEN", "Bracket");
 					this.Next();
 					let Cases = [];
-					while(!this.CheckNext("BCLOSE","Bracket")){
+					while (!this.CheckNext("BCLOSE", "Bracket")) {
 						this.ErrorIfEOS();
-						if(this.CheckNext("CASE","Keyword")){
+						if (this.CheckNext("CASE", "Keyword")) {
 							this.Next(2);
 							let Case = this.NewNode("Case");
-							Case.Write("Expression",this.ParseExpression());
+							Case.Write("Expression", this.ParseExpression());
 							this.Next();
-							Case.Write("Body",this.ParseBlock());
+							Case.Write("Body", this.ParseBlock());
 							Cases.push(Case);
-						}else if(this.CheckNext("DEFAULT","Keyword")){
+						} else if (this.CheckNext("DEFAULT", "Keyword")) {
 							this.Next(2);
 							let Def = this.NewNode("Default");
-							Def.Write("Body",this.ParseBlock());
-							Node.Write("Default",Def);
-						}else{
+							Def.Write("Body", this.ParseBlock());
+							Node.Write("Default", Def);
+						} else {
 							this.Next();
 							this.ErrorIfEOS();
-							ErrorHandler.AError(this,"Expected","case or def for switch statement",`${this.Token.Type.toLowerCase()} ${this.Token.Value}`);
+							ErrorHandler.AError(this, "Expected", "case or def for switch statement", `${this.Token.Type.toLowerCase()} ${this.Token.Value}`);
 						}
 					}
-					this.TestNext("BCLOSE","Bracket");
+					this.TestNext("BCLOSE", "Bracket");
 					this.Next();
-					Node.Write("Cases",Cases);
+					Node.Write("Cases", Cases);
 					return Node;
 				},
 			},
 			{
-				Value:"SWAP",
-				Type:"Keyword",
-				Call:function(){
+				Value: "SWAP",
+				Type: "Keyword",
+				Call: function () {
 					let Node = this.NewNode("Swap");
-				    	this.TypeTestNext("Identifier");
-					this.Next();
-					Node.Write("N1",this.Token.Value);
 					this.TypeTestNext("Identifier");
 					this.Next();
-					Node.Write("N2",this.Token.Value);
+					Node.Write("N1", this.Token.Value);
+					this.TypeTestNext("Identifier");
+					this.Next();
+					Node.Write("N2", this.Token.Value);
 					return Node;
 				},
 			},
 			{
-				Value:"LOCKVAR",
-				Type:"Keyword",
-				Call:function(){
+				Value: "LOCKVAR",
+				Type: "Keyword",
+				Call: function () {
 					let Node = this.NewNode("LockVariable");
-				    	this.TypeTestNext("Identifier");
+					this.TypeTestNext("Identifier");
 					this.Next();
-					Node.Write("Name",this.Token.Value);
+					Node.Write("Name", this.Token.Value);
 					return Node;
 				},
 			},
@@ -1146,94 +1146,94 @@ const XBS = ((DebugMode = false) => {
 			{
 				Value: "FUNC",
 				Type: "Keyword",
-				Stop:false,
+				Stop: false,
 				Call: function (Priority) {
 					let Node = this.NewNode("FastFunction");
 					this.Next();
-					Node.Write("Parameters",this.IdentifierListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"},{AllowDefault:true,AllowVarargs:true,SoftCheck:true}));
+					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
 					this.Next();
-					Node.Write("Body",this.ParseBlock());
-					return [Node,Priority];
+					Node.Write("Body", this.ParseBlock());
+					return [Node, Priority];
 				},
 			},
 			{
 				Value: "DEFINE",
 				Type: "Keyword",
-				Stop:false,
+				Stop: false,
 				Call: function (Priority) {
 					let Node = this.NewNode("FastDefine");
 					this.Next();
-					Node.Write("Body",this.ParseBlock());
-					return [Node,Priority];
+					Node.Write("Body", this.ParseBlock());
+					return [Node, Priority];
 				},
 			},
 			{
 				Value: "MUL",
 				Type: "Operator",
-				Stop:false,
+				Stop: false,
 				Call: function (Priority) {
 					let Node = this.NewNode("UnpackArray");
 					this.Next();
-					Node.Write("V1",this.ParseExpression());
-					return [Node,Priority];
+					Node.Write("V1", this.ParseExpression());
+					return [Node, Priority];
 				},
 			},
 			{
 				Value: "FORCEPARSE",
 				Type: "Operator",
-				Stop:false,
+				Stop: false,
 				Call: function (Priority) {
 					let Node = this.NewNode("ACP");
 					this.Next();
-					Node.Write("V1",this.ParseRChunk(true));
-					return [Node,Priority];
+					Node.Write("V1", this.ParseRChunk(true));
+					return [Node, Priority];
 				},
 			},
 			{
-				Value:"PIPE",
-				Type:"Operator",
-				Stop:false,
-				Call:function(Priority){
+				Value: "PIPE",
+				Type: "Operator",
+				Stop: false,
+				Call: function (Priority) {
 					let Node = this.NewNode("Pipe");
-				    	this.Next();
-					Node.Write("Expressions",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
-					let B = {BLANK:true}
-					let CE = this.ParseComplexExpression(new ASTExpression(B,Priority));
-					Node.Write("ComplexExpression",CE);
-					if(CE instanceof ASTNode&&CE.Read(CE.FirstData)!=B){
-						for(let Key in CE.Data){
+					this.Next();
+					Node.Write("Expressions", this.ExpressionListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }));
+					let B = { BLANK: true }
+					let CE = this.ParseComplexExpression(new ASTExpression(B, Priority));
+					Node.Write("ComplexExpression", CE);
+					if (CE instanceof ASTNode && CE.Read(CE.FirstData) != B) {
+						for (let Key in CE.Data) {
 							let Value = CE.Data[Key];
-							if(Value==B){
-								CE.FirstData=Key;
+							if (Value == B) {
+								CE.FirstData = Key;
 								break;
 							}
-						}	
+						}
 					}
-					return [Node,Priority];
+					return [Node, Priority];
 				},
 			},
 			{
-				Value:"EPIPE",
-				Type:"Operator",
-				Stop:false,
-				Call:function(Priority){
+				Value: "EPIPE",
+				Type: "Operator",
+				Stop: false,
+				Call: function (Priority) {
 					let Node = this.NewNode("EPipe");
-				    	this.Next();
-					Node.Write("Expressions",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
 					this.Next();
-					Node.Write("Expression",this.ParseExpression());
-					return [Node,Priority];
+					Node.Write("Expressions", this.ExpressionListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }));
+					this.Next();
+					Node.Write("Expression", this.ParseExpression());
+					return [Node, Priority];
 				},
 			},
 			{
 				Value: "CHUNK",
 				Type: "Keyword",
-				Stop:false,
+				Stop: false,
 				Call: function (Priority) {
 					let Node = this.NewNode("Chunk");
 					this.Next();
-					Node.Write("Body",this.ParseBlock());
-					return [Node,Priority];
+					Node.Write("Body", this.ParseBlock());
+					return [Node, Priority];
 				},
 			},
 			/*
@@ -1735,19 +1735,19 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
-				Value:"QUESTION",
-				Type:"Operator",
-				Stop:false,
-				Priority:130,
-				Call:function(Value,Priority){
+				Value: "QUESTION",
+				Type: "Operator",
+				Stop: false,
+				Priority: 130,
+				Call: function (Value, Priority) {
 					this.Next(2);
 					let Node = this.NewNode("Ternary");
-				    	Node.Write("Condition",Value);
-					Node.Write("V1",this.ParseExpression());
-					this.TestNext("COLON","Operator");
+					Node.Write("Condition", Value);
+					Node.Write("V1", this.ParseExpression());
+					this.TestNext("COLON", "Operator");
 					this.Next(2);
-					Node.Write("V2",this.ParseExpression());
-					return new ASTExpression(Node,Priority);
+					Node.Write("V2", this.ParseExpression());
+					return new ASTExpression(Node, Priority);
 				},
 			},
 			{
@@ -1771,8 +1771,8 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Value, Priority) {
 					this.Next(2);
 					let Node = this.NewNode("In");
-					Node.Write("V1",Value);
-					Node.Write("V2",this.ParseExpression(Priority));
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
 					return new ASTExpression(Node, Priority);
 				},
 			},
@@ -1877,7 +1877,7 @@ const XBS = ((DebugMode = false) => {
 				Next = this.Tokens[this.Position + 1];
 			if (!Next) return Expression.Value;
 			if (AST.IsToken(Next, "LINEEND", "Operator")) return Expression.Value;
-			if(AST.IsType(Next,"Identifier"))ErrorHandler.AError(this,"Unexpected","identifier while parsing complex expression");
+			if (AST.IsType(Next, "Identifier")) ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
 			for (let Complex of AST.ComplexExpressions) {
 				if (!AST.IsToken(Next, Complex.Value, Complex.Type)) continue;
 				if (Expression.Priority <= Complex.Priority) {
@@ -1923,8 +1923,8 @@ const XBS = ((DebugMode = false) => {
 					return Result;
 				}
 			}
-			if(Result===undefined){
-				ErrorHandler.AError(this,"Unexpected",`${Token.Type.toLowerCase()} ${Token.RawValue} while parsing expression`);	
+			if (Result === undefined) {
+				ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing expression`);
 			}
 			return this.ParseComplexExpression(new ASTExpression(Result, Priority));
 		}
@@ -1953,7 +1953,7 @@ const XBS = ((DebugMode = false) => {
 		ExpressionListInside(Start, End, Priority) {
 			if (AST.IsToken(this.Token, Start.Value, Start.Type)) {
 				this.Next();
-				if(AST.IsToken(this.Token,End.Value,End.Type)){
+				if (AST.IsToken(this.Token, End.Value, End.Type)) {
 					return [];
 				}
 				let List = this.ExpressionList(Priority);
@@ -1968,7 +1968,7 @@ const XBS = ((DebugMode = false) => {
 		ExpressionInside(Start, End, Priority, AllowComma) {
 			if (AST.IsToken(this.Token, Start.Value, Start.Type)) {
 				this.Next();
-				if(AST.IsToken(this.Token,End.Value,End.Type)){
+				if (AST.IsToken(this.Token, End.Value, End.Type)) {
 					return [];
 				}
 				let List = this.ParseExpression(Priority, AllowComma);
@@ -1977,7 +1977,7 @@ const XBS = ((DebugMode = false) => {
 				return List;
 			} else {
 				this.ErrorIfEOS();
-				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase()} ${Tokenizer.ValueFromName(Start.Value,Start.Type)}`, `${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
+				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase()} ${Tokenizer.ValueFromName(Start.Value, Start.Type)}`, `${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
 			}
 		}
 		IdentifierList(Options = {}) {
@@ -1990,11 +1990,11 @@ const XBS = ((DebugMode = false) => {
 					Type: undefined,
 				}
 				this.ErrorIfEOS();
-				if (Options.AllowVarargs === true){
-					if(AST.IsToken(Token,"MUL","Operator")){
+				if (Options.AllowVarargs === true) {
+					if (AST.IsToken(Token, "MUL", "Operator")) {
 						this.Next();
-						Token=this.Token;
-						Identifier.IsVararg=true;
+						Token = this.Token;
+						Identifier.IsVararg = true;
 					}
 				}
 				if (!AST.IsType(Token, "Identifier")) {
@@ -2002,12 +2002,12 @@ const XBS = ((DebugMode = false) => {
 				}
 				Identifier.Name = Token.Value;
 				if (Options.AllowDefault === true) {
-					if(Options.SoftCheck===true){
-						if(this.CheckNext("EQ","Assignment")){
+					if (Options.SoftCheck === true) {
+						if (this.CheckNext("EQ", "Assignment")) {
 							this.Next(2);
 							Identifier.Value = this.ParseExpression(Options.Priority);
 						}
-					}else{
+					} else {
 						this.TestNext("EQ", "Assignment");
 						this.Next(2);
 						Identifier.Value = this.ParseExpression(Options.Priority);
@@ -2025,7 +2025,7 @@ const XBS = ((DebugMode = false) => {
 		IdentifierListInside(Start, End, Options) {
 			if (AST.IsToken(this.Token, Start.Value, Start.Type)) {
 				this.Next();
-				if(AST.IsToken(this.Token,End.Value,End.Type)){
+				if (AST.IsToken(this.Token, End.Value, End.Type)) {
 					return [];
 				}
 				let List = this.IdentifierList(Options);
@@ -2070,19 +2070,19 @@ const XBS = ((DebugMode = false) => {
 						return Chunk.Call.bind(this)();
 					} else {
 						this.ErrorIfEOS();
-						ErrorHandler.AError(this, "Expected", `${Type.toLowerCase()} ${Tokenizer.ValueFromName(Value,Type)}`, `${Token.Type.toLowerCase()} ${Token.RawValue}`);
+						ErrorHandler.AError(this, "Expected", `${Type.toLowerCase()} ${Tokenizer.ValueFromName(Value, Type)}`, `${Token.Type.toLowerCase()} ${Token.RawValue}`);
 					}
 				}
 			}
 		}
-		ParseRChunk(AllowExpression=false) {
+		ParseRChunk(AllowExpression = false) {
 			let Token = this.Token;
 			for (let Chunk of AST.Chunks) {
 				if (AST.IsToken(Token, Chunk.Value, Chunk.Type)) {
 					return Chunk.Call.bind(this)();
 				}
 			}
-			if(AllowExpression===true){
+			if (AllowExpression === true) {
 				let Result = this.ParseFullExpression();
 				if (Result === undefined) {
 					ErrorHandler.AError(this, "Unexpected", `${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
@@ -2580,217 +2580,217 @@ const XBS = ((DebugMode = false) => {
 				}
 				return R;
 			},
-			Function: function (State,Token){
-				State.NewVariable(Token.Read("Name"),this.FunctionState(State,Token));
+			Function: function (State, Token) {
+				State.NewVariable(Token.Read("Name"), this.FunctionState(State, Token));
 			},
-			FastFunction: function (State,Token){
-				return this.FunctionState(State,Token);	
+			FastFunction: function (State, Token) {
+				return this.FunctionState(State, Token);
 			},
-			Define:function(State,Token){
+			Define: function (State, Token) {
 				let Name = Token.Read("Name");
-				State.NewVariable(Name,new DefineState(State,Token.Read("Body")));
+				State.NewVariable(Name, new DefineState(State, Token.Read("Body")));
 			},
-			FastDefine:function(State,Token){
-				return new DefineState(State,Token.Read("Body"));
+			FastDefine: function (State, Token) {
+				return new DefineState(State, Token.Read("Body"));
 			},
-			RunDefine:function(State,Token){
-				let Define = this.Parse(State,Token.Read("V1"));
+			RunDefine: function (State, Token) {
+				let Define = this.Parse(State, Token.Read("V1"));
 				Define.Fire(this);
 			},
-			Destructure:function(State,Token){
+			Destructure: function (State, Token) {
 				let Names = Token.Read("Names");
-				let O = this.Parse(State,Token.Read("Object"));
+				let O = this.Parse(State, Token.Read("Object"));
 				let Default = O.default;
-				for(let V of Names){
-					if(!Object.prototype.hasOwnProperty.call(O,V.Name)){
-						if(Default){
-							State.NewVariable(V.Name,Default);	
+				for (let V of Names) {
+					if (!Object.prototype.hasOwnProperty.call(O, V.Name)) {
+						if (Default) {
+							State.NewVariable(V.Name, Default);
 						}
-					}else{
-						State.NewVariable(V.Name,O[V.Name]);
-					}	
+					} else {
+						State.NewVariable(V.Name, O[V.Name]);
+					}
 				}
 			},
 			BitAnd: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
-				return V1&V2;
+				return V1 & V2;
 			},
 			BitOr: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
-				return V1&V2;
+				return V1 & V2;
 			},
 			BitXor: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
-				return V1^V2;
+				return V1 ^ V2;
 			},
 			BitZLShift: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
-				return V1<<V2;
+				return V1 << V2;
 			},
 			BitZRShift: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
-				return V1>>V2;
+				return V1 >> V2;
 			},
 			BitRShift: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
-				return V1>>>V2;
+				return V1 >>> V2;
 			},
 			BitNot: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				return ~V1;
 			},
-			Length:function(State,Token){
-				let V1 = this.Parse(State,Token.Read("V1"));
+			Length: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1"));
 				let T = this.GetType(V1);
-				if(T!="string"&&T!="array")ErrorHandler.IError(Token,"Expected","string or array",T);
+				if (T != "string" && T != "array") ErrorHandler.IError(Token, "Expected", "string or array", T);
 				return V1.length;
 			},
-			Ternary:function(State,Token){
-				if(this.Parse(State,Token.Read("Condition"))){
-					return this.Parse(State,Token.Read("V1"));
-				}else{
-					return this.Parse(State,Token.Read("V2"));
+			Ternary: function (State, Token) {
+				if (this.Parse(State, Token.Read("Condition"))) {
+					return this.Parse(State, Token.Read("V1"));
+				} else {
+					return this.Parse(State, Token.Read("V2"));
 				}
 			},
 			Range: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2")),
 					List = [];
-				if(this.GetType(V1)!="number")ErrorHandler.IError(Token,"Expected","number",`${this.GetType(V1)} for range a`);
-				if(this.GetType(V2)!="number")ErrorHandler.IError(Token,"Expected","number",`${this.GetType(V2)} for range b`);
-				if(V1>=V2)ErrorHandler.IError(Token,"Unexpected","range number sequence (a must be less than b)");
-				for(let i=V1;i<=V2;i++)List.push(i);
+				if (this.GetType(V1) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V1)} for range a`);
+				if (this.GetType(V2) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V2)} for range b`);
+				if (V1 >= V2) ErrorHandler.IError(Token, "Unexpected", "range number sequence (a must be less than b)");
+				for (let i = V1; i <= V2; i++)List.push(i);
 				return List;
 			},
-			ACP:function(State,Token){
-				return this.Parse(State,Token.Read("V1"));	
+			ACP: function (State, Token) {
+				return this.Parse(State, Token.Read("V1"));
 			},
-			Pipe:function(State,Token){
+			Pipe: function (State, Token) {
 				let Expressions = Token.Read("Expressions"),
 					ComplexExpression = Token.Read("ComplexExpression"),
 					Result = [],
 					Ex = [];
-				for(let E of Expressions)
-					if(E instanceof ASTBase&&E.Type==="UnpackArray")for(let x of this.Parse(State,E.Read("V1"),true))Ex.push(x);
+				for (let E of Expressions)
+					if (E instanceof ASTBase && E.Type === "UnpackArray") for (let x of this.Parse(State, E.Read("V1"), true)) Ex.push(x);
 					else Ex.push(E);
-				if(ComplexExpression.FirstData===undefined)ErrorHandler.IError(ComplexExpression,"Unexpected","complex expression for pipe operator");
-				for(let Expression of Ex){
-					ComplexExpression.Write(ComplexExpression.FirstData,Expression);
-					Result.push(this.Parse(State,ComplexExpression));
+				if (ComplexExpression.FirstData === undefined) ErrorHandler.IError(ComplexExpression, "Unexpected", "complex expression for pipe operator");
+				for (let Expression of Ex) {
+					ComplexExpression.Write(ComplexExpression.FirstData, Expression);
+					Result.push(this.Parse(State, ComplexExpression));
 				}
 				return Result;
 			},
-			EPipe:function(State,Token){
+			EPipe: function (State, Token) {
 				let Expressions = Token.Read("Expressions"),
 					X = Token.Read("Expression"),
 					Ex = [],
-				    	Result = [];
-				for(let E of Expressions)
-					if(E instanceof ASTBase&&E.Type==="UnpackArray")for(let x of this.Parse(State,E.Read("V1"),true))Ex.push(x);
+					Result = [];
+				for (let E of Expressions)
+					if (E instanceof ASTBase && E.Type === "UnpackArray") for (let x of this.Parse(State, E.Read("V1"), true)) Ex.push(x);
 					else Ex.push(E);
-				let FakeBody = {Data:[],Line:Token.Line,Index:Token.Index};
-				for(let Expression of Ex){
-					let NewState = new IState(FakeBody,State);
-					State.NewVariable("_",this.Parse(State,Expression));
-					Result.push(this.Parse(NewState,X));
+				let FakeBody = { Data: [], Line: Token.Line, Index: Token.Index };
+				for (let Expression of Ex) {
+					let NewState = new IState(FakeBody, State);
+					State.NewVariable("_", this.Parse(State, Expression));
+					Result.push(this.Parse(NewState, X));
 				}
 				return Result;
 			},
-			Delete:function(State,Token){
+			Delete: function (State, Token) {
 				let Names = Token.Read("Names");
-				for(let V of Names){
-					State.DeleteVariable(V.Name);	
+				for (let V of Names) {
+					State.DeleteVariable(V.Name);
 				}
 			},
-			Unset:function(State,Token){
+			Unset: function (State, Token) {
 				let Expressions = Token.Read("Expressions");
-				for(let E of Expressions){
-					if(E instanceof ASTBase){
-						if(E.Type==="GetIndex"){
-							let O = this.Parse(State,E.Read("Object"));
-							let I = this.Parse(State,E.Read("Index"));
+				for (let E of Expressions) {
+					if (E instanceof ASTBase) {
+						if (E.Type === "GetIndex") {
+							let O = this.Parse(State, E.Read("Object"));
+							let I = this.Parse(State, E.Read("Index"));
 							delete O[I];
-						}else{
-							ErrorHandler.IError(E,"Attempt","delete non-index");	
+						} else {
+							ErrorHandler.IError(E, "Attempt", "delete non-index");
 						}
-					}else{
-						ErrorHandler.IError(Token,"Expected","index for unset statement",String(E));
+					} else {
+						ErrorHandler.IError(Token, "Expected", "index for unset statement", String(E));
 					}
 				}
 			},
-			Chunk:function(State,Token){
-				this.ParseState(new IState(Token.Read("Body"),State));
+			Chunk: function (State, Token) {
+				this.ParseState(new IState(Token.Read("Body"), State));
 			},
-			Try:function(State,Token){
+			Try: function (State, Token) {
 				let TryBody = Token.Read("TryBody");
 				let CatchBody = Token.Read("CatchBody");
 				let CatchName = Token.Read("CatchName");
 				let FinallyBody = Token.Read("FinallyBody");
 				try {
-					let NewState = new IState(TryBody,State);
-					this.ParseState(NewState);	
-				}catch(E){
-					let NewState = new IState(CatchBody,State);
-					NewState.NewVariable(CatchName,E);
+					let NewState = new IState(TryBody, State);
 					this.ParseState(NewState);
-				}finally{
-					if(FinallyBody){
-						let NewState = new IState(FinallyBody,State);
-						this.ParseState(NewState);	
+				} catch (E) {
+					let NewState = new IState(CatchBody, State);
+					NewState.NewVariable(CatchName, E);
+					this.ParseState(NewState);
+				} finally {
+					if (FinallyBody) {
+						let NewState = new IState(FinallyBody, State);
+						this.ParseState(NewState);
 					}
 				}
 			},
-			Switch:function(State,Token){
-				let Expression = this.Parse(State,Token.Read("Expression"));
+			Switch: function (State, Token) {
+				let Expression = this.Parse(State, Token.Read("Expression"));
 				let Do = true;
-				for(let Case of Token.Read("Cases")){
-					if(Expression==this.Parse(State,Case.Read("Expression"))){
-						let NewState=new IState(Case.Read("Body"),State);
+				for (let Case of Token.Read("Cases")) {
+					if (Expression == this.Parse(State, Case.Read("Expression"))) {
+						let NewState = new IState(Case.Read("Body"), State);
 						this.ParseState(NewState);
 						Do = false;
 						break;
 					}
 				}
-				if(Do){
+				if (Do) {
 					let Def = Token.Read("Default");
-					if(Def){
-						let NewState=new IState(Def.Read("Body"),State);
+					if (Def) {
+						let NewState = new IState(Def.Read("Body"), State);
 						this.ParseState(NewState);
 					}
 				}
 			},
-			Swap:function(State,Token){
+			Swap: function (State, Token) {
 				let N1 = Token.Read("N1");
 				let N2 = Token.Read("N2");
 				let V1 = State.GetGlobalRawVariable(N1);
 				let V2 = State.GetGlobalRawVariable(N1);
-				if(!V1)ErrorHandler.IError(Token,"Attempt",`swap invalid variable ${N1}`);
-				if(!V2)ErrorHandler.IError(Token,"Attempt",`swap invalid variable ${N2}`);
-				if(V1.Constant===true)ErrorHandler.IError(Token,"Attempt",`modify constant variable ${N1}`);
-				if(V2.Constant===true)ErrorHandler.IError(Token,"Attempt",`modify constant variable ${N2}`);
-				let T=V1.Value;
-				V1.Value=V2.Value;
-				V2.Value=T;
+				if (!V1) ErrorHandler.IError(Token, "Attempt", `swap invalid variable ${N1}`);
+				if (!V2) ErrorHandler.IError(Token, "Attempt", `swap invalid variable ${N2}`);
+				if (V1.Constant === true) ErrorHandler.IError(Token, "Attempt", `modify constant variable ${N1}`);
+				if (V2.Constant === true) ErrorHandler.IError(Token, "Attempt", `modify constant variable ${N2}`);
+				let T = V1.Value;
+				V1.Value = V2.Value;
+				V2.Value = T;
 			},
-			LockVariable:function(State,Token){
+			LockVariable: function (State, Token) {
 				let Name = Token.Read("Name");
 				let Variable = State.GetGlobalRawVariable(Name);
-				if(!Variable)ErrorHandler.IError(Token,"Attempt",`lock invalid variable ${Name}`);
+				if (!Variable) ErrorHandler.IError(Token, "Attempt", `lock invalid variable ${Name}`);
 				Variable.Constant = true;
 			},
-			In:function(State,Token){
-				let V1 = this.Parse(State,Token.Read("V1"));
-				let V2 = this.Parse(State,Token.Read("V2"));
+			In: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1"));
+				let V2 = this.Parse(State, Token.Read("V2"));
 				let T = this.GetType(V2);
-				if(T==="string")return !!V2.match(Tokenizer.Escape(V1));
-				else if(T==="array")return V2.includes(V1);
-				else if(T==="object")return Object.prototype.hasOwnProperty.call(V2,V1);
+				if (T === "string") return !!V2.match(Tokenizer.Escape(V1));
+				else if (T === "array") return V2.includes(V1);
+				else if (T === "object") return Object.prototype.hasOwnProperty.call(V2, V1);
 				return false;
 			},
 		},
@@ -2803,10 +2803,10 @@ const XBS = ((DebugMode = false) => {
 	}
 
 	class DefineState {
-		constructor(State,Body){
-			Body=new IState(Body,State);
-			this.Fire = function(IStack){
-				if(IStack instanceof InterpreterStack)IStack.ParseState(Body);
+		constructor(State, Body) {
+			Body = new IState(Body, State);
+			this.Fire = function (IStack) {
+				if (IStack instanceof InterpreterStack) IStack.ParseState(Body);
 			}
 		}
 	}
@@ -2823,11 +2823,11 @@ const XBS = ((DebugMode = false) => {
 			this.ParseStates = {};
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
-		GetType(V){
+		GetType(V) {
 			let T = typeof V;
-			if(T==="object"&&V instanceof Array){
-				return "array";	
-			}else if(V===undefined||V===null){
+			if (T === "object" && V instanceof Array) {
+				return "array";
+			} else if (V === undefined || V === null) {
 				return "null";
 			}
 			return T;
@@ -2890,37 +2890,37 @@ const XBS = ((DebugMode = false) => {
 			State.Close();
 		}
 		//-- Other Language States --\\
-		FunctionState(State,Token){
-			let Parameters=Token.Read("Parameters"),
-				GlobalVariables=State.GetAllGlobalVariables(),
-				Body=Token.Read("Body"),
-				self=this;
-			return function(...Arguments){
-				let NewState = new IState(Body,State,{IsFunction:true});
+		FunctionState(State, Token) {
+			let Parameters = Token.Read("Parameters"),
+				GlobalVariables = State.GetAllGlobalVariables(),
+				Body = Token.Read("Body"),
+				self = this;
+			return function (...Arguments) {
+				let NewState = new IState(Body, State, { IsFunction: true });
 				let Stop = false;
-				for(let Key in Parameters){
+				for (let Key in Parameters) {
 					let Parameter = Parameters[Key];
 					let Argument = Arguments[Key];
-					if(Parameter.IsVararg===true){
-						let K=+Key,
-							List=[];
-						for(let i=K;i<Arguments.length;i++){
-							List.push(self.Parse(State,Arguments[i]));
+					if (Parameter.IsVararg === true) {
+						let K = +Key,
+							List = [];
+						for (let i = K; i < Arguments.length; i++) {
+							List.push(self.Parse(State, Arguments[i]));
 						}
-						Argument=List;
-						if(Argument.length===0){
-							Argument=undefined;
+						Argument = List;
+						if (Argument.length === 0) {
+							Argument = undefined;
 						}
-						Stop=true;
+						Stop = true;
 					}
-					if(Argument===undefined){
-						Argument=self.Parse(State,Parameter.Value);
+					if (Argument === undefined) {
+						Argument = self.Parse(State, Parameter.Value);
 					}
-					NewState.NewVariable(Parameter.Name,Argument);
-					if(Stop)break;
+					NewState.NewVariable(Parameter.Name, Argument);
+					if (Stop) break;
 				}
-				for(let Variable of GlobalVariables){
-					State.TransferVariable(NewState,Variable);
+				for (let Variable of GlobalVariables) {
+					State.TransferVariable(NewState, Variable);
 				}
 				self.ParseState(NewState);
 				let Return = NewState.Read("Return");
