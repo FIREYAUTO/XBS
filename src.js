@@ -868,6 +868,26 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value:"DEL",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("Delete");
+					this.Next();
+					Node.Write("Names",this.IdentifierList());
+					return Node;
+				},
+			},
+			{
+				Value:"UNSET",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("Unset");
+					this.Next();
+					Node.Write("Expressions",this.ExpressionList());
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -2575,6 +2595,28 @@ const XBS = ((DebugMode = false) => {
 					Result.push(this.Parse(NewState,X));
 				}
 				return Result;
+			},
+			Delete:function(State,Token){
+				let Names = Token.Read("Names");
+				for(let V of Names){
+					State.DeleteVariable(V.Name);	
+				}
+			},
+			Unset:function(State,Token){
+				let Expressions = Token.Read("Expressions");
+				for(let E of Expressions){
+					if(E instanceof ASTBase){
+						if(E.Type==="GetIndex"){
+							let O = this.Parse(State,E.Read("Object"));
+							let I = this.Parse(State,E.Read("Index"));
+							delete O[I];
+						}else{
+							ErrorHandler.IError(E,"Attempt","delete non-index");	
+						}
+					}else{
+						ErrorHandler.IError(Token,"Expected","index for unset statement",String(E));
+					}
+				}
 			},
 		},
 	};
