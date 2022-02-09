@@ -915,7 +915,7 @@ const XBS = ((DebugMode = false) => {
 				Call:function(){
 					let Node = this.NewNode("Switch");
 				    	this.Next();
-					Node.Write("Expression",this.ExpressionInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
+					Node.Write("Expression",this.ParseExpression());
 					this.TestNext("BOPEN","Bracket");
 					this.Next();
 					let Cases = [];
@@ -1940,7 +1940,7 @@ const XBS = ((DebugMode = false) => {
 				return List;
 			} else {
 				this.ErrorIfEOS();
-				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase} ${Start.Value}`, `${this.Token.Type.toLowerCase} ${this.Token.Value}`);
+				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase()} ${Tokenizer.ValueFromName(Start.Value,Start.Type)}`, `${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
 			}
 		}
 		IdentifierList(Options = {}) {
@@ -2033,7 +2033,7 @@ const XBS = ((DebugMode = false) => {
 						return Chunk.Call.bind(this)();
 					} else {
 						this.ErrorIfEOS();
-						ErrorHandler.AError(this, "Expected", `${Type.toLowerCase()} ${Tokenizer.ValueFromName(Value)}`, `${Token.Type.toLowerCase()} ${Token.RawValue}`);
+						ErrorHandler.AError(this, "Expected", `${Type.toLowerCase()} ${Tokenizer.ValueFromName(Value,Type)}`, `${Token.Type.toLowerCase()} ${Token.RawValue}`);
 					}
 				}
 			}
