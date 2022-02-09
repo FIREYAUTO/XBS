@@ -546,8 +546,10 @@ const XBS = ((DebugMode = false) => {
 		constructor(Stack, Type) {
 			super(Stack, Type);
 			this.Data = {};
+			this.FirstData = undefined;
 		}
 		Write(Name, Value) {
+			if(this.FirstData===undefined)this.FirstData=Name;
 			this.Data[Name] = Value;
 		}
 		Read(Name) {
@@ -1074,6 +1076,29 @@ const XBS = ((DebugMode = false) => {
 					return [Node,Priority];
 				},
 			},
+			{
+				Value: "FORCEPARSE",
+				Type: "Operator",
+				Stop:false,
+				Call: function (Priority) {
+					let Node = this.NewNode("ACP");
+					this.Next();
+					Node.Write("V1",this.ParseRChunk(true));
+					return [Node,Priority];
+				},
+			},
+			{
+				Value:"PIPE",
+				Type:"Operator",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("Pipe");
+				    	this.Next();
+					Node.Write("Expressions",this.ExpressionListInside({Value:"POPEN",Type:"Bracket"},{Value:"PCLOSE",Type:"Bracket"}));
+					Node.Write("ComplexExpression",this.ParseComplexExpression(new ASTExpression("BLANK",Priority)));
+					return [Node,Priority];
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -1588,6 +1613,19 @@ const XBS = ((DebugMode = false) => {
 					return new ASTExpression(Node,Priority);
 				},
 			},
+			{
+				Value: "RANGE",
+				Type: "Operator",
+				Stop: false,
+				Priority: 395,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("Range");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -1882,12 +1920,19 @@ const XBS = ((DebugMode = false) => {
 				}
 			}
 		}
-		ParseRChunk() {
+		ParseRChunk(AllowExpression=false) {
 			let Token = this.Token;
 			for (let Chunk of AST.Chunks) {
 				if (AST.IsToken(Token, Chunk.Value, Chunk.Type)) {
 					return Chunk.Call.bind(this)();
 				}
+			}
+			if(AllowExpression===true){
+				let Result = this.ParseFullExpression();
+				if (Result === undefined) {
+					ErrorHandler.AError(this, "Unexpected", `${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
+				}
+				return Result;
 			}
 		}
 		ParseChunk() {
@@ -2457,6 +2502,41 @@ const XBS = ((DebugMode = false) => {
 				}else{
 					return this.Parse(State,Token.Read("V2"));
 				}
+			},
+			Range: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2")),
+					List = [];
+				if(this.GetType(V1)!="number")ErrorHandler.IError(Token,"Expected","number",`${this.GetType(V1)} for range a`);
+				if(this.GetType(V2)!="number")ErrorHandler.IError(Token,"Expected","number",`${this.GetType(V2)} for range b`);
+				if(V1>=V2)ErrorHandler.IError(Token,"Unexpected","range number sequence (a must be less than b)");
+				for(let i=V1;i<=V2;i++)List.push(i);
+				return List;
+			},
+			ACP:function(State,Token){
+				return this.Parse(State,Token.Read("V1"));	
+			},
+			Pipe:function(State,Token){
+				let Expressions = Token.Read("Expressions"),
+					ComplexExpression = Token.Read("ComplexExpression"),
+					Result = [];
+				let Ex = [];
+				for(let E of Expressions){
+					if(E instanceof ASTBase&&E.Type==="UnpackArray"){
+						let List = this.Parse(State,E.Read("V1"),true);
+						for(let x of List){
+							Ex.push(x);	
+						}
+					}else{
+						Ex.push(E);	
+					}
+				}
+				if(ComplexExpression.FirstData===undefined)ErrorHandler.IError(ComplexExpression,"Unexpected","complex expression for pipe operator");
+				for(let Expression of Ex){
+					ComplexExpression.Write(ComplexExpression.FirstData,Expression);
+					Result.push(this.Parse(State,ComplexExpression));
+				}
+				return Result;
 			},
 		},
 	};
