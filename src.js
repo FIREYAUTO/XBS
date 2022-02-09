@@ -861,6 +861,7 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Destructure");
 					this.Next();
 					Node.Write("Names", this.IdentifierListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" }));
+					this.Next();
 					Node.Write("Object", this.ParseExpression());
 					return Node;
 				},
