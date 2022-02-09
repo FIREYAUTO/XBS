@@ -15,7 +15,7 @@ const XBS = ((DebugMode = false) => {
 			"Unexpected": (a) => `Unexpected ${a}`,
 			"Expected": (a, b) => `Expected ${a}, got ${b} instead`,
 			"Attempt": (a) => `Attempt to ${a}`,
-			"Cannot":(a)=>`Cannot ${b}`,
+			"Cannot":(a)=>`Cannot ${a}`,
 		},
 		RawError: function (Type, StartMessage = "", EndMessage = "", ...Parameters) {
 			let Result = this.ErrorTypes[Type];
@@ -2829,6 +2829,7 @@ const XBS = ((DebugMode = false) => {
 						return new Call(...Arguments);
 					}else if(E.Type==="GetVariable"){
 						let Result = State.GetVariable(E.Read("Name"));
+						if(Result==undefined)ErrorHandler.IError(E,"Attempt","create new instance of non-object");
 						return new Result;
 					}else{
 						ErrorHandler.IError(E,"Attempt","create new instance of non-object");
@@ -2954,24 +2955,16 @@ const XBS = ((DebugMode = false) => {
 					if (Parameter.IsVararg === true) {
 						let K = +Key,
 							List = [];
-						for (let i = K; i < Arguments.length; i++) {
-							List.push(self.Parse(State, Arguments[i]));
-						}
+						for (let i = K; i < Arguments.length; i++)List.push(self.Parse(State, Arguments[i]));
 						Argument = List;
-						if (Argument.length === 0) {
-							Argument = undefined;
-						}
+						if (Argument.length === 0)Argument = undefined;
 						Stop = true;
 					}
-					if (Argument === undefined) {
-						Argument = self.Parse(State, Parameter.Value);
-					}
+					if (Argument === undefined)Argument = self.Parse(State, Parameter.Value);
 					NewState.NewVariable(Parameter.Name, Argument);
 					if (Stop) break;
 				}
-				for (let Variable of GlobalVariables) {
-					State.TransferVariable(NewState, Variable);
-				}
+				for (let Variable of GlobalVariables)State.TransferVariable(NewState, Variable);
 				self.ParseState(NewState);
 				let Return = NewState.Read("Return");
 				return Return;
@@ -2982,7 +2975,7 @@ const XBS = ((DebugMode = false) => {
 	//-- Language Setup --\\
 
 	return function (Code = "", Library = {}, Settings = {}) {
-		const CodeResult = { Success: false, Error: undefined, Result: undefined };
+		const CodeResult = { Success: false, Error: undefined, Result: undefined, GlobalSettings: {} };
 		try {
 			//-- Token --\\
 			const TokenizerStack = Tokenizer.NewStack(Code);
@@ -3002,6 +2995,7 @@ const XBS = ((DebugMode = false) => {
 			//-- Finish --\\
 			CodeResult.Success = true;
 			CodeResult.Result = IStack.Evaluation;
+			CodeResult.GlobalSettings = IStack.MainState.GlobalVariables;
 		} catch (Error) {
 			CodeResult.Success = false;
 			CodeResult.Error = Error.stack;
