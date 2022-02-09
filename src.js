@@ -945,6 +945,20 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value:"SWAP",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("Swap");
+				    	this.TypeTestNext("Identifier");
+					this.Next();
+					Node.Write("N1",this.Token.Value);
+					this.TypeTestNext("Identifier");
+					this.Next();
+					Node.Write("N2",this.Token.Value);
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -1729,12 +1743,25 @@ const XBS = ((DebugMode = false) => {
 				Value: "RANGE",
 				Type: "Operator",
 				Stop: false,
-				Priority: 395,
+				Priority: 760,
 				Call: function (Value, Priority) {
 					this.Next(2);
 					let Node = this.NewNode("Range");
 					Node.Write("V1", Value);
 					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "IN",
+				Type: "Keyword",
+				Stop: false,
+				Priority: 395,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("In");
+					Node.Write("V1",Value);
+					Node.Write("V2",this.ParseExpression(Priority));
 					return new ASTExpression(Node, Priority);
 				},
 			},
@@ -2726,6 +2753,28 @@ const XBS = ((DebugMode = false) => {
 						this.ParseState(NewState);
 					}
 				}
+			},
+			Swap:function(State,Token){
+				let N1 = Token.Read("N1");
+				let N2 = Token.Read("N2");
+				let V1 = State.GetGlobalRawVariable(N1);
+				let V2 = State.GetGlobalRawVariable(N1);
+				if(!V1)ErrorHandler.IError(Token,"Attempt",`swap invalid variable ${N1}`);
+				if(!V2)ErrorHandler.IError(Token,"Attempt",`swap invalid variable ${N2}`);
+				if(V1.Constant===true)ErrorHandler.IError(Token,"Attempt",`modify constant variable ${N1}`);
+				if(V2.Constant===true)ErrorHandler.IError(Token,"Attempt",`modify constant variable ${N2}`);
+				let T=V1.Value;
+				V1.Value=V2.Value;
+				V2.Value=T;
+			},
+			In:function(State,Token){
+				let V1 = this.Parse(State,Token.Read("V1"));
+				let V2 = this.Parse(State,Token.Read("V2"));
+				let T = this.GetType(V2);
+				if(T==="string")return V2.match(Tokenizer.Escape(V1));
+				else if(T==="array")return V2.includes(V1);
+				else if(T==="object")return Object.prototype.hasOwnProperty.call(V2,V1);
+				return false;
 			},
 		},
 	};
