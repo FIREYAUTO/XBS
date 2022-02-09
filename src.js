@@ -926,13 +926,13 @@ const XBS = ((DebugMode = false) => {
 							let Case = this.NewNode("Case");
 							Case.Write("Expression",this.ParseExpression());
 							this.Next();
-							Case.Write("Body",this.ParseBody());
+							Case.Write("Body",this.ParseBlock());
 							Cases.push(Case);
 						}else if(this.CheckNext("DEFAULT","Keyword")){
 							this.Next(2);
 							let Def = this.NewNode("Default");
 							this.Next();
-							Def.Write("Body",this.ParseBody());
+							Def.Write("Body",this.ParseBlock());
 							Node.Write("Default",Def);
 						}else{
 							this.Next();
