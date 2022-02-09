@@ -1143,6 +1143,17 @@ const XBS = ((DebugMode = false) => {
 					return [Node,Priority];
 				},
 			},
+			{
+				Value: "CHUNK",
+				Type: "Keyword",
+				Stop:false,
+				Call: function (Priority) {
+					let Node = this.NewNode("Chunk");
+					this.Next();
+					Node.Write("Body",this.ParseBlock());
+					return [Node,Priority];
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -2617,6 +2628,9 @@ const XBS = ((DebugMode = false) => {
 						ErrorHandler.IError(Token,"Expected","index for unset statement",String(E));
 					}
 				}
+			},
+			Chunk:function(State,Token){
+				this.ParseState(new IState(Token.Read("Body"),State));
 			},
 		},
 	};
