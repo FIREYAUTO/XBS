@@ -1,9 +1,79 @@
 # XBS
-## What is XBS?
-  > XBS is an intepreted programming language written in JavaScript. XBS is my first "working" programming language. Currently, the state of main XBS components isn't great; the AST is a good example of this. XBS isn't really informative about errors, and you can sometimes break it. In the future, I plan on rewriting XBS entirely once I have a good idea on how to make a good AST and paraser.
-## What is the purpose of XBS?
-  > XBS doesn't really have any main purpose, as I created it mainly as a test to see if I could finally make a programming language. You can use XBS for anything you want, as long as you can run JavaScript and have a proper library.
-## Big Issues
-  > Some big issues in XBS include the structure of the AST. The AST uses arrays instead of objects to make interpreted code. This has already shown its downsides, and plans for a new AST and parser will be constructed as time goes on.
+
+## Questions
+
+### What is XBS?
+* XBS is an interpreted programming language written in JavaScript with similar syntax design to the following languages: JavaScript and Python. The syntax design mainly stems from JavaScript rather than Python.
+
+### What is the purpose of XBS
+* The purpose for this language is flexible. I mainly wrote this as a fun project to work on, but also to expand my creativity and other aspects of programming.
+	XBS can be used in just about any web-based client-side application you need it for.
+***
 ## Notes
-  > * XBS is not finished.
+* XBS is not finished.
+* The wiki is being rewritten.
+***
+## Features
+- [x] Declaring & Updating Variables
+- [x] Indexing & Setting Indexes
+- [x] Math Operators
+- [x] Logical & Conditional Operators
+- [x] If Statement
+- [x] As Statement
+- [x] Define Statement
+- [x] Functions
+- [x] Varargs & Array Unpacking
+- [x] Using Statement
+- [x] Calling Functions
+- [x] Objects & Arrays
+- [x] Pipe & EPipe Operators
+- [x] Send, Stop, and Continue Statements
+- [x] ACP Operator
+- [x] Ternary Operator
+- [x] Bitwise Operators
+- [x] Unary Negation & Round Operators
+- [x] While, For, Foreach, Repeat, Each Loop Statements 
+- [x] Destructure Statement
+- [x] Comment Syntax 
+- [x] Range Operator
+- [ ] Type System
+- [ ] Chunk Statement
+- [ ] Try Statement
+- [ ] Switch Statement
+- [ ] Isa operator
+- [ ] Classes
+- [ ] Global Settings
+- [ ] Del & Unset Statements
+- [ ] New Statement
+- [ ] Swap Statement
+- [ ] Istype Statement
+- [ ] Lockvar Statement
+- [ ] Exit Statement
+- [ ] Self-Calling Operator
+- [ ] Expressional Strings
+***
+## Using XBS
+
+### Load in HTML
+
+```html
+<script src="https://fireyauto.github.io/XBS/src.js"></script>
+```
+
+### Run Code
+
+```js
+XBS(Code: string, Environment: {}, Settings: { PrintTokens: boolean, PrintAST: boolean });
+```
+Example:
+```js
+XBS(`log("Hello, world!");`,{log:(...a)=>document.write(a.join(" "),"<br>")})
+```
+Returns:
+```js
+{
+	Success: boolean,
+	Error: ?string,
+	Result: any,
+}
+```
