@@ -15,6 +15,7 @@ const XBS = ((DebugMode = false) => {
 			"Unexpected": (a) => `Unexpected ${a}`,
 			"Expected": (a, b) => `Expected ${a}, got ${b} instead`,
 			"Attempt": (a) => `Attempt to ${a}`,
+			"Cannot":(a)=>`Cannot ${b}`,
 		},
 		RawError: function (Type, StartMessage = "", EndMessage = "", ...Parameters) {
 			let Result = this.ErrorTypes[Type];
@@ -970,6 +971,16 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value: "AT",
+				Type: "Operator",
+				Call: function () {
+					let Node = this.NewNode("GlobalVariable");
+					this.Next();
+					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 }));
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -1234,6 +1245,17 @@ const XBS = ((DebugMode = false) => {
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
 					return [Node, Priority];
+				},
+			},
+			{
+				Value: "NEW",
+				Type: "Keyword",
+				Stop:false,
+				Call: function (Priority) {
+					let Node = this.NewNode("New");
+					this.Next();
+					Node.Write("Expression", this.ParseExpression());
+					return [Node,Priority];
 				},
 			},
 			/*
@@ -2134,7 +2156,8 @@ const XBS = ((DebugMode = false) => {
 				},
 				this.Variables = [],
 				this.Children = [],
-				this.Position = 0;
+				this.Position = 0,
+				this.GlobalVariables={};
 			for (let k in Data) this.Data[k] = Data[k];
 			if (Parent && Parent instanceof IState) {
 				Parent.Children.push(this);
@@ -2142,6 +2165,7 @@ const XBS = ((DebugMode = false) => {
 					this.Data.InAs = true;
 					this.Data.AsExpression = Parent.Data.AsExpression;
 				}
+				this.GlobalVariables=this.Parent.GlobalVariables;
 			}
 		}
 		Write(Name, Value) {
@@ -2792,6 +2816,32 @@ const XBS = ((DebugMode = false) => {
 				else if (T === "array") return V2.includes(V1);
 				else if (T === "object") return Object.prototype.hasOwnProperty.call(V2, V1);
 				return false;
+			},
+			New:function(State,Token){
+				let E = Token.Read("Expression");
+				if(E instanceof ASTBase){
+					if(E.Type==="Call"){
+						let Call = this.Parse(State, E.Read("Call"));
+						let Arguments = this.ParseArray(State, E.Read("Arguments"));
+						if (!(Call instanceof Function)) {
+							ErrorHandler.IError(E, "Attempt", "call non-function");
+						}
+						return new Call(...Arguments);
+					}else if(E.Type==="GetVariable"){
+						let Result = State.GetVariable(E.Read("Name"));
+						return new Result;
+					}else{
+						ErrorHandler.IError(E,"Attempt","create new instance of non-object");
+					}
+				}else{
+					ErrorHandler.IError(Token,"Cannot",`create new instance of ${this.GetType(E)} ${String(E)}`)
+				}
+			},
+			GlobalVariable:function(State,Token){
+				let Variables = Token.Read("Variables");
+				for(let Variable of Variables){
+					State.GlobalVariables[Variable.Name]=this.Parse(State,Variable.Value);
+				}
 			},
 		},
 	};
