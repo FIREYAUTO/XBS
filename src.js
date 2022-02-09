@@ -854,6 +854,17 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value: "DESTRUCT",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("Destructure");
+					this.Next();
+					Node.Write("Names", this.IdentifierListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" }));
+					Node.Write("Object", this.ParseExpression());
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -949,6 +960,28 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Priority) {
 					this.Next();
 					let Node = this.NewNode("Round");
+					Node.Write("V1", this.ParseExpression(400));
+					return [Node, Priority];
+				},
+			},
+			{
+				Value: "QUESTION",
+				Type: "Operator",
+				Stop: false,
+				Call: function (Priority) {
+					this.Next();
+					let Node = this.NewNode("Length");
+					Node.Write("V1", this.ParseExpression(400));
+					return [Node, Priority];
+				},
+			},
+			{
+				Value: "BITNOT",
+				Type: "Bitwise",
+				Stop: false,
+				Call: function (Priority) {
+					this.Next();
+					let Node = this.NewNode("BitNot");
 					Node.Write("V1", this.ParseExpression(400));
 					return [Node, Priority];
 				},
@@ -1460,6 +1493,100 @@ const XBS = ((DebugMode = false) => {
 					return new ASTExpression(Node, Priority);
 				},
 			},
+			{
+				Value: "BITAND",
+				Type: "Bitwise",
+				Stop: false,
+				Priority: 280,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("BitAnd");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "BITOR",
+				Type: "Bitwise",
+				Stop: false,
+				Priority: 280,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("BitOr");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "BITXOR",
+				Type: "Bitwise",
+				Stop: false,
+				Priority: 280,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("BitXor");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "BITZLSHIFT",
+				Type: "Bitwise",
+				Stop: false,
+				Priority: 290,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("BitZLShift");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "BITZRSHIFT",
+				Type: "Bitwise",
+				Stop: false,
+				Priority: 290,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("BitZRShift");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "BITRSHIFT",
+				Type: "Bitwise",
+				Stop: false,
+				Priority: 290,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("BitRShift");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value:"QUESTION",
+				Type:"Operator",
+				Stop:false,
+				Priority:1300,
+				Call:function(Value,Priority){
+					this.Next(2);
+					let Node = this.NewNode("Ternary");
+				    	Node.Write("Condition",Value);
+					Node.Write("V1",this.ParseExpression());
+					this.TestNext("COLON","Operator");
+					this.Next(2);
+					Node.Write("V2",this.ParseExpression());
+					return new ASTExpression(Node,Priority);
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -1469,7 +1596,7 @@ const XBS = ((DebugMode = false) => {
 				Call:function(Value,Priority){
 					let Node = this.NewNode("Type");
 				    
-					return Node;
+					return new ASTExpression(Node,Priority);
 				},
 			},
 			*/
@@ -2097,7 +2224,7 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				return -V1;
 			},
-			"Negative": function (State, Token) {
+			"Round": function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				return Math.round(V1);
 			},
@@ -2268,7 +2395,68 @@ const XBS = ((DebugMode = false) => {
 			RunDefine:function(State,Token){
 				let Define = this.Parse(State,Token.Read("V1"));
 				Define.Fire(this);
-			}
+			},
+			Destructure:function(State,Token){
+				let Names = Token.Read("Names");
+				let O = this.Parse(State,Token.Read("Object"));
+				let Default = O.default;
+				for(let V of Names){
+					if(!Object.prototype.hasOwnProperty.call(O,V.Name)){
+						if(Default){
+							State.NewVariable(V.Name,Default);	
+						}
+					}else{
+						State.NewVariable(V.Name,O[V.Name]);
+					}	
+				}
+			},
+			BitAnd: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				return V1&V2;
+			},
+			BitOr: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				return V1&V2;
+			},
+			BitXor: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				return V1^V2;
+			},
+			BitZLShift: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				return V1<<V2;
+			},
+			BitZRShift: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				return V1>>V2;
+			},
+			BitRShift: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				return V1>>>V2;
+			},
+			BitNot: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1"));
+				return ~V1;
+			},
+			Length:function(State,Token){
+				let V1 = this.Parse(State,Token.Read("V1"));
+				let T = this.GetType(V1);
+				if(T!="string"&&T!="array")ErrorHandler.IError(Token,"Expected","string or array",T);
+				return V1.length;
+			},
+			Ternary:function(State,Token){
+				if(this.Parse(State,Token.Read("Condition"))){
+					return this.Parse(State,Token.Read("V1"));
+				}else{
+					return this.Parse(State,Token.Read("V2"));
+				}
+			},
 		},
 	};
 
@@ -2298,6 +2486,15 @@ const XBS = ((DebugMode = false) => {
 			for (let Name in Environment) this.MainState.NewVariable(Name, Environment[Name]);
 			this.ParseStates = {};
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
+		}
+		GetType(V){
+			let T = typeof V;
+			if(T==="object"&&V instanceof Array){
+				return "array";	
+			}else if(V===undefined||V===null){
+				return "null";
+			}
+			return T;
 		}
 		ParseArray(State, List) {
 			let Result = [];
