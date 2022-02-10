@@ -1,0 +1,39 @@
+#>
+XBS Examples
+<#
+
+#Variable Declarations
+
+set Name = "Hello, world!",
+	Age = 18;
+	
+#Functions
+
+func Add(Number1,Number2){
+	send Number1 + Number2;
+}
+
+#Classes
+
+class Animal {
+	private func construct(self,Name="Animal"){
+		self.Name = Name;
+	}
+	private undefined Name
+	func GetName(self){
+		send self.Name;
+	}
+}
+
+class Dog extends Animal {
+	private func construct(self,Name){
+		super(Name);
+	}
+	func Bark(self){
+		log(self.Name+" barks!");
+	}
+}
+
+set MyDog = new Dog("Spots");
+MyDog::Bark();
+log(MyDog::GetName(), MyDog.Name);
