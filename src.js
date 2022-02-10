@@ -3153,7 +3153,7 @@ const XBS = ((DebugMode = false) => {
 						});	
 					}
 				}
-				let Con = this.Parse(NS,Construct);
+				let Con = self.Parse(NS,Construct);
 				let R = Con(New,...Arguments);
 				if(R===undefined){
 					return New;
