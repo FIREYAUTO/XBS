@@ -1995,9 +1995,11 @@ const XBS = ((DebugMode = false) => {
 				return Expression;
 			}
 			let Priority = Expression.Priority,
-				Next = this.Tokens[this.Position + 1];
+				Next = this.Tokens[this.Position + 1],
+			    	Current = this.Token;
 			if (!Next) return Expression.Value;
 			if (AST.IsToken(Next, "LINEEND", "Operator")) return Expression.Value;
+			if (AST.IsType(Next, "Identifier")&&AST.IsType(Current,"Identifier") ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
 			for (let Complex of AST.ComplexExpressions) {
 				if (!AST.IsToken(Next, Complex.Value, Complex.Type)) continue;
 				if (Expression.Priority <= Complex.Priority) {
@@ -2009,7 +2011,6 @@ const XBS = ((DebugMode = false) => {
 					return Expression.Value;
 				}
 			}
-			if (AST.IsType(Next, "Identifier")) ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
 			return Expression.Value;
 		}
 		ParseExpression(Priority = -1, AllowComma = false) {
