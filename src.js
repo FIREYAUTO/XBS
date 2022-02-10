@@ -812,7 +812,7 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
-				Value: "STOP",
+				Value: "EXIT",
 				Type: "Keyword",
 				Call: function () {
 					let Node = this.NewNode("Exit");
