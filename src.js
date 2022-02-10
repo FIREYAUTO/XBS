@@ -1006,6 +1006,11 @@ const XBS = ((DebugMode = false) => {
 					let Properties = {};
 					while(!this.CheckNext("BCLOSE","Bracket")){
 						this.ErrorIfEOS();
+						let Private = false;
+						if(this.CheckNext("private","Identifier")){
+							Private = true;
+							this.Next();
+						}
 						if(this.CheckNext("FUNC","Keyword")){
 							this.Next();
 							let O = this.NewNode("FastFunction");
@@ -1015,6 +1020,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
 							this.Next();
+							O.Write("Private",Private);
 							O.Write("Body", this.ParseBlock());
 							Properties[Name]=O;
 						}else if(this.CheckNext("SET","Keyword")){
@@ -1026,6 +1032,7 @@ const XBS = ((DebugMode = false) => {
 							this.TestNext("EQ","Assignment");
 							this.Next(2);
 							O.Write("Value",this.ParseExpression());
+							O.Write("Private",Private);
 							Properties[Name]=O;
 						}else if(this.CheckNext("CONST","Keyword")){
 							this.Next();
@@ -2266,6 +2273,11 @@ const XBS = ((DebugMode = false) => {
 					this.Data.InAs = true;
 					this.Data.AsExpression = Parent.Data.AsExpression;
 				}
+				if(Parent.Data.IsClass===true){
+					this.Data.IsClass=true;
+					this.Data.Class=Parent.Data.Class;
+					this.Data.Private=Parent.Data.Private;
+				}
 				this.GlobalVariables=this.Parent.GlobalVariables;
 			}
 		}
@@ -2451,6 +2463,13 @@ const XBS = ((DebugMode = false) => {
 						let Object = this.Parse(State, Name.Read("Object")),
 							Index = this.Parse(State, Name.Read("Index")),
 							ObjectValue = Object[Index];
+						if(State.Read("IsClass")===true&&State.Read("Class")===Object){
+							let Private = State.Read("Private");
+							if(Private.hasOwnProperty(Index)){
+								ObjectValue=Private[Index];
+								Object=Private;
+							}
+						}
 						Object[Index] = Call(ObjectValue, Value);
 						return Object[Index];
 					} else {
@@ -2564,6 +2583,12 @@ const XBS = ((DebugMode = false) => {
 				let Object = this.Parse(State, Token.Read("Object")),
 					Index = this.Parse(State, Token.Read("Index")),
 					Value = Object[Index];
+				if(State.Read("IsClass")===true&&State.Read("Class")===Object){
+					let Private = State.Read("Private");
+					if(Private.hasOwnProperty(Index)){
+						Value=Private[Index];
+					}
+				}
 				if (Value instanceof Function) {
 					Value = Value.bind(Object);
 				}
@@ -2580,6 +2605,12 @@ const XBS = ((DebugMode = false) => {
 			SelfCall: function (State, Token) {
 				let O = this.Parse(State, Token.Read("Object"));
 				let I = this.Parse(State,Token.Read("Index"));
+				if(State.Read("IsClass")===true&&State.Read("Class")===O){
+					let Private = State.Read("Private");
+					if(Private.hasOwnProperty(I)){
+						O=Private;
+					}
+				}
 				let Arguments = this.ParseArray(State, Token.Read("Arguments"));
 				let Call = O[I];
 				if (!(Call instanceof Function)) {
@@ -2856,6 +2887,12 @@ const XBS = ((DebugMode = false) => {
 						if (E.Type === "GetIndex") {
 							let O = this.Parse(State, E.Read("Object"));
 							let I = this.Parse(State, E.Read("Index"));
+							if(State.Read("IsClass")===true&&State.Read("Class")===O){
+								let Private = State.Read("Private");
+								if(Private.hasOwnProperty(I)){
+									O=Private;
+								}
+							}
 							delete O[I];
 						} else {
 							ErrorHandler.IError(E, "Attempt", "delete non-index");
@@ -3137,7 +3174,8 @@ const XBS = ((DebugMode = false) => {
 			Extends = this.Parse(CS,Extends);
 			let Class = function(...Arguments){
 				let New = this;
-				let NS = new IState({Data:[],Line:0,Index:0},CS);
+				let Private = {};
+				let NS = new IState({Data:[],Line:0,Index:0},CS,{IsClass:true,Private:Private,Class:New});
 				let Super = function(...A){
 					let Result = new Extends(...A);
 					for(let Key in Result){
@@ -3149,15 +3187,34 @@ const XBS = ((DebugMode = false) => {
 					let Property = Properties[Name];
 					if(Property.Type==="FastFunction"){
 						if(Name==="construct")continue;
-						New[Name]=self.Parse(NS,Property);
+						let Value = self.Parse(NS,Property);
+						if(Property.Read("Private")===true){
+							Private[Name]=Value;	
+						}else{
+							New[Name]=Value;	
+						}
 					}else if(Property.Type==="Set"){
-						New[Name]=self.Parse(NS,Property.Read("Value"));
+						let Value=self.Parse(NS,Property.Read("Value"));
+						if(Property.Read("Private")===true){
+							Private[Name]=Value;	
+						}else{
+							New[Name]=Value;	
+						}
 					}else if(Property.Type==="Constant"){
-						Object.defineProperty(New,Name,{
-							value:self.Parse(NS,Property.Read("Value")),
-							writeable:false,
-							enumerable:true,
-						});	
+						let Value = self.Parse(NS,Property.Read("Value"))
+						if(Property.Read("Private")===true){
+							Object.defineProperty(New,Name,{
+								value:Value,
+								writeable:false,
+								enumerable:true,
+							});
+						}else{
+							Object.defineProperty(New,Name,{
+								value:Value,
+								writeable:false,
+								enumerable:true,
+							});	
+						}
 					}
 				}
 				let Con = self.Parse(NS,Construct);
