@@ -76,5 +76,6 @@ Returns:
 	Success: boolean,
 	Error: ?string,
 	Result: any,
+	GlobalSettings: {},
 }
 ```
