@@ -3134,17 +3134,9 @@ const XBS = ((DebugMode = false) => {
 					let Property = Properties[Name];
 					if(Property.Type==="FastFunction"){
 						if(Name==="construct")continue;
-						Object.defineProperty(New,Name,{
-							value:self.Parse(NS,Property),
-							writeable:true,
-							enumerable:true,
-						});
+						New[Name]=self.Parse(NS,Property);
 					}else if(Property.Type==="Set"){
-						Object.defineProperty(New,Name,{
-							value:self.Parse(NS,Property.Read("Value")),
-							writeable:true,
-							enumerable:true,
-						});
+						New[Name]=self.Parse(NS,Property.Read("Value"));
 					}else if(Property.Type==="Constant"){
 						Object.defineProperty(New,Name,{
 							value:self.Parse(NS,Property.Read("Value")),
