@@ -1043,7 +1043,7 @@ const XBS = ((DebugMode = false) => {
 							ErrorHandler.AError(this,"Unexpected",`${this.Token.Type.toLowerCase()} ${this.Token.RawValue} while parsing class`);
 						}
 					}
-					this.TestNext("TK_BCLOSE","Bracket");
+					this.TestNext("BCLOSE","Bracket");
 					this.Next();
 					Node.Write("Properties",Properties);
 					return Node;
