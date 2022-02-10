@@ -1045,6 +1045,14 @@ const XBS = ((DebugMode = false) => {
 							O.Write("Value",this.ParseExpression());
 							O.Write("Private",Private);
 							Properties[Name]=O;
+						}else if(this.CheckNext("undefined","Identifier")){
+							this.Next();
+							let O = this.NewNode("Undefined");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							O.Write("Private",Private);
+							Properties[Name]=O;
 						}else{
 							this.Next();
 							this.ErrorIfEOS();
@@ -3233,6 +3241,12 @@ const XBS = ((DebugMode = false) => {
 								writeable:false,
 								enumerable:true,
 							});	
+						}
+					}else if(Property.Type==="Undefined"){
+						if(Property.Read("Private")===true){
+							Private[Name]=null;	
+						}else{
+							New[Name]=null;
 						}
 					}
 				}
