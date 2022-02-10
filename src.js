@@ -2284,7 +2284,7 @@ const XBS = ((DebugMode = false) => {
 				}
 				if(Parent.Data.IsClass===true){
 					this.Data.IsClass=true;
-					this.Data.Class=Parent.Data.Class;
+					this.Data.Classes=Parent.Data.Classes;
 					this.Data.Private=Parent.Data.Private;
 				}
 				this.GlobalVariables=this.Parent.GlobalVariables;
@@ -2472,7 +2472,7 @@ const XBS = ((DebugMode = false) => {
 						let Object = this.Parse(State, Name.Read("Object")),
 							Index = this.Parse(State, Name.Read("Index")),
 							ObjectValue = Object[Index];
-						if(State.Read("IsClass")===true&&State.Read("Class")===Object){
+						if(State.Read("IsClass")===true&&State.Read("Classes").includes(Object)){
 							let Private = State.Read("Private");
 							if(Private.hasOwnProperty(Index)){
 								ObjectValue=Private[Index];
@@ -2592,7 +2592,7 @@ const XBS = ((DebugMode = false) => {
 				let Object = this.Parse(State, Token.Read("Object")),
 					Index = this.Parse(State, Token.Read("Index")),
 					Value = Object[Index];
-				if(State.Read("IsClass")===true&&State.Read("Class")===Object){
+				if(State.Read("IsClass")===true&&State.Read("Classes").includes(Object)){
 					let Private = State.Read("Private");
 					if(Private.hasOwnProperty(Index)){
 						Value=Private[Index];
@@ -2614,7 +2614,7 @@ const XBS = ((DebugMode = false) => {
 			SelfCall: function (State, Token) {
 				let O = this.Parse(State, Token.Read("Object"));
 				let I = this.Parse(State,Token.Read("Index"));
-				if(State.Read("IsClass")===true&&State.Read("Class")===O){
+				if(State.Read("IsClass")===true&&State.Read("Classes").includes(O)){
 					let Private = State.Read("Private");
 					if(Private.hasOwnProperty(I)){
 						O=Private;
@@ -3184,6 +3184,7 @@ const XBS = ((DebugMode = false) => {
 			let Class = function(...Arguments){
 				let New = this;
 				let Private = {};
+				let Classes=[New];
 				Object.defineProperty(New,"__IS_XBS_CLASS",{
 					value:true,
 					configurable:false,
@@ -3196,13 +3197,23 @@ const XBS = ((DebugMode = false) => {
 					writable:false,
 					enumerable:false,
 				});
-				let NS = new IState({Data:[],Line:0,Index:0},CS,{IsClass:true,Private:Private,Class:New});
+				Object.defineProperty(New,"__XBS_CLASSES",{
+					value:Classes,
+					configurable:false,
+					writable:false,
+					enumerable:false,
+				});
+				let NS = new IState({Data:[],Line:0,Index:0},CS,{IsClass:true,Private:Private,Classes:Classes});
 				let Super = function(...A){
 					let Result = new Extends(...A);
+					Classes.push(Result);
 					if(Result&&Result.__IS_XBS_CLASS===true){
 						let P = Result.__XBS_PRIVATE_PROPERTIES;
 						for(let Key in P){
 							Private[Key]=P[Key];	
+						}
+						for(let C of Result.__XBS_CLASSES){
+							Classes.push(C);	
 						}
 					}
 					for(let Key in Result){
