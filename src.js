@@ -3119,18 +3119,17 @@ const XBS = ((DebugMode = false) => {
 			if(!Construct||Construct.Type!="FastFunction"){
 				ErrorHandler.IError(Token,"Expected","construct to be function",`${this.GetType(Construct)}`);
 			}
-			let Super = function(self,...A){
-				let Result = new Extends(...A);
-				for(let Key in Result){
-					self[Key]=Result[Key];
-				}
-			}
-			CS.NewVariable("super",Super);
 			Extends = this.Parse(CS,Extends);
-			Construct = this.Parse(CS,Construct);
 			let Class = function(...Arguments){
 				let New = this;
 				let NS = new IState({Data:[],Line:0,Index:0},CS);
+				let Super = function(...A){
+					let Result = new Extends(...A);
+					for(let Key in Result){
+						New[Key]=Result[Key];
+					}
+				}
+				NS.NewVariable("super",Super);
 				for(let Name in Properties){
 					let Property = Properties[Name];
 					if(Property.Type==="FastFunction"){
@@ -3154,7 +3153,8 @@ const XBS = ((DebugMode = false) => {
 						});	
 					}
 				}
-				let R = Construct(New,...Arguments);
+				let Con = this.Parse(NS,Construct);
+				let R = Con(New,...Arguments);
 				if(R===undefined){
 					return New;
 				}
