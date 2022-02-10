@@ -3176,9 +3176,27 @@ const XBS = ((DebugMode = false) => {
 			let Class = function(...Arguments){
 				let New = this;
 				let Private = {};
+				Object.defineProperty(New,"__IS_XBS_CLASS",{
+					value:true,
+					configurable:false,
+					writable:false,
+					enumerable:false,
+				});
+				Object.defineProperty(New,"__XBS_PRIVATE_PROPERTIES",{
+					value:Private,
+					configurable:false,
+					writable:false,
+					enumerable:false,
+				});
 				let NS = new IState({Data:[],Line:0,Index:0},CS,{IsClass:true,Private:Private,Class:New});
 				let Super = function(...A){
 					let Result = new Extends(...A);
+					if(Result&&Object.prototype.hasOwnProperty.call("__IS_XBS_CLASS")&&Result.__IS_XBS_CLASS===true){
+						let P = Result.__XBS_PRIVATE_PROPERTIES;
+						for(let Key in P){
+							Private[Key]=P[Key];	
+						}
+					}
 					for(let Key in Result){
 						New[Key]=Result[Key];
 					}
