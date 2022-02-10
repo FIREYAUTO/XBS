@@ -2435,12 +2435,18 @@ const XBS = ((DebugMode = false) => {
 					if (Name.Type === "GetVariable") {
 						Name = Name.Read("Name");
 						let Variable = State.GetGlobalRawVariable(Name);
-						if (Variable.Constant === true) {
-							ErrorHandler.IError(Token, "Attempt", `modify constant variable ${Variable.Name}`);
+						if(Variable){
+							if (Variable.Constant === true) {
+								ErrorHandler.IError(Token, "Attempt", `modify constant variable ${Variable.Name}`);
+							}
+							let Previous = Variable.Value;
+							State.SetVariable(Name, Call(Variable.Value, Value));
+							return Token.Read("Type") >= 9 ? Previous : Variable.Value;
+						}else{
+							let Result = Call(null, Value);
+							State.SetVariable(Name, Result);
+							return Result;
 						}
-						let Previous = Variable.Value;
-						State.SetVariable(Name, Call(Variable.Value, Value));
-						return Token.Read("Type") >= 9 ? Previous : Variable.Value;
 					} else if (Name.Type === "GetIndex") {
 						let Object = this.Parse(State, Name.Read("Object")),
 							Index = this.Parse(State, Name.Read("Index")),
