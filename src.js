@@ -1043,6 +1043,7 @@ const XBS = ((DebugMode = false) => {
 							this.TestNext("EQ","Assignment");
 							this.Next(2);
 							O.Write("Value",this.ParseExpression());
+							O.Write("Private",Private);
 							Properties[Name]=O;
 						}else{
 							this.Next();
@@ -3201,7 +3202,7 @@ const XBS = ((DebugMode = false) => {
 							New[Name]=Value;	
 						}
 					}else if(Property.Type==="Constant"){
-						let Value = self.Parse(NS,Property.Read("Value"))
+						let Value = self.Parse(NS,Property.Read("Value"));
 						if(Property.Read("Private")===true){
 							Object.defineProperty(Private,Name,{
 								value:Value,
