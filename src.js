@@ -989,6 +989,66 @@ const XBS = ((DebugMode = false) => {
 					return Node;
 				},
 			},
+			{
+				Value:"CLASS",
+				Type:"Keyword",
+				Call:function(){
+					let Node = this.NewNode("Class");
+				    	this.TypeTestNext("Identifier");
+					this.Next();
+					Node.Write("Name",this.Token.Value);
+					if(this.CheckNext("EXTENDS","Keyword")){
+						this.Next(2);
+						Node.Write("Extends",this.ParseExpression());
+					}
+					this.TestNext("BOPEN","Bracket");
+					this.Next();
+					let Properties = {};
+					while(!this.CheckNext("TK_BCLOSE","Bracket")){
+						this.ErrorIfEOS();
+						if(this.CheckNext("FUNC","Keyword")){
+							this.Next();
+							let O = this.NewNode("FastFunction");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							this.Next();
+							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+							this.Next();
+							O.Write("Body", this.ParseBlock());
+							Properties[Name]=O;
+						}else if(this.CheckNext("SET","Keyword")){
+							this.Next();
+							let O = this.NewNode("Set");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							this.TestNext("EQ","Assignment");
+							this.Next(2);
+							O.Write("Value",this.ParseExpression());
+							Properties[Name]=O;
+						}else if(this.CheckNext("CONST","Keyword")){
+							this.Next();
+							let O = this.NewNode("Constant");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							this.TestNext("EQ","Assignment");
+							this.Next(2);
+							O.Write("Value",this.ParseExpression());
+							Properties[Name]=O;
+						}else{
+							this.Next();
+							this.ErrorIfEOS();
+							ErrorHandler.AError(this,"Unexpected",`${this.Token.Type.toLowerCase()} ${this.Token.RawValue} while parsing class`);
+						}
+					}
+					this.TestNext("TK_BCLOSE","Bracket");
+					this.Next();
+					Node.Write("Properties",Properties);
+					return Node;
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -1819,6 +1879,19 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Value, Priority) {
 					this.Next(2);
 					let Node = this.NewNode("In");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "ISA",
+				Type: "Keyword",
+				Stop: false,
+				Priority: 395,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("IsA");
 					Node.Write("V1", Value);
 					Node.Write("V2", this.ParseExpression(Priority));
 					return new ASTExpression(Node, Priority);
@@ -2884,6 +2957,17 @@ const XBS = ((DebugMode = false) => {
 			Exit:function(State,Token){
 				State.Write("Exited",true);
 			},
+			Class:function(State,Token){
+				State.NewVariable(Token.Read("Name"),this.ClassState(State,Token));	
+			},
+			IsA:function(State,Token){
+				let V1 = this.Parse(State,Token.Read("V1")),
+					V2 = this.Parse(State,Token.Read("V2")),
+				    	V = V1;
+				try {V=V.constructor}catch(e){}
+				let Classes = this.GetExtendingClasses(V);
+				return Classes.includes(V2);
+			},
 		},
 	};
 
@@ -3010,6 +3094,76 @@ const XBS = ((DebugMode = false) => {
 				let Return = NewState.Read("Return");
 				return Return;
 			}
+		}
+		GetExtendingClasses(Class){
+			if(!Class)return[];
+			let Extensions = [];
+			Extensions.push(Class);
+			let Proto = Object.prototype.hasOwnProperty.call(Class,"Extends")?Class.Extends:Object.getPrototypeOf(Class);
+			while(Proto){
+				if(Extensions.includes(Proto)){
+					Extensions.pop();
+					break;
+				}
+				Extensions.push(Proto);
+				Proto = Object.prototype.hasOwnProperty.call(Proto,"Extends")?Proto.Extends:Object.getPrototypeOf(Proto.constructor);
+			}
+			return Extensions;
+		}
+		ClassState(State,Token){
+			let Properties = Token.Read("Properties"),
+				Extends = Token.Read("Extends"),
+				self = this;
+			let CS = new IState({Data:[],Line:0,Index:0},State);
+			let Construct = Properties.construct;
+			if(!Construct||Construct.Type!="FastFunction"){
+				ErrorHandler.IError(Token,"Expected","construct to be function",`${this.GetType(Construct)}`);
+			}
+			Extends = this.Parse(CS,Extends);
+			Construct = this.Parse(CS,Construct);
+			let Class = function(...Arguments){
+				let New = this;
+				let NS = new IState({Data:[],Line:0,Index:0},CS);
+				let Super = function(...A){
+					let Result = new Extends(...A);
+					for(let Key in Result){
+						New[Key]=Result[Key];	
+					}
+				}
+				NS.NewVariable("super",Super);
+				for(let Name in Properties){
+					let Property = Properties[Name];
+					if(Property.Type==="FastFunction"){
+						if(Name==="construct")continue;
+						Object.defineProperty(New,Name,{
+							value:self.Parse(NS,Property),
+							writeable:true,
+							enumerable:true,
+						});
+					}else if(Property.Type==="Set"){
+						Object.defineProperty(New,Name,{
+							value:self.Parse(NS,Property.Read("Value")),
+							writeable:true,
+							enumerable:true,
+						});
+					}else if(Property.Type==="Constant"){
+						Object.defineProperty(New,Name,{
+							value:self.Parse(NS,Property.Read("Value")),
+							writeable:false,
+							enumerable:true,
+						});	
+					}
+				}
+				let R = Construct(New,...Arguments);
+				if(R===undefined){
+					return New;
+				}
+				return R;
+			}
+			if(Extends){
+				Class.Extends = Extends;	
+			}
+			return Class;
 		}
 	}
 
