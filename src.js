@@ -1999,7 +1999,7 @@ const XBS = ((DebugMode = false) => {
 			    	Current = this.Token;
 			if (!Next) return Expression.Value;
 			if (AST.IsToken(Next, "LINEEND", "Operator")) return Expression.Value;
-			if (AST.IsType(Next, "Identifier")&&AST.IsType(Current,"Identifier") ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
+			if (AST.IsType(Next, "Identifier")&&AST.IsType(Current,"Identifier")) ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
 			for (let Complex of AST.ComplexExpressions) {
 				if (!AST.IsToken(Next, Complex.Value, Complex.Type)) continue;
 				if (Expression.Priority <= Complex.Priority) {
