@@ -3203,7 +3203,7 @@ const XBS = ((DebugMode = false) => {
 					}else if(Property.Type==="Constant"){
 						let Value = self.Parse(NS,Property.Read("Value"))
 						if(Property.Read("Private")===true){
-							Object.defineProperty(New,Name,{
+							Object.defineProperty(Private,Name,{
 								value:Value,
 								writeable:false,
 								enumerable:true,
