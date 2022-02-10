@@ -2968,6 +2968,14 @@ const XBS = ((DebugMode = false) => {
 				let Classes = this.GetExtendingClasses(V);
 				return Classes.includes(V2);
 			},
+			CommaExpression:function(State,Token){
+				let List = Token.Read("List");
+				let R = null;
+				for(let V of List){
+					R=this.Parse(State,V);
+				}
+				return R;
+			},
 		},
 	};
 
