@@ -3191,7 +3191,7 @@ const XBS = ((DebugMode = false) => {
 				let NS = new IState({Data:[],Line:0,Index:0},CS,{IsClass:true,Private:Private,Class:New});
 				let Super = function(...A){
 					let Result = new Extends(...A);
-					if(Result&&Object.prototype.hasOwnProperty.call("__IS_XBS_CLASS")&&Result.__IS_XBS_CLASS===true){
+					if(Result&&Result.__IS_XBS_CLASS===true){
 						let P = Result.__XBS_PRIVATE_PROPERTIES;
 						for(let Key in P){
 							Private[Key]=P[Key];	
