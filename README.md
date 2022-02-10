@@ -47,9 +47,9 @@
 - [x] New Statement
 - [x] Exit Statement
 - [x] Self-Calling Operator
+- [x] Classes
+- [x] Isa Operator
 - [ ] Type System
-- [ ] Isa operator
-- [ ] Classes
 - [ ] Istype Statement
 - [ ] Expressional Strings
 ***
