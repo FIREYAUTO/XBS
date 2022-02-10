@@ -46,11 +46,11 @@
 - [x] Global Settings
 - [x] New Statement
 - [x] Exit Statement
+- [x] Self-Calling Operator
 - [ ] Type System
 - [ ] Isa operator
 - [ ] Classes
 - [ ] Istype Statement
-- [ ] Self-Calling Operator
 - [ ] Expressional Strings
 ***
 ## Using XBS
