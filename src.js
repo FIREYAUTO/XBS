@@ -2903,7 +2903,7 @@ const XBS = ((DebugMode = false) => {
 				let N1 = Token.Read("N1");
 				let N2 = Token.Read("N2");
 				let V1 = State.GetGlobalRawVariable(N1);
-				let V2 = State.GetGlobalRawVariable(N1);
+				let V2 = State.GetGlobalRawVariable(N2);
 				if (!V1) ErrorHandler.IError(Token, "Attempt", `swap invalid variable ${N1}`);
 				if (!V2) ErrorHandler.IError(Token, "Attempt", `swap invalid variable ${N2}`);
 				if (V1.Constant === true) ErrorHandler.IError(Token, "Attempt", `modify constant variable ${N1}`);
