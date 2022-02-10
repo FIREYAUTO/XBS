@@ -1659,6 +1659,24 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "SELFCALL",
+				Type: "Operator",
+				Stop: false,
+				Priority: 900,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("SelfCall");
+					Node.Write("Object", Value);
+					this.ErrorIfEOS();
+					if(!AST.IsType(this.Token,"Identifier")&&!AST.IsType(this.Token,"Keyword"))ErrorHandler.AError(this,"Expected","identifier",this.Token.Type.toLowerCase());
+					Node.Write("Index",this.Token.Value);
+					this.TestNext("POPEN","Bracket");
+					this.Next();
+					Node.Write("Arguments", this.ExpressionListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
 				Value: "INC",
 				Type: "Operator",
 				Stop: false,
@@ -2317,10 +2335,10 @@ const XBS = ((DebugMode = false) => {
 			10: (a, b) => a - 1,
 		},
 		ParseStates: {
-			"GetVariable": function (State, Token) {
+			GetVariable: function (State, Token) {
 				return State.GetVariable(Token.Read("Name"));
 			},
-			"NewVariable": function (State, Token) {
+			NewVariable: function (State, Token) {
 				let Variables = Token.Read("Variables");
 				let Append = State;
 				if (Token.Read("Type") === "Upvar" && State.Parent) {
@@ -2335,7 +2353,7 @@ const XBS = ((DebugMode = false) => {
 					});
 				};
 			},
-			"Assignment": function (State, Token) {
+			Assignment: function (State, Token) {
 				let Name = Token.Read("Name");
 				let Value = this.Parse(State, Token.Read("Value"));
 				let Call = Interpreter.AssignmentStates[Token.Read("Type")];
@@ -2362,77 +2380,77 @@ const XBS = ((DebugMode = false) => {
 					ErrorHandler.IError(Token, "Unexpected", "assignment operator");
 				}
 			},
-			"Add": function (State, Token) {
+			Add: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 + V2;
 			},
-			"Sub": function (State, Token) {
+			Sub: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 - V2;
 			},
-			"Mul": function (State, Token) {
+			Mul: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 * V2;
 			},
-			"Div": function (State, Token) {
+			Div: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 / V2;
 			},
-			"Mod": function (State, Token) {
+			Mod: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 % V2;
 			},
-			"Pow": function (State, Token) {
+			Pow: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 ** V2;
 			},
-			"FloorDiv": function (State, Token) {
+			FloorDiv: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return Math.floor(V1 / V2);
 			},
-			"PercentOf": function (State, Token) {
+			PercentOf: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return (V1 / 100) * V2;
 			},
-			"Eqs": function (State, Token) {
+			Eqs: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 == V2;
 			},
-			"Leq": function (State, Token) {
+			Leq: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 <= V2;
 			},
-			"Lt": function (State, Token) {
+			Lt: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 < V2;
 			},
-			"Geq": function (State, Token) {
+			Geq: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 >= V2;
 			},
-			"Gt": function (State, Token) {
+			Gt: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 > V2;
 			},
-			"Neq": function (State, Token) {
+			Neq: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 != V2;
 			},
-			"And": function (State, Token) {
+			And: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				if (V1) {
 					let V2 = this.Parse(State, Token.Read("V2"));
@@ -2441,7 +2459,7 @@ const XBS = ((DebugMode = false) => {
 					return false;
 				}
 			},
-			"Or": function (State, Token) {
+			Or: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				if (V1) {
 					return V1;
@@ -2450,19 +2468,19 @@ const XBS = ((DebugMode = false) => {
 					return V1 || V2;
 				}
 			},
-			"Not": function (State, Token) {
+			Not: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				return !V1;
 			},
-			"Negative": function (State, Token) {
+			Negative: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				return -V1;
 			},
-			"Round": function (State, Token) {
+			Round: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				return Math.round(V1);
 			},
-			"GetIndex": function (State, Token) {
+			GetIndex: function (State, Token) {
 				let Object = this.Parse(State, Token.Read("Object")),
 					Index = this.Parse(State, Token.Read("Index")),
 					Value = Object[Index];
@@ -2471,7 +2489,7 @@ const XBS = ((DebugMode = false) => {
 				}
 				return Value;
 			},
-			"Call": function (State, Token) {
+			Call: function (State, Token) {
 				let Call = this.Parse(State, Token.Read("Call"));
 				let Arguments = this.ParseArray(State, Token.Read("Arguments"));
 				if (!(Call instanceof Function)) {
@@ -2479,7 +2497,17 @@ const XBS = ((DebugMode = false) => {
 				}
 				return Call(...Arguments);
 			},
-			"If": function (State, Token) {
+			SelfCall: function (State, Token) {
+				let O = this.Parse(State, Token.Read("Object"));
+				let I = this.Parse(State,Token.Read("Index"));
+				let Arguments = this.ParseArray(State, Token.Read("Arguments"));
+				let Call = O[I];
+				if (!(Call instanceof Function)) {
+					ErrorHandler.IError(Token, "Attempt", "call non-function");
+				}
+				return Call(O,...Arguments);
+			},
+			If: function (State, Token) {
 				let Expression = this.Parse(State, Token.Read("Expression"));
 				let Conditions = Token.Read("Conditions");
 				if (Expression) {
@@ -2502,7 +2530,7 @@ const XBS = ((DebugMode = false) => {
 					}
 				}
 			},
-			"While": function (State, Token) {
+			While: function (State, Token) {
 				let Expression = Token.Read("Expression");
 				let Body = Token.Read("Body");
 				while (this.Parse(State, Expression)) {
@@ -2511,7 +2539,7 @@ const XBS = ((DebugMode = false) => {
 					if (!NewState.Read("InLoop")) break;
 				}
 			},
-			"Repeat": function (State, Token) {
+			Repeat: function (State, Token) {
 				let Amount = this.Parse(State, Token.Read("Amount"));
 				let Body = Token.Read("Body");
 				let Name = Token.Read("Name");
@@ -2522,7 +2550,7 @@ const XBS = ((DebugMode = false) => {
 					if (!NewState.Read("InLoop")) break;
 				}
 			},
-			"For": function (State, Token) {
+			For: function (State, Token) {
 				let _State = new IState({ Data: [], Line: Token.Line, Index: Token.Index }, State);
 				this.Parse(_State, Token.Read("Variable"));
 				let Body = Token.Read("Body");
@@ -2535,7 +2563,7 @@ const XBS = ((DebugMode = false) => {
 					this.Parse(_State, Increment);
 				}
 			},
-			"Foreach": function (State, Token) {
+			Foreach: function (State, Token) {
 				let Body = Token.Read("Body");
 				let Names = Token.Read("Names");
 				let Iterator = this.Parse(State, Token.Read("Iterator"));
