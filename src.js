@@ -1004,7 +1004,7 @@ const XBS = ((DebugMode = false) => {
 					this.TestNext("BOPEN","Bracket");
 					this.Next();
 					let Properties = {};
-					while(!this.CheckNext("TK_BCLOSE","Bracket")){
+					while(!this.CheckNext("BCLOSE","Bracket")){
 						this.ErrorIfEOS();
 						if(this.CheckNext("FUNC","Keyword")){
 							this.Next();
