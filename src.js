@@ -425,6 +425,11 @@ const XBS = ((DebugMode = false) => {
 					Token.Type = "Constant";
 					Token.Value = Result;
 					Token.RawValue = "String";
+				} else if (Token.Value === "\`") {
+					let Tokens = this.BetweenRead(Stack, { End: { Value: "\`", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false });
+					Token.Type = "ExpressionalString";
+					Token.Value = Tokens;
+					Token.RawValue = "ExpressionalString";
 				}
 			} else if (Token.Type === "Identifier") {
 				let Value = this.NumberRead(Stack);
@@ -1083,6 +1088,39 @@ const XBS = ((DebugMode = false) => {
 				Stop: false,
 				Call: function (Priority) {
 					return [this.Token.Value, Priority];
+				},
+			},
+			{
+				Type:"ExpressionalString",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("ExpressionalString");
+					let TS = {Code:"",Character:undefined,Lines:[],Line:1,Index:1,Position:-1,Tokens:this.Token.Value};
+					let AS = new ASTStack(TS);
+					AS.IsString = true;
+					let Texts = [];
+					while(!AS.IsEnd()){
+						if(AST.IsToken(AS.Token,"BOPEN","Bracket")){
+							AS.Next();
+							AS.ErrorIfEOS();
+							let R = AS.ParseExpression();
+							AS.TestNext("BCLOSE","Bracket");
+							AS.Next();
+							Texts.push(R);
+						}else{
+							let T=AS.Token;
+							let Text=T.RawValue,Add=undefined;
+							if(T.Escaped===true){
+								if(Text.length>1)Add=Text.substr(1,Text.length),Text=Text.substr(0,1);
+								Text=Tokenizer.EscapeStringLiteral(Text);
+							}
+							Texts.push(Text);
+							if(Add)Texts.push(Add);
+						}
+						AS.Next();	
+					}
+					Node.Write("Expressions",Texts);
+					return [Node,Priority];
 				},
 			},
 			{
@@ -1979,9 +2017,16 @@ const XBS = ((DebugMode = false) => {
 		Next(Amount = 1) {
 			this.Position += Amount;
 			this.Token = this.Tokens[this.Position];
-			if (this.Token)
+			if (this.Token){
+				if(this.IsString===true){
+					if(AST.IsType(this.Token,"Whitespace")){
+						let Dir = Math.abs(Amount)/Amount;
+						return this.Next(Dir);	
+					}
+				}
 				this.Line = this.Token.Line,
 					this.Index = this.Token.Index;
+			}
 			return this.Token;
 		}
 		IsEnd() {
@@ -3067,6 +3112,12 @@ const XBS = ((DebugMode = false) => {
 					if (this.GetType(V2) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V2)} for index range b`);
 					if (V1 >= V2) ErrorHandler.IError(Token, "Unexpected", "index range number sequence (a must be less than b)");
 					return new IndexRange(V1,V2);
+			},
+			ExpressionalString:function(State,Token){
+				let Expressions = Token.Read("Expressions");
+				let Text = "";
+				for(let E of Expressions) Text+=String(this.Parse(State,E));
+				return Text;
 			},
 		},
 	};
