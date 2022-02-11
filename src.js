@@ -1327,6 +1327,16 @@ const XBS = ((DebugMode = false) => {
 				Stop: false,
 				Call: function (Priority) {
 					let Node = this.NewNode("EPipe");
+					if(this.CheckNext("BOPEN","Bracket")){
+						this.Next();
+						this.TypeTestNext("Identifier");
+						this.Next();
+						Node.Write("Name",this.Token.Value);
+						this.TestNext("BCLOSE","Bracket");
+						this.Next();
+					}else{
+						Node.Write("Name","_");	
+					}
 					this.Next();
 					Node.Write("Expressions", this.ExpressionListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }));
 					this.Next();
@@ -2923,14 +2933,15 @@ const XBS = ((DebugMode = false) => {
 				let Expressions = Token.Read("Expressions"),
 					X = Token.Read("Expression"),
 					Ex = [],
-					Result = [];
+					Result = [],
+				    	Name = Token.Read("Name");
 				for (let E of Expressions)
 					if (E instanceof ASTBase && E.Type === "UnpackArray") for (let x of this.Parse(State, E.Read("V1"), true)) Ex.push(x);
 					else Ex.push(E);
 				let FakeBody = { Data: [], Line: Token.Line, Index: Token.Index };
 				for (let Expression of Ex) {
 					let NewState = new IState(FakeBody, State);
-					State.NewVariable("_", this.Parse(State, Expression));
+					State.NewVariable(Name, this.Parse(State, Expression));
 					Result.push(this.Parse(NewState, X));
 				}
 				return Result;
