@@ -1053,6 +1053,20 @@ const XBS = ((DebugMode = false) => {
 							let Name = this.Token.Value;
 							O.Write("Private", Private);
 							Properties[Name] = O;
+						} else if (this.CheckNext("method","Identifier")){
+							this.Next();
+							let O = this.NewNode("FastFunction");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							this.Next();
+							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true });
+							Ids.unshift({Name:"self"});
+							O.Write("Parameters", Ids);
+							this.Next();
+							O.Write("Private", Private);
+							O.Write("Body", this.ParseBlock());
+							Properties[Name] = O;
 						} else {
 							this.Next();
 							this.ErrorIfEOS();
