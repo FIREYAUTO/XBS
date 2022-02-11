@@ -198,10 +198,10 @@ const XBS = ((DebugMode = false) => {
 			}
 			return this.IsIdentifier(Value) ? "Identifier" : "Syntax";
 		},
-		TokenNameFromValue: function (Value) {
+		TokenNameFromValue: function (Value,Type) {
 			for (let Name in this.Tokens) {
 				let Token = this.Tokens[Name];
-				if (Token.Value === Value) {
+				if (Token.Value===Value&&Token.Type===Type) {
 					return Name;
 				}
 			}
@@ -525,7 +525,7 @@ const XBS = ((DebugMode = false) => {
 			return this.Tokens.filter(Token => Token.Type != "Whitespace");
 		}
 		ApplyTokenNames() {
-			this.Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value));
+			this.Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value,Token.Type));
 			return this.Tokens;
 		}
 	}
@@ -1095,7 +1095,9 @@ const XBS = ((DebugMode = false) => {
 				Stop:false,
 				Call:function(Priority){
 					let Node = this.NewNode("ExpressionalString");
-					let TS = {Code:"",Character:undefined,Lines:[],Line:1,Index:1,Position:-1,Tokens:this.Token.Value};
+					let Tokens = this.Token.Value;
+					Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value,Token.Type));
+					let TS = {Code:"",Character:undefined,Lines:[],Line:1,Index:1,Position:-1,Tokens:Tokens};
 					let AS = new ASTStack(TS);
 					let Texts = [];
 					while(!AS.IsEnd()){
