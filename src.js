@@ -326,9 +326,9 @@ const XBS = ((DebugMode = false) => {
 				Token.Index = this.Index;
 				this.Tokens.push(Token);
 			}
-			this.Tokens = this.HandleTokenTypes();
-			this.Tokens = this.RemoveWhitespace();
-			this.Tokens = this.ApplyTokenNames();
+			this.Tokens = this.HandleTokenTypes(this.Tokens);
+			this.Tokens = this.RemoveWhitespace(this.Tokens);
+			this.Tokens = this.ApplyTokenNames(this.Tokens);
 		}
 		ENumberRead(Stack) {
 			let Token = Stack.Token;
@@ -397,7 +397,7 @@ const XBS = ((DebugMode = false) => {
 		TypeRead(Stack) {
 			let Token = Stack.Token;
 			if (Token.Type === "String") {
-				if (Token.Value === "\"") {
+				if (Token.Value === "\""&&!Stack.IsEString) {
 					let Tokens = this.BetweenRead(Stack, { End: { Value: "\"", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false }), Result = "";
 					for (let Value of Tokens) {
 						let Text = Value.RawValue, Add = undefined;
@@ -411,7 +411,7 @@ const XBS = ((DebugMode = false) => {
 					Token.Type = "Constant";
 					Token.Value = Result;
 					Token.RawValue = "String";
-				} else if (Token.Value === "\'") {
+				} else if (Token.Value === "\'"&&!Stack.IsEString) {
 					let Tokens = this.BetweenRead(Stack, { End: { Value: "\'", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false }), Result = "";
 					for (let Value of Tokens) {
 						let Text = Value.RawValue, Add = undefined;
@@ -427,6 +427,8 @@ const XBS = ((DebugMode = false) => {
 					Token.RawValue = "String";
 				} else if (Token.Value === "\`") {
 					let Tokens = this.BetweenRead(Stack, { End: { Value: "\`", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false });
+					Tokens=this.HandleTokenTypes(Tokens,true);
+					Token=this.ApplyTokenNames(Tokens);
 					Token.Type = "ExpressionalString";
 					Token.Value = Tokens;
 					Token.RawValue = "ExpressionalString";
@@ -498,10 +500,10 @@ const XBS = ((DebugMode = false) => {
 			}
 			return Result;
 		}
-		HandleTokenTypes() {
-			let Tokens = this.Tokens,
-				Result = [];
+		HandleTokenTypes(Tokens,IsEString=false) {
+			let Result = [];
 			let Stack = {
+				IsEString:IsEString,
 				Tokens: Tokens,
 				Position: 0,
 				Token: Tokens[0],
@@ -521,12 +523,12 @@ const XBS = ((DebugMode = false) => {
 			}
 			return Result;
 		}
-		RemoveWhitespace() {
-			return this.Tokens.filter(Token => Token.Type != "Whitespace");
+		RemoveWhitespace(Tokens) {
+			return Tokens.filter(Token => Token.Type != "Whitespace");
 		}
-		ApplyTokenNames() {
-			this.Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value,Token.Type));
-			return this.Tokens;
+		ApplyTokenNames(Tokens) {
+			Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value,Token.Type));
+			return Tokens;
 		}
 	}
 
@@ -1096,7 +1098,6 @@ const XBS = ((DebugMode = false) => {
 				Call:function(Priority){
 					let Node = this.NewNode("ExpressionalString");
 					let Tokens = this.Token.Value;
-					Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value,Token.Type));
 					let TS = {Code:"",Character:undefined,Lines:[],Line:1,Index:1,Position:-1,Tokens:Tokens};
 					let AS = new ASTStack(TS);
 					let Texts = [];
