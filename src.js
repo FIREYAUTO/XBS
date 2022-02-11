@@ -1097,13 +1097,14 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("ExpressionalString");
 					let TS = {Code:"",Character:undefined,Lines:[],Line:1,Index:1,Position:-1,Tokens:this.Token.Value};
 					let AS = new ASTStack(TS);
-					AS.IsString = true;
 					let Texts = [];
 					while(!AS.IsEnd()){
 						if(AST.IsToken(AS.Token,"BOPEN","Bracket")){
 							AS.Next();
 							AS.ErrorIfEOS();
+							AS.IsString = true;
 							let R = AS.ParseExpression();
+							AS.IsString = false;
 							AS.TestNext("BCLOSE","Bracket");
 							AS.Next();
 							Texts.push(R);
