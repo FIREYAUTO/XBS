@@ -2144,7 +2144,7 @@ const XBS = ((DebugMode = false) => {
 				return List;
 			} else {
 				this.ErrorIfEOS();
-				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase} ${Start.Value}`, `${this.Token.Type.toLowerCase} ${this.Token.Value}`);
+				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase()} ${Tokenizer.ValueFromName(Start.Value,Start.Type)}`, `${this.Token.Type.toLowerCase()} ${this.Token.RawValue}`);
 			}
 		}
 		ExpressionInside(Start, End, Priority, AllowComma) {
