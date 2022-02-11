@@ -1888,6 +1888,19 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "COLON",
+				Type: "Operator",
+				Stop: false,
+				Priority: 760,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("IndexRange");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
 				Value: "IN",
 				Type: "Keyword",
 				Stop: false,
@@ -2590,14 +2603,31 @@ const XBS = ((DebugMode = false) => {
 			},
 			GetIndex: function (State, Token) {
 				let Object = this.Parse(State, Token.Read("Object")),
-					Index = this.Parse(State, Token.Read("Index")),
-					Value = Object[Index];
+					Index = this.Parse(State, Token.Read("Index"));
+				if (Index instanceof IndexRange){
+					let T = this.GetType(Object);
+					if(T==="string"){
+						return Object.substring(Index.Min,Index.Max);
+					}else if(T==="array"){
+						let New = [];
+						for(let k in Object){
+							let v = Object[k];
+							k=+k;
+							if(k>=Index.Min&&k<=Index.Max){
+								New.push(v);
+							}
+						}
+					}else{
+						ErrorHandler.IError(Token,"Expected","string or array for index range",`type of ${T}`);
+					}
+				}
 				if (State.Read("IsClass") === true && State.Read("Classes").includes(Object)) {
 					let Private = State.Read("Private");
 					if (Private.hasOwnProperty(Index)) {
-						Value = Private[Index];
+						Object = Private;
 					}
 				}
+				let Value = Object[Index];
 				if (Value instanceof Function) {
 					Value = Value.bind(Object);
 				}
@@ -3029,6 +3059,14 @@ const XBS = ((DebugMode = false) => {
 				}
 				return R;
 			},
+			IndexRange:function(State,Token){
+				let V1 = this.Parse(State,Token.Read("V1")),
+					V2 = this.Parse(State,Token.Read("V2"));
+					if (this.GetType(V1) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V1)} for index range a`);
+					if (this.GetType(V2) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V2)} for index range b`);
+					if (V1 >= V2) ErrorHandler.IError(Token, "Unexpected", "index range number sequence (a must be less than b)");
+					return new IndexRange(V1,V2);
+			},
 		},
 	};
 
@@ -3044,6 +3082,12 @@ const XBS = ((DebugMode = false) => {
 			this.Fire = function (IStack) {
 				if (IStack instanceof InterpreterStack) IStack.ParseState(Body);
 			}
+		}
+	}
+	
+	class IndexRange {
+		constructor(Min,Max){
+			this.Min=Min,this.Max=Max;
 		}
 	}
 
