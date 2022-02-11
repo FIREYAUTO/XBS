@@ -231,7 +231,7 @@ const XBS = ((DebugMode = false) => {
 				case "c": return "\c";
 				case "f": return "\f";
 				case "v": return "\v";
-				default: return "\\" + Text;
+				default: return Text;
 			}
 		},
 		NewStack: function (Code) {
