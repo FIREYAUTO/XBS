@@ -425,13 +425,6 @@ const XBS = ((DebugMode = false) => {
 					Token.Type = "Constant";
 					Token.Value = Result;
 					Token.RawValue = "String";
-				} else if (Token.Value === "\`") {
-					let Tokens = this.BetweenRead(Stack, { End: { Value: "\`", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false });
-					Tokens=this.HandleTokenTypes(Tokens,true);
-					Token=this.ApplyTokenNames(Tokens);
-					Token.Type = "ExpressionalString";
-					Token.Value = Tokens;
-					Token.RawValue = "ExpressionalString";
 				}
 			} else if (Token.Type === "Identifier") {
 				let Value = this.NumberRead(Stack);
@@ -1090,41 +1083,6 @@ const XBS = ((DebugMode = false) => {
 				Stop: false,
 				Call: function (Priority) {
 					return [this.Token.Value, Priority];
-				},
-			},
-			{
-				Type:"ExpressionalString",
-				Stop:false,
-				Call:function(Priority){
-					let Node = this.NewNode("ExpressionalString");
-					let Tokens = this.Token.Value;
-					let TS = {Code:"",Character:undefined,Lines:[],Line:1,Index:1,Position:-1,Tokens:Tokens};
-					let AS = new ASTStack(TS);
-					let Texts = [];
-					while(!AS.IsEnd()){
-						if(AST.IsToken(AS.Token,"BOPEN","Bracket")){
-							AS.Next();
-							AS.ErrorIfEOS();
-							AS.IsString = true;
-							let R = AS.ParseExpression();
-							AS.IsString = false;
-							AS.TestNext("BCLOSE","Bracket");
-							AS.Next();
-							Texts.push(R);
-						}else{
-							let T=AS.Token;
-							let Text=T.RawValue,Add=undefined;
-							if(T.Escaped===true){
-								if(Text.length>1)Add=Text.substr(1,Text.length),Text=Text.substr(0,1);
-								Text=Tokenizer.EscapeStringLiteral(Text);
-							}
-							Texts.push(Text);
-							if(Add)Texts.push(Add);
-						}
-						AS.Next();	
-					}
-					Node.Write("Expressions",Texts);
-					return [Node,Priority];
 				},
 			},
 			{
@@ -3116,12 +3074,6 @@ const XBS = ((DebugMode = false) => {
 					if (this.GetType(V2) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V2)} for index range b`);
 					if (V1 >= V2) ErrorHandler.IError(Token, "Unexpected", "index range number sequence (a must be less than b)");
 					return new IndexRange(V1,V2);
-			},
-			ExpressionalString:function(State,Token){
-				let Expressions = Token.Read("Expressions");
-				let Text = "";
-				for(let E of Expressions) Text+=String(this.Parse(State,E));
-				return Text;
 			},
 		},
 	};
