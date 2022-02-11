@@ -37,3 +37,8 @@ class Dog extends Animal {
 set MyDog = new Dog("Spots");
 MyDog::Bark();
 log(MyDog::GetName(), MyDog.Name);
+
+# Factorials Function (Compressed)
+
+func Factorial(_0)send((_0=1.._0),<|{_1}(*_0[1:?_0])_0[0]*=_1,_0[0]);
+log(Factorial(4));
