@@ -2617,6 +2617,7 @@ const XBS = ((DebugMode = false) => {
 								New.push(v);
 							}
 						}
+						return New;
 					}else{
 						ErrorHandler.IError(Token,"Expected","string or array for index range",`type of ${T}`);
 					}
