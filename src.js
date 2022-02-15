@@ -3357,8 +3357,8 @@ const XBS = ((DebugMode = false) => {
 	}
 
 	//-- Language Setup --\\
-
-	return function (Code = "", Library = {}, Settings = {}) {
+	
+	function Main(Code = "", Library = {}, Settings = {}) {
 		const CodeResult = { Success: false, Error: undefined, Result: undefined, GlobalSettings: {} };
 		try {
 			//-- Token --\\
@@ -3386,5 +3386,31 @@ const XBS = ((DebugMode = false) => {
 		}
 		return CodeResult;
 	}
+	
+	Main.NewToken = function(Name,Value,Type,Extra={}){
+		let Token = {Value:Value,Type:Type};
+		for(let Key in Extra){
+			Token[Key] = Extra[Key];
+		}
+		Tokenizer.Tokens[Name]=Token;
+	}
+	
+	Main.NewASTChunk = function(Data){
+		AST.Chunks.push(Data);
+	}
+	
+	Main.NewASTExpression = function(Data){
+		AST.Expressions.push(Data);
+	}
+	
+	Main.NewASTComplexExpression = function(Data){
+		AST.ComplexExpressions.push(Data);
+	}
+	
+	Main.NewInterpreterParseState = function(Name,Call){
+		Interpreter.ParseStates[Name] = Call;
+	}
+	
+	return Main
 
 })(true);
