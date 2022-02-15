@@ -1493,7 +1493,7 @@ const XBS = ((DebugMode = false) => {
 					this.Next(2);
 					let Node = this.NewNode("GetIndex");
 					Node.Write("Object", Value);
-					Node.Write("Index", this.ParseExpression());
+					Node.Write("Index", this.ParseExpression(-1,false,[]));
 					this.TestNext("ICLOSE", "Bracket");
 					this.Next();
 					return new ASTExpression(Node, Priority);
@@ -2050,7 +2050,7 @@ const XBS = ((DebugMode = false) => {
 				else ErrorHandler.AError(this, "Expected", Type.toLowerCase(), "end of script");
 			}
 		}
-		ParseComplexExpression(Expression) {
+		ParseComplexExpression(Expression,IgnoreList=[{Value:"COLON",Type:"Operator"}]) {
 			if (!(Expression instanceof ASTExpression)) {
 				return Expression;
 			}
@@ -2060,20 +2060,23 @@ const XBS = ((DebugMode = false) => {
 			if (!Next) return Expression.Value;
 			if (AST.IsToken(Next, "LINEEND", "Operator")) return Expression.Value;
 			if (AST.IsType(Next, "Identifier") && AST.IsType(Current, "Identifier")) ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
+			for(let Item of IgnoreList)
+				if(Next.Value===Item.Value&&Next.Type===Item.Type))
+					return Expression.Value;
 			for (let Complex of AST.ComplexExpressions) {
 				if (!AST.IsToken(Next, Complex.Value, Complex.Type)) continue;
 				if (Expression.Priority <= Complex.Priority) {
 					Expression = Complex.Call.bind(this)(Expression.Value, Complex.Priority);
 					Expression.Priority = Priority;
 					if (Complex.Stop === true) break;
-					let Result = this.ParseComplexExpression(Expression);
+					let Result = this.ParseComplexExpression(Expression,IgnoreList);
 					Expression = new ASTExpression(Result, Expression.Priority);
 					return Expression.Value;
 				}
 			}
 			return Expression.Value;
 		}
-		ParseExpression(Priority = -1, AllowComma = false) {
+		ParseExpression(Priority = -1, AllowComma = false,IgnoreList) {
 			this.ErrorIfEOS();
 			let Token = this.Token;
 			let Result = undefined;
@@ -2108,10 +2111,10 @@ const XBS = ((DebugMode = false) => {
 			if (Result === undefined) {
 				ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing expression`);
 			}
-			return this.ParseComplexExpression(new ASTExpression(Result, Priority));
+			return this.ParseComplexExpression(new ASTExpression(Result, Priority),IgnoreList);
 		}
-		ParseFullExpression(Priority = -1, AllowComma = false) {
-			let Result = this.ParseExpression(Priority, AllowComma);
+		ParseFullExpression(Priority = -1, AllowComma = false,IgnoreList) {
+			let Result = this.ParseExpression(Priority, AllowComma,IgnoreList);
 			if (this.CheckNext("LINEEND", "Operator")) {
 				this.Next();
 			}
