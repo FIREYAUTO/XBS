@@ -42,3 +42,10 @@ log(MyDog::GetName(), MyDog.Name);
 
 func Factorial(_0)send((_0=1.._0),<|{_1}(*_0[1:?_0])_0[0]*=_1,_0[0]);
 log(Factorial(4));
+
+# Range Expansion
+
+const Tokens={comma=",",sub="-"},Numbers="0123456789".split("");func GetToken(Value){each Tokens as k,v if(Value==v)send k;send Value}func Tokenize(Code){set Tokens=[],Split=Code.split("");each Split as k,v Tokens.push(GetToken(v));send Tokens}func IsNumeric(x) send Numbers.includes(x);func ApplyRange(Range,Min,Max) each Min..Max as k,v Range.push(v);func Parse(Tokens){set Result=[],Token="";func Write(){if(?Token>0)Result.push(Token);Token=""}each Tokens as k,v{if(v=="comma"){Write();Token+=v;Write()}elif(v=="sub"){Write();Token+=v;Write()}elif(IsNumeric(v))Token+=v;else error("Unexpected "+v)}Write();send Result}func RangeExpansion(String){set Range=[],Tokens=Parse(Tokenize(String)),i=0;func next(){set t=Tokens[i];if(t=="sub"){i++;send-next();}else send toint(t)}while(i<?Tokens){set t=Tokens[i],v=next();i++;if(Tokens[i]=="sub"){i++;ApplyRange(Range,v,next());i++}else Range.push(v);if(Tokens[i]=="comma"){i++;continue}break}send Range}
+
+set r = RangeExpansion("-6,-3--1,3-5,7-11,14,15,17-20");
+log(r);
