@@ -2061,7 +2061,7 @@ const XBS = ((DebugMode = false) => {
 			if (AST.IsToken(Next, "LINEEND", "Operator")) return Expression.Value;
 			if (AST.IsType(Next, "Identifier") && AST.IsType(Current, "Identifier")) ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex expression");
 			for(let Item of IgnoreList)
-				if(Next.Value===Item.Value&&Next.Type===Item.Type))
+				if(Next.Value===Item.Value&&Next.Type===Item.Type)
 					return Expression.Value;
 			for (let Complex of AST.ComplexExpressions) {
 				if (!AST.IsToken(Next, Complex.Value, Complex.Type)) continue;
