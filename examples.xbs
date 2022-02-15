@@ -49,3 +49,27 @@ const Tokens={comma=",",sub="-"},Numbers="0123456789".split("");func GetToken(Va
 
 set r = RangeExpansion("-6,-3--1,3-5,7-11,14,15,17-20");
 log(r);
+
+# Request Class
+
+func __assert(a,b)a&error(b);
+class Request {
+	private undefined XML
+	private method construct(Type="GET",URL,Callback){
+		__assert(!["post","get"].includes(tostring(Type).toLowerCase()),"Expected GET or POST for RequestType");
+		__assert(!URL,"Expected URL for Request");
+		self.XML=new window.XMLHttpRequest();
+		self.XML.onreadystatechange=func()
+			if(self.XML.readyState==self.XML.DONE&Callback&type(Callback)=="function")
+				Callback(self.XML.response);
+		self.XML.open(Type,URL);
+	}
+	method SetHeaders(Headers={})
+		each Headers as k,v
+			self.XML.setRequestHeader(k,v);
+	method Send(Data)
+		self.XML.send(Data);
+}
+
+set x=new Request("GET","https://fireyauto.github.io/SingleScript/imports/load.singlescript",log);
+x::Send();
