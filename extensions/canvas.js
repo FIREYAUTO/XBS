@@ -133,8 +133,8 @@ Adds drawing components to XBS for HTML canvas elements
 				List = Stack.Parse(State,Token.Read("List"));
 			let V1 = List[0],
 				V2 = List[1];
-			if(!(V1 instanceof __VECTOR))ErrorHandler.IError(Token,"Expected","Vector for line v1",Stack.GetType(V1));
-			if(!(V2 instanceof __VECTOR))ErrorHandler.IError(Token,"Expected","Vector for line v2",Stack.GetType(V2));
+			if(!(V1 instanceof Vector))ErrorHandler.IError(Token,"Expected","Vector for line v1",Stack.GetType(V1));
+			if(!(V2 instanceof Vector))ErrorHandler.IError(Token,"Expected","Vector for line v2",Stack.GetType(V2));
 			if(List[2]===null||List[2]===undefined){
 				List[2]=1;	
 			}
@@ -221,6 +221,7 @@ Adds drawing components to XBS for HTML canvas elements
 		const Context = Stack.Parse(State,Token.Read("Context"));
 		const Body = Token.Read("Body");
 		let NS = new IState(Body,State,{Context:Context});
+		NS.NewVariable("Vector",Vector);
 		ParseCState(Stack,NS);
 	});
 })();
