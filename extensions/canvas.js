@@ -217,11 +217,11 @@ Adds drawing components to XBS for HTML canvas elements
 			return Node;
 		}
 	});
-	XBS.NewInterpreterParseState("CanvasDraw",function(Stack,State,Token){
-		const Context = Stack.Parse(State,Token.Read("Context"));
+	XBS.NewInterpreterParseState("CanvasDraw",function(State,Token){
+		const Context = this.Parse(State,Token.Read("Context"));
 		const Body = Token.Read("Body");
 		let NS = new IState(Body,State,{Context:Context});
 		NS.NewVariable("Vector",Vector);
-		ParseCState(Stack,NS);
+		ParseCState(this,NS);
 	});
 })();
