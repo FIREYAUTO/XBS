@@ -198,6 +198,7 @@ Adds drawing components to XBS for HTML canvas elements
 			}
 			if (State.Read("Continued") === true) break;
 			if (State.Read("Exited") === true) break;
+			State.Next();
 		}
 		State.Close();
 	}
