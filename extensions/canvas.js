@@ -116,6 +116,16 @@ Adds drawing components to XBS for HTML canvas elements
 				return Node;
 			},
 		},
+		{
+			Value:"do",
+			Type:"Identifier",
+			Call:function(Stack){
+				let Node = Stack.NewNode("Do");
+				Stack.Next();
+				Node.Write("Body",Stack.ParseBlock());
+				return Node;
+			},
+		},
 	];
 	function ParseState(Stack){
 		let Result = undefined;
@@ -213,6 +223,12 @@ Adds drawing components to XBS for HTML canvas elements
 				C.strokeStyle=List[3];	
 			}
 			C.strokeRect(V1.x,V1.y,V2.x,V2.y);
+		},
+		Do:function(Stack,State,Token){
+			let C = State.Data.Context,
+			let Body = Token.Read("Body");
+			let NS = new IState(Body,State,{Context:C});
+			ParseCState(Stack,NS);
 		},
 	};
 	
