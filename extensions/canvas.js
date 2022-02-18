@@ -212,6 +212,7 @@ Adds drawing components to XBS for HTML canvas elements
 			let Node = this.NewNode("CanvasDraw");
 			this.Next();
 			Node.Write("Context",this.ParseExpression());
+			this.Next();
 			Node.Write("Body",ParseBlock(this));
 			return Node;
 		}
