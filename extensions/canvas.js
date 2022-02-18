@@ -115,9 +115,9 @@ Adds drawing components to XBS for HTML canvas elements
 			while(!Stack.IsEnd()){
 				Stack.ErrorIfEOS();
 				if(Stack.CheckNext("BCLOSE","Bracket"))break;
-				this.Next();
+				Stack.Next();
 				Block.Write(ParseState(Stack));
-				if(this.CheckNext("LINEEND","Operator"))this.Next();
+				if(this.CheckNext("LINEEND","Operator"))Stack.Next();
 			}
 			Stack.TestNext("BCLOSE","Bracket");
 			Stack.Next();
