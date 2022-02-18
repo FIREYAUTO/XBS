@@ -3411,6 +3411,10 @@ const XBS = ((DebugMode = false) => {
 		Interpreter.ParseStates[Name] = Call;
 	}
 	
+	Main.AST=AST;
+	Main.Interpreter=Interpreter;
+	Main.Tokenizer=Tokenizer;
+	
 	return Main
 
 })(true);
