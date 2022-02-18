@@ -135,8 +135,12 @@ Adds drawing components to XBS for HTML canvas elements
 				V2 = List[1];
 			if(!(V1 instanceof __VECTOR))ErrorHandler.IError(Token,"Expected","Vector for line v1",Stack.GetType(V1));
 			if(!(V2 instanceof __VECTOR))ErrorHandler.IError(Token,"Expected","Vector for line v2",Stack.GetType(V2));
+			if(List[2]===null||List[2]===undefined){
+				List[2]=1;	
+			}
 			C.moveTo(V1.x,V1.y);
 			C.lineTo(V2.x,V2.y);
+			C.lineWidth=List[2];
 		},
 		Path:function(Stack,State,Token){
 			let C = State.Context,
