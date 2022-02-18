@@ -246,18 +246,14 @@ Adds drawing components to XBS for HTML canvas elements
 		Stroke:function(Stack,State,Token){
 			let C = State.Data.Context,
 				Style = Stack.Parse(State,Token.Read("Style"));
-			if(Style){
-				C.strokeStyle = Style;
-				C.stroke();	
-			}
+			if(Style)C.strokeStyle=Style;
+			C.stroke();
 		},
 		Fill:function(Stack,State,Token){
 			let C = State.Data.Context,
 				Style = Stack.Parse(State,Token.Read("Style"));
-			if(Style){
-				C.fillStyle = Style;
-				C.fill();	
-			}
+			if(Style)C.fillStyle=Style;
+			C.fill();
 		},
 		FillRect:function(Stack,State,Token){
 			let C = State.Data.Context,
