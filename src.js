@@ -3416,6 +3416,10 @@ const XBS = ((DebugMode = false) => {
 	Main.Tokenizer=Tokenizer;
 	Main.ErrorHandler=ErrorHandler;
 	Main.IState=IState;
+	Main.ASTExpression=ASTExpression;
+	Main.ASTBase=ASTBase;
+	Main.ASTNode=ASTNode;
+	Main.ASTBlock=ASTBlock;
 	
 	return Main
 
