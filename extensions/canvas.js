@@ -129,7 +129,7 @@ Adds drawing components to XBS for HTML canvas elements
 	
 	const IStates = {
 		Line:function(Stack,State,Token){
-			let C = State.Context,
+			let C = State.Data.Context,
 				List = Stack.Parse(State,Token.Read("List"));
 			let V1 = List[0],
 				V2 = List[1];
@@ -143,7 +143,7 @@ Adds drawing components to XBS for HTML canvas elements
 			C.lineWidth=List[2];
 		},
 		Path:function(Stack,State,Token){
-			let C = State.Context,
+			let C = State.Data.Context,
 				Type = Token.Read("Type");
 			if(Type==="Begin"){
 				C.beginPath();	
@@ -152,7 +152,7 @@ Adds drawing components to XBS for HTML canvas elements
 			}
 		},
 		Stroke:function(Stack,State,Token){
-			let C = State.Context,
+			let C = State.Data.Context,
 				Style = Stack.Parse(State,Token.Read("Style"));
 			if(Style){
 				C.strokeStyle = Style;
@@ -160,7 +160,7 @@ Adds drawing components to XBS for HTML canvas elements
 			}
 		},
 		Fill:function(Stack,State,Token){
-			let C = State.Context,
+			let C = State.Data.Context,
 				Style = Stack.Parse(State,Token.Read("Style"));
 			if(Style){
 				C.fillStyle = Style;
