@@ -117,7 +117,7 @@ Adds drawing components to XBS for HTML canvas elements
 				if(Stack.CheckNext("BCLOSE","Bracket"))break;
 				Stack.Next();
 				Block.Write(ParseState(Stack));
-				if(this.CheckNext("LINEEND","Operator"))Stack.Next();
+				if(Stack.CheckNext("LINEEND","Operator"))Stack.Next();
 			}
 			Stack.TestNext("BCLOSE","Bracket");
 			Stack.Next();
@@ -183,7 +183,7 @@ Adds drawing components to XBS for HTML canvas elements
 	function ParseCState(Stack,State){
 		while(!State.IsEnd()){
 			if (State.Read("InAs") === true) {
-				if (!this.Parse(State, State.Read("AsExpression"))) {
+				if (!Stack.Parse(State, State.Read("AsExpression"))) {
 					break;
 				}
 			}
