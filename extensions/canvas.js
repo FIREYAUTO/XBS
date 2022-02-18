@@ -65,7 +65,7 @@ Adds drawing components to XBS for HTML canvas elements
 			Call:function(Stack){
 				let Node = Stack.NewNode("Stroke");
 				Stack.Next();
-				Node.Write("List",Stack.ParseExpression());
+				Node.Write("Style",Stack.ParseExpression());
 				return Node;
 			},
 		},
@@ -75,7 +75,7 @@ Adds drawing components to XBS for HTML canvas elements
 			Call:function(Stack){
 				let Node = Stack.NewNode("Fill");
 				Stack.Next();
-				Node.Write("List",Stack.ParseExpression());
+				Node.Write("Style",Stack.ParseExpression());
 				return Node;
 			},
 		},
