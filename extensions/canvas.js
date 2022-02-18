@@ -226,8 +226,8 @@ Adds drawing components to XBS for HTML canvas elements
 		},
 		Do:function(Stack,State,Token){
 			let C = State.Data.Context,
-			let Body = Token.Read("Body");
-			let NS = new IState(Body,State,{Context:C});
+				Body = Token.Read("Body"),
+				NS = new IState(Body,State,{Context:C});
 			Stack.ParseState(NS);
 		},
 	};
