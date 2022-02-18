@@ -60,6 +60,26 @@ Adds drawing components to XBS for HTML canvas elements
 			},
 		},
 		{
+			Value:"fillrect",
+			Type:"Identifier",
+			Call:function(Stack){
+				let Node = Stack.NewNode("FillRect");
+				Stack.Next();
+				Node.Write("List",Stack.ParseExpression());
+				return Node;
+			},
+		},
+		{
+			Value:"strokerect",
+			Type:"Identifier",
+			Call:function(Stack){
+				let Node = Stack.NewNode("StrokeRect");
+				Stack.Next();
+				Node.Write("List",Stack.ParseExpression());
+				return Node;
+			},
+		},
+		{
 			Value:"stroke",
 			Type:"Identifier",
 			Call:function(Stack){
@@ -166,6 +186,33 @@ Adds drawing components to XBS for HTML canvas elements
 				C.fillStyle = Style;
 				C.fill();	
 			}
+		},
+		FillRect:function(Stack,State,Token){
+			let C = State.Data.Context,
+				List = Stack.Parse(State,Token.Read("List"));
+			let V1 = List[0],
+				V2 = List[1];
+			if(!(V1 instanceof Vector))ErrorHandler.IError(Token,"Expected","Vector for line v1",Stack.GetType(V1));
+			if(!(V2 instanceof Vector))ErrorHandler.IError(Token,"Expected","Vector for line v2",Stack.GetType(V2));
+			if(!(List[2]===null||List[2]===undefined)){
+				C.fillStyle=List[2];
+			}
+			C.fillRect(V1.x,V1.y,V2.x,V2.y);
+		},
+		StrokeRect:function(Stack,State,Token){
+			let C = State.Data.Context,
+				List = Stack.Parse(State,Token.Read("List"));
+			let V1 = List[0],
+				V2 = List[1];
+			if(!(V1 instanceof Vector))ErrorHandler.IError(Token,"Expected","Vector for line v1",Stack.GetType(V1));
+			if(!(V2 instanceof Vector))ErrorHandler.IError(Token,"Expected","Vector for line v2",Stack.GetType(V2));
+			if(!(List[2]===null||List[2]===undefined)){
+				C.lineWidth=List[2];
+			}
+			if(!(List[3]===null||List[3]===undefined)){
+				C.strokeStyle=List[3];	
+			}
+			C.strokeRect(V1.x,V1.y,V2.x,V2.y);
 		},
 	};
 	
