@@ -3414,6 +3414,7 @@ const XBS = ((DebugMode = false) => {
 	Main.AST=AST;
 	Main.Interpreter=Interpreter;
 	Main.Tokenizer=Tokenizer;
+	Main.ErrorHandler=ErrorHandler;
 	
 	return Main
 
