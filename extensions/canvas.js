@@ -10,7 +10,8 @@ Adds drawing components to XBS for HTML canvas elements
 	const Tokenizer=XBS.Tokenizer,
 		AST=XBS.AST,
 		Interpreter=XBS.Interpreter,
-		ErrorHandler=XBS.ErrorHandler;
+		ErrorHandler=XBS.ErrorHandler,
+	      	IState=XBS.IState;
 	
 	//{{ Internal AST Functions }}\\
 	
@@ -79,6 +80,10 @@ Adds drawing components to XBS for HTML canvas elements
 		},
 	};
 	
+	function ParseIState(Stack,State,Token){
+		
+	}
+	
 	function ParseCState(Stack,State){
 		while(!State.IsEnd()){
 			if (State.Read("InAs") === true) {
@@ -118,6 +123,7 @@ Adds drawing components to XBS for HTML canvas elements
 	XBS.NewInterpreterParseState("CanvasDraw",function(Stack,State,Token){
 		const Context = Stack.Parse(State,Token.Read("Context"));
 		const Body = Token.Read("Body");
-		let IState
+		let NS = new IState(Body,State,{Context:Context});
+		ParseCState(Stack,NS);
 	});
 })();
