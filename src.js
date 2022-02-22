@@ -111,6 +111,7 @@ const XBS = ((DebugMode = false) => {
 			"FLOORDIV": { Value: "//", Type: "Operator" },
 			"DOT": { Value: ".", Type: "Operator" },
 			"EQS": { Value: "==", Type: "Operator" },
+			"TEQ": { Value: ":=", Type: "Operator" },
 			"GEQ": { Value: ">=", Type: "Operator" },
 			"LEQ": { Value: "<=", Type: "Operator" },
 			"GT": { Value: ">", Type: "Operator" },
@@ -1818,6 +1819,19 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "TEQ",
+				Type: "Operator",
+				Stop: false,
+				Priority: 200,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("Teq");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseTypeExpression());
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
 				Value: "LT",
 				Type: "Operator",
 				Stop: false,
@@ -2830,6 +2844,15 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				return V1 == V2;
+			},
+			Teq: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1"));
+				try {
+					this.TypeCheck(State,V1,Token.Read("V2"));
+					return true;
+				}catch(e){
+					return false;	
+				}
 			},
 			Leq: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
