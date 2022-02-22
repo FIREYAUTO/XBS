@@ -1176,7 +1176,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 							let Name = this.Token.Value;
 							this.Next();
-							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true }));
 							O.Write("ReturnType",this.GetType());
 							this.Next();
 							O.Write("Private", Private);
@@ -1221,7 +1221,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 							let Name = this.Token.Value;
 							this.Next();
-							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true });
+							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true });
 							Ids.unshift({Name:"self"});
 							O.Write("Parameters", Ids);
 							O.Write("ReturnType",this.GetType());
