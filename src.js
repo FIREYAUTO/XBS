@@ -596,6 +596,143 @@ const XBS = ((DebugMode = false) => {
 			if (!Token) return false;
 			return Token.Type === Type;
 		},
+		//{{ Type States }}\\
+		TypeExpressions:[
+			{
+				Type:"Identifier",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("GetType");
+					Node.Write("Name",this.Token.RawValue);
+					return [Node,Priority];
+				},
+			},
+			{
+				Value:"NOT",
+				Type:"Operator",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("TypeNot");
+					this.Next();
+					Node.Write("V1",this.ParseTypeExpression(200));
+					return [Node,Priority];
+				},
+			},
+			{
+				Value:"QUESTION",
+				Type:"Operator",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("TypeNull");
+					this.Next();
+					Node.Write("V1",this.ParseTypeExpression(200));
+					return [Node,Priority];
+				},
+			},
+			{
+				Value:"POPEN",
+				Type:"Bracket",
+				Stop:false,
+				Call:function(Priority){
+					this.Next();
+					let Node = this.ParseTypeExpression();
+					this.TestNext("PCLOSE","Bracket");
+					this.Next();
+					return [Node,Priority];
+				},
+			},
+			{
+				Value:"IOPEN",
+				Type:"Bracket",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("TypeArray");
+					if(!this.CheckNext("ICLOSE","Bracket")){
+						this.Next();
+						Node.Write("List",this.ParseTypeExpression());
+						this.TestNext("ICLOSE","Bracket");
+					}
+					this.Next();
+					Node.Write("V1",this.ParseTypeExpression(200));
+					return [Node,Priority];
+				},
+			},
+			{
+			      Value:"BOPEN",
+			      Type:"Bracket",
+			      Stop:false,
+			      Call:function(Priority){
+				let Node = this.NewNode("TypeObject");
+				if(!this.CheckNext("BCLOSE","Bracket")){
+				  this.Next();
+				  if(AST.IsToken(this.Token,"IOPEN","Bracket")){
+				    Node.Write("ObjectType","TypedKeys");
+				    this.Next();
+				    Node.Write("KeyType",this.ParseTypeExpression());
+				    this.TestNext("ICLOSE","Bracket");
+				    this.Next();
+				    this.TestNext("COLON","Operator");
+				    this.Next(2);
+				    Node.Write("ValueType",this.ParseTypeExpression());
+				    this.TestNext("BCLOSE","Bracket");
+				    this.Next();
+				  }else if(this.Token.Type=="Identifier"||this.Token.Type=="Constant"){
+				    Node.Write("ObjectType","NamedKeys");
+				    let TypeObject = {};
+				    while(true){
+				      if(AST.IsToken(this.Token,"BCLOSE","Bracket"))break;
+				      if(this.Token.Type=="Identifier"||this.Token.Type=="Constant"){
+					let Key = this.Token.Value;
+					this.TestNext("COLON","Operator");
+					this.Next(2);
+					let Value = this.ParseTypeExpression();
+					TypeObject[Key]=Value;
+				      }else{
+					ErrorHandler.AError(this,"Invalid","token type in object type statement; expected Identifier or Constant");
+				      }
+				      if(this.CheckNext("COMMA","Operator")){
+					this.Next(2);
+					continue;
+				      }
+				      this.Next();
+				      break;
+				    }
+				    Node.Write("TypeObject",TypeObject);
+				  }
+				}
+				return [Node,Priority];
+			      }
+			    },
+		],
+		ComplexTypeExpressions:[
+			{
+				Value: "OR",
+				Type: "Operator",
+				Stop: false,
+				Priority: 150,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("TypeOr");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseTypeExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
+				Value: "AND",
+				Type: "Operator",
+				Stop: false,
+				Priority: 150,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("TypeAnd");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseTypeExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+		],
+		//{{ Main States }}\\
 		Chunks: [
 			{
 				Value: "SET",
@@ -603,7 +740,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function () {
 					let Node = this.NewNode("NewVariable");
 					this.Next();
-					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 }));
+					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 , AllowType: true}));
 					return Node;
 				},
 			},
@@ -613,7 +750,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function () {
 					let Node = this.NewNode("NewVariable");
 					this.Next();
-					let List = this.IdentifierList({ AllowDefault: true, Priority: -1 });
+					let List = this.IdentifierList({ AllowDefault: true, Priority: -1 , AllowType: true});
 					Node.Write("Variables", List);
 					for (let v of List) {
 						v.Constant = true;
@@ -628,7 +765,7 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("NewVariable");
 					this.Next();
 					Node.Write("Type", "Upvar");
-					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 }));
+					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 , AllowType: true}));
 					return Node;
 				},
 			},
@@ -837,6 +974,7 @@ const XBS = ((DebugMode = false) => {
 					Node.Write("Name", this.Token.Value);
 					this.Next();
 					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+					Node.Write("ReturnType", this.GetType());
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
 					return Node;
@@ -871,7 +1009,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function () {
 					let Node = this.NewNode("Destructure");
 					this.Next();
-					Node.Write("Names", this.IdentifierListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" }));
+					Node.Write("Names", this.IdentifierListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" },{AllowType: true}));
 					this.Next();
 					Node.Write("Object", this.ParseExpression());
 					return Node;
@@ -1019,6 +1157,7 @@ const XBS = ((DebugMode = false) => {
 							let Name = this.Token.Value;
 							this.Next();
 							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+							O.Write("ReturnType",this.GetType());
 							this.Next();
 							O.Write("Private", Private);
 							O.Write("Body", this.ParseBlock());
@@ -1029,6 +1168,7 @@ const XBS = ((DebugMode = false) => {
 							this.TypeTestNext("Identifier");
 							this.Next();
 							let Name = this.Token.Value;
+							O.Write("Type",this.GetType());
 							this.TestNext("EQ", "Assignment");
 							this.Next(2);
 							O.Write("Value", this.ParseExpression());
@@ -1040,6 +1180,7 @@ const XBS = ((DebugMode = false) => {
 							this.TypeTestNext("Identifier");
 							this.Next();
 							let Name = this.Token.Value;
+							O.Write("Type",this.GetType());
 							this.TestNext("EQ", "Assignment");
 							this.Next(2);
 							O.Write("Value", this.ParseExpression());
@@ -1063,6 +1204,7 @@ const XBS = ((DebugMode = false) => {
 							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true });
 							Ids.unshift({Name:"self"});
 							O.Write("Parameters", Ids);
+							O.Write("ReturnType",this.GetType());
 							this.Next();
 							O.Write("Private", Private);
 							O.Write("Body", this.ParseBlock());
@@ -1233,6 +1375,7 @@ const XBS = ((DebugMode = false) => {
 						} else {
 							ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing object`);
 						}
+						Result.Type = this.GetType();
 						this.TestNext("EQ", "Assignment");
 						this.Next(2);
 						Result.Value = this.ParseExpression();
@@ -1260,6 +1403,7 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("FastFunction");
 					this.Next();
 					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+					Node.Write("ReturnType",this.GetType());
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
 					return [Node, Priority];
@@ -2120,6 +2264,61 @@ const XBS = ((DebugMode = false) => {
 			}
 			return Result;
 		}
+		ParseComplexTypeExpression(Expression,IgnoreList=[]) {
+			if (!(Expression instanceof ASTExpression)) {
+				return Expression;
+			}
+			let Priority = Expression.Priority,
+				Next = this.Tokens[this.Position + 1],
+				Current = this.Token;
+			if (!Next) return Expression.Value;
+			if (AST.IsToken(Next, "LINEEND", "Operator")) return Expression.Value;
+			if (AST.IsType(Next, "Identifier") && AST.IsType(Current, "Identifier")) ErrorHandler.AError(this, "Unexpected", "identifier while parsing complex type expression");
+			for(let Item of IgnoreList)
+				if(Next.Value===Item.Value&&Next.Type===Item.Type)
+					return Expression.Value;
+			for (let Complex of AST.ComplexTypeExpressions) {
+				if (!AST.IsToken(Next, Complex.Value, Complex.Type)) continue;
+				if (Expression.Priority <= Complex.Priority) {
+					Expression = Complex.Call.bind(this)(Expression.Value, Complex.Priority);
+					Expression.Priority = Priority;
+					if (Complex.Stop === true) break;
+					let Result = this.ParseComplexTypeExpression(Expression,IgnoreList);
+					Expression = new ASTExpression(Result, Expression.Priority);
+					return Expression.Value;
+				}
+			}
+			return Expression.Value;
+		}
+		ParseTypeExpression(Priority=-1,IgnoreList){
+			this.ErrorIfEOS();
+			let Token = this.Token;
+			let Result = undefined;
+			for (let Chunk of AST.TypeExpressions) {
+				let Do = false;
+				if (Chunk.Value) {
+					Do = AST.IsToken(Token, Chunk.Value, Chunk.Type);
+				} else {
+					Do = AST.IsType(Token, Chunk.Type);
+				}
+				if (Do) {
+					let [R, P] = Chunk.Call.bind(this)(Priority);
+					Result = R;
+					Priority = P;
+					if (Chunk.Stop === true) return Result;
+					break;
+				}
+			}
+			if (Result === undefined) {
+				ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing type expression`);
+			}
+			return this.ParseComplexTypeExpression(new ASTExpression(Result, Priority),IgnoreList);		
+		}
+		GetType(Priority,IgnoreList){
+			if(!this.CheckNext("COLON","Operator"))return;
+			this.Next(2);
+			return this.ParseTypeExpression(Priority,IgnoreList);
+		}
 		ExpressionList(Priority) {
 			let List = [];
 			do {
@@ -2194,6 +2393,9 @@ const XBS = ((DebugMode = false) => {
 					}
 				}
 				Identifier.Name = Token.Type==="Keyword"?Token.RawValue:Token.Value;
+				if (Options.AllowType === true) {
+					Identifier.Type = this.GetType(Options.TypePriority,Options.TypeIgnoreList);	
+				}
 				if (Options.AllowDefault === true) {
 					if (Options.SoftCheck === true) {
 						if (this.CheckNext("EQ", "Assignment")) {
@@ -2327,6 +2529,7 @@ const XBS = ((DebugMode = false) => {
 					Exited: false,
 				},
 				this.Variables = [],
+				this.TypeVars = {},
 				this.Children = [],
 				this.Position = 0,
 				this.GlobalVariables = {};
@@ -2343,6 +2546,19 @@ const XBS = ((DebugMode = false) => {
 					this.Data.Private = Parent.Data.Private;
 				}
 				this.GlobalVariables = this.Parent.GlobalVariables;
+			}
+		}
+		IsType(Name){
+			return this.TypeVars.hasOwnProperty(Name);
+		}
+		NewType(Name,Value){
+			this.TypeVars[Name]=Value;
+		}
+		GetType(Name){
+			if(this.IsType(Name)){
+				return this.TypeVars[Name];
+			}else if(this.Parent){
+				return this.Parent.GetType(Name);
 			}
 		}
 		Write(Name, Value) {
@@ -2498,8 +2714,13 @@ const XBS = ((DebugMode = false) => {
 					let Name = Variable.Name;
 					let Value = this.Parse(State, Variable.Value);
 					let IsConstant = Variable.Constant;
+					let Type = Variable.Type;
+					if(Type){
+						this.TypeCheck(State,Value,Type);	
+					}
 					Append.NewVariable(Name, Value, {
 						Constant: IsConstant,
+						Type: Type,
 					});
 				};
 			},
@@ -2515,6 +2736,9 @@ const XBS = ((DebugMode = false) => {
 							if (Variable.Constant === true) {
 								ErrorHandler.IError(Token, "Attempt", `modify constant variable ${Variable.Name}`);
 							}
+                        				if(Variable.Type){
+                        					this.TypeCheck(State,Value,Variable.Type);
+                        				}
 							let Previous = Variable.Value;
 							State.SetVariable(Name, Call(Variable.Value, Value));
 							return Token.Read("Type") >= 9 ? Previous : Variable.Value;
@@ -2830,7 +3054,12 @@ const XBS = ((DebugMode = false) => {
 				let O = Token.Read("Object");
 				let R = {};
 				for (let v of O) {
-					R[this.Parse(State, v.Name)] = this.Parse(State, v.Value);
+					let Value = this.Parse(State, v.Value);
+					let Type = v.Type;
+					if(Type){
+						this.TypeCheck(State,Value,Type);	
+					}
+					R[this.Parse(State, v.Name)] = Value;
 				}
 				return R;
 			},
@@ -2858,9 +3087,15 @@ const XBS = ((DebugMode = false) => {
 				for (let V of Names) {
 					if (!Object.prototype.hasOwnProperty.call(O, V.Name)) {
 						if (Default) {
+							if(V.Type){
+								this.TypeCheck(State,Default,V.Type);	
+							}
 							State.NewVariable(V.Name, Default);
 						}
 					} else {
+						if(V.Type){
+							this.TypeCheck(State,O[V.Name],V.Type);	
+						}
 						State.NewVariable(V.Name, O[V.Name]);
 					}
 				}
@@ -3035,6 +3270,12 @@ const XBS = ((DebugMode = false) => {
 				if (!V2) ErrorHandler.IError(Token, "Attempt", `swap invalid variable ${N2}`);
 				if (V1.Constant === true) ErrorHandler.IError(Token, "Attempt", `modify constant variable ${N1}`);
 				if (V2.Constant === true) ErrorHandler.IError(Token, "Attempt", `modify constant variable ${N2}`);
+				if(V1.Type){
+					this.TypeCheck(State,V2.Value,V1.Type);	
+				}
+				if(V2.Type){
+					this.TypeCheck(State,V1.Value,V2.Type);	
+				}
 				let T = V1.Value;
 				V1.Value = V2.Value;
 				V2.Value = T;
@@ -3078,7 +3319,12 @@ const XBS = ((DebugMode = false) => {
 			GlobalVariable: function (State, Token) {
 				let Variables = Token.Read("Variables");
 				for (let Variable of Variables) {
-					State.GlobalVariables[Variable.Name] = this.Parse(State, Variable.Value);
+					let Value = this.Parse(State, Variable.Value);
+					let Type = Variable.Type;
+					if(Type){
+						this.TypeCheck(State,Value,Type);	
+					}
+					State.GlobalVariables[Variable.Name] = Value;
 				}
 			},
 			Exit: function (State, Token) {
@@ -3219,7 +3465,8 @@ const XBS = ((DebugMode = false) => {
 			let Parameters = Token.Read("Parameters"),
 				GlobalVariables = State.GetAllGlobalVariables(),
 				Body = Token.Read("Body"),
-				self = this;
+				self = this,
+			    	ReturnType = Token.Read("ReturnType");
 			return function (...Arguments) {
 				let NewState = new IState(Body, State, { IsFunction: true });
 				let Stop = false;
@@ -3241,6 +3488,9 @@ const XBS = ((DebugMode = false) => {
 				for (let Variable of GlobalVariables) State.TransferVariable(NewState, Variable);
 				self.ParseState(NewState);
 				let Return = NewState.Read("Return");
+				if(ReturnType){
+					self.TypeCheck(NewState,Return,ReturnType);	
+				}
 				return Return;
 			}
 		}
@@ -3322,6 +3572,10 @@ const XBS = ((DebugMode = false) => {
 						}
 					} else if (Property.Type === "Set") {
 						let Value = self.Parse(NS, Property.Read("Value"));
+						let Type = Property.Read("Type");
+						if(Type){
+							self.TypeCheck(NS,Value,Type);	
+						}
 						if (Property.Read("Private") === true) {
 							Private[Name] = Value;
 						} else {
@@ -3329,6 +3583,10 @@ const XBS = ((DebugMode = false) => {
 						}
 					} else if (Property.Type === "Constant") {
 						let Value = self.Parse(NS, Property.Read("Value"));
+						let Type = Property.Read("Type");
+						if(Type){
+							self.TypeCheck(NS,Value,Type);	
+						}
 						if (Property.Read("Private") === true) {
 							Object.defineProperty(Private, Name, {
 								value: Value,
@@ -3362,6 +3620,134 @@ const XBS = ((DebugMode = false) => {
 			}
 			return Class;
 		}
+		//-- Type Handler --\\
+		ParseType(State,Type){
+        		if(!(Type instanceof ASTBase)){return Type}
+        		let T = Type.Type;
+		    if (T=="GetType"){
+			return this.ParseType(State,State.GetType(Type.Read("Name")));
+		    }else if(T=="TypeOr"){
+			return {
+				Type:"Union",
+			    V1:this.ParseType(State,Type.Read("V1")),
+			    V2:this.ParseType(State,Type.Read("V2")),
+			    toString:function(){
+				return `${String(this.V1)}|${String(this.V2)}`
+			    }
+			};
+		    }else if(T=="TypeUnion"){
+			return {
+				Type:"Concat",
+			    V1:this.ParseType(State,Type.Read("V1")),
+			    V2:this.ParseType(State,Type.Read("V2")),
+			    toString:function(){
+				return `${String(this.V1)}&${String(this.V2)}`
+			    }
+			};
+		    }else if(T=="TypeNull"){
+			return {
+				Type:"Null",
+			    V:this.ParseType(State,Type.Read("V1")),
+			    toString:function(){
+				return `?${String(this.V)}`
+			    }
+			};
+		    }else if(T=="TypeNot"){
+			return {
+				Type:"Not",
+			    V:this.ParseType(State,Type.Read("V1")),
+			    toString:function(){
+				return `!${String(this.V)}`
+			    }
+			};
+		    }else if(T=="TypeArray"){
+			return {
+				Type:"Array",
+			    V:this.ParseType(State,Type.Read("List")),
+			    toString:function(){
+				return `[${String(this.V)}]`;
+			    }
+			};
+		    }else if(T=="TypeObject"){
+		      let TY = Type.Read("ObjectType");
+		      if(TY=="TypedKeys"){
+			return {
+			  Type:"TypedKeysObject",
+			  K:this.ParseType(State,Type.Read("KeyType")),
+			  V:this.ParseType(State,Type.Read("ValueType")),
+			  toString:function(){
+			    return `{[${String(this.K)}]:${String(this.V)}}`;
+			  }
+			};
+		      }else if(TY=="NamedKeys"){
+			let O = Type.Read("TypeObject");
+			let N = {};
+			for(let k in O){
+			  N[k]=this.ParseType(State,O[k]);
+			}
+			return {
+			  Type:"NamedKeysObject",
+			  V:N,
+			  toString:function(){
+			    let R = [];
+			    for(let k in this.V){
+			      let v = this.V[k];
+			      R.push(`"${k}":${String(v)}`);
+			    }
+			    return `{${R.join(",")}}`;
+			  }
+			};
+		      }
+		    }
+		    return Type;
+		}
+		TypeCheck(State,Value,Type){
+		    Type=this.ParseType(State,Type);
+		    let self = this;
+		    let Check=function(a,b){
+			if(a===undefined)a=null;
+			let ta=self.GetType(a);
+			if (b.Type == "Union"){
+				return Check(a,b.V1)||Check(a,b.V2);
+			}else if(b.Type=="Concat"){
+				return Check(a,b.V1)&&Check(a,b.V2);
+			}else if(b.Type=="Array"){
+				return Check(a,"array")&&(!a.find((v, k)=>!Check(v, b.V)))
+			}else if(b.Type=="Null"){
+				return Check(a,"null")||Check(a,b.V);
+			}else if(b.Type=="Not"){
+				return !Check(a,b.V);
+			}else if(b.Type=="TypedKeysObject"){
+			  let R = Check(a,"object");
+			  if(!R)return R;
+			  for(let k in a){
+			    let v = a[k];
+			    let c = Check(k,b.K)&&Check(v,b.V);
+			    if(!c)return c;
+			  }
+			  return true;
+			}else if(b.Type=="NamedKeysObject"){
+			  let R = Check(a,"object");
+			  if(!R)return R;
+			  let N = b.V;
+			  for(let k in N){
+			    let v = N[k];
+			    if(Object.prototype.hasOwnProperty.call(a,k)){
+			      let c = Check(a[k],v);
+			      if(!c)return c;
+			    }
+			  }
+			  return true;
+			}else{
+				if(b=="any")return true;
+				return b==ta;
+			}
+		    }
+		    let Done = Check(Value,Type);
+		    if(!Done){
+			ErrorHandler.IError(State.Token,"TypeCheck",`${Value} does not match type ${Type}`);
+		    }
+		}
 	}
 
 	//-- Language Setup --\\
@@ -3383,6 +3769,10 @@ const XBS = ((DebugMode = false) => {
 			}
 			//-- Interpret --\\
 			let IStack = Interpreter.NewStack(AStack, Library, true);
+			let RawTypes = "string number boolean object array function null any".split(" ");
+			for(let V of RawTypes){
+				IStack.MainState.NewType(V,V);	
+			}	
 			IStack.ParseState(IStack.MainState);
 			//-- Finish --\\
 			CodeResult.Success = true;
