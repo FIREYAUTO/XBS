@@ -64,7 +64,7 @@ body.appendChild(x[0]);
 				Node.Write("Tag",Stack.Token.Value);
 				if(Stack.CheckNext("IOPEN","Bracket")){
 					Stack.Next();
-					Node.Write("Properties",Stack.IdentifierListInside({Value:"IOPEN",Type:"Bracket"},{Value:"ICLOSE",Type:"Bracket"},{AllowDefault:true,SoftCheck:true}));
+					Node.Write("Properties",Stack.IdentifierListInside({Value:"IOPEN",Type:"Bracket"},{Value:"ICLOSE",Type:"Bracket"},{AllowDefault:true,AllowKeyword:true,SoftCheck:true}));
 				}else{
 					Node.Write("Properties",[]);	
 				}
