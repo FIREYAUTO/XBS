@@ -1392,6 +1392,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 							Result.Name = this.ParseExpression();
 							this.TestNext("ICLOSE", "Bracket");
+							this.Next();
 						} else {
 							ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing object`);
 						}
