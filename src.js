@@ -16,6 +16,8 @@ const XBS = ((DebugMode = false) => {
 			"Expected": (a, b) => `Expected ${a}, got ${b} instead`,
 			"Attempt": (a) => `Attempt to ${a}`,
 			"Cannot": (a) => `Cannot ${a}`,
+			"Invalid": (a)=>`Invalid ${a}`,
+			"TypeCheck": (a)=> String(a),
 		},
 		RawError: function (Type, StartMessage = "", EndMessage = "", ...Parameters) {
 			let Result = this.ErrorTypes[Type];
