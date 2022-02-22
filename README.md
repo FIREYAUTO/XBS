@@ -50,7 +50,8 @@
 - [x] Classes
 - [x] Isa Operator
 - [x] XBS File Extensions 
-- [ ] Type System
+- [x] Type System
+- [x] Settype Statement 
 - [ ] Istype Statement
 - [ ] Expressional Strings
 ***
