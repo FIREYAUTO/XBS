@@ -125,8 +125,18 @@ body.appendChild(x[0]);
 				Properties = Token.Read("Properties");
 			let Element = document.createElement(Token.Read("Tag"));
 			BS.NewVariable("_self",Element);
+			function Apply(A,B){
+				if(typeof B!="object")return;
+				for(let k in B){
+					let v = Stack.Parse(BS,B[k]);
+					if(typeof v==="object")Apply(A[k],v);
+					else A[k]=v;
+				}
+			}
 			for(let V of Properties){
-				Element[V.Name]=Stack.Parse(BS,V.Value);
+				let Val = Stack.Parse(BS,V.Value);
+				if(typeof Val==="object")Apply(Element[V.Name],Val);
+				else Element[V.Name]=Val;
 			}
 			ParseCState(Stack,BS);
 			for(let V of PE){
