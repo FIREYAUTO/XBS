@@ -1,26 +1,19 @@
 /*
-canvas.js XBS Extension
-Adds drawing components to XBS for HTML canvas elements
+html.js XBS Extension
+Adds HTML components to XBS for an easier way to make HTML elements
 
 Example:
 
- * The "canvas" global must be the 2d context of a HTML canvas element
+ * The "body" global must be an HTML element.
 
-func main(){ #Draws a house
-	cdraw canvas {
-    		val lineWidth=10,strokeStyle="#000000",fillStyle="#000000";
-    		strokerect [new Vector(75,140),new Vector(150,110)];
-        	fillrect [new Vector(130,190),new Vector(40,60)];
-        	path begin;
-        	moveto new Vector(50,140);
-        	lineto new Vector(150,60);
-        	lineto new Vector(250,140);
-        	path close;
-        	stroke;
+set x = parsehtml {
+	p {
+    		"Hello, ";
+        	span [style="color:#ff1a4c"] {"world"};
+        	"!";
 	};
 }
-
-main();
+body.appendChild(x[0]);
 
 */
 
