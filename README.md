@@ -49,6 +49,7 @@
 - [x] Self-Calling Operator
 - [x] Classes
 - [x] Isa Operator
+- [x] XBS File Extensions 
 - [ ] Type System
 - [ ] Istype Statement
 - [ ] Expressional Strings
