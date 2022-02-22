@@ -657,52 +657,54 @@ const XBS = ((DebugMode = false) => {
 					return [Node,Priority];
 				},
 			},
+			/*
 			{
 			      Value:"BOPEN",
 			      Type:"Bracket",
 			      Stop:false,
 			      Call:function(Priority){
-				let Node = this.NewNode("TypeObject");
-				if(!this.CheckNext("BCLOSE","Bracket")){
-				  this.Next();
-				  if(AST.IsToken(this.Token,"IOPEN","Bracket")){
-				    Node.Write("ObjectType","TypedKeys");
-				    this.Next();
-				    Node.Write("KeyType",this.ParseTypeExpression());
-				    this.TestNext("ICLOSE","Bracket");
-				    this.Next();
-				    this.TestNext("COLON","Operator");
-				    this.Next(2);
-				    Node.Write("ValueType",this.ParseTypeExpression());
-				    this.TestNext("BCLOSE","Bracket");
-				    this.Next();
-				  }else if(this.Token.Type=="Identifier"||this.Token.Type=="Constant"){
-				    Node.Write("ObjectType","NamedKeys");
-				    let TypeObject = {};
-				    while(true){
-				      if(AST.IsToken(this.Token,"BCLOSE","Bracket"))break;
-				      if(this.Token.Type=="Identifier"||this.Token.Type=="Constant"){
-					let Key = this.Token.Value;
-					this.TestNext("COLON","Operator");
-					this.Next(2);
-					let Value = this.ParseTypeExpression();
-					TypeObject[Key]=Value;
-				      }else{
-					ErrorHandler.AError(this,"Invalid","token type in object type statement; expected Identifier or Constant");
-				      }
-				      if(this.CheckNext("COMMA","Operator")){
-					this.Next(2);
-					continue;
-				      }
-				      this.Next();
-				      break;
-				    }
-				    Node.Write("TypeObject",TypeObject);
-				  }
+					let Node = this.NewNode("TypeObject");
+					if(!this.CheckNext("BCLOSE","Bracket")){
+					  this.Next();
+					  if(AST.IsToken(this.Token,"IOPEN","Bracket")){
+					    Node.Write("ObjectType","TypedKeys");
+					    this.Next();
+					    Node.Write("KeyType",this.ParseTypeExpression());
+					    this.TestNext("ICLOSE","Bracket");
+					    this.Next();
+					    this.TestNext("COLON","Operator");
+					    this.Next(2);
+					    Node.Write("ValueType",this.ParseTypeExpression());
+					    this.TestNext("BCLOSE","Bracket");
+					    this.Next();
+					  }else if(this.Token.Type=="Identifier"||this.Token.Type=="Constant"){
+					    Node.Write("ObjectType","NamedKeys");
+					    let TypeObject = {};
+					    while(true){
+					      if(AST.IsToken(this.Token,"BCLOSE","Bracket"))break;
+					      if(this.Token.Type=="Identifier"||this.Token.Type=="Constant"){
+						let Key = this.Token.Value;
+						this.TestNext("COLON","Operator");
+						this.Next(2);
+						let Value = this.ParseTypeExpression();
+						TypeObject[Key]=Value;
+					      }else{
+						ErrorHandler.AError(this,"Invalid","token type in object type statement; expected Identifier or Constant");
+					      }
+					      if(this.CheckNext("COMMA","Operator")){
+						this.Next(2);
+						continue;
+					      }
+					      this.Next();
+					      break;
+					    }
+					    Node.Write("TypeObject",TypeObject);
+					  }
+					}
+					return [Node,Priority];
 				}
-				return [Node,Priority];
-			      }
-			    },
+			},
+			*/
 		],
 		ComplexTypeExpressions:[
 			{
