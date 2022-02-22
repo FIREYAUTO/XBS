@@ -771,6 +771,24 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "SETTYPE",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("NewType");
+					this.Next();
+					let T = this.Token;
+					if(!AST.IsType(T,"Identifier")){
+						this.ErrorIfEOS();
+						ErrorHandler.AError(this,"Expected","identifier for type name",T.Type.toLowerCase());
+					}
+					Node.Write("Name",T.Value);
+					this.TestNext("EQ","Assignment");
+					this.Next(2);
+					Node.Write("Value",this.ParseTypeExpression());
+					return Node;
+				},
+			},
+			{
 				Value: "IF",
 				Type: "Keyword",
 				Call: function () {
@@ -3357,6 +3375,10 @@ const XBS = ((DebugMode = false) => {
 					if (this.GetType(V2) != "number") ErrorHandler.IError(Token, "Expected", "number", `${this.GetType(V2)} for index range b`);
 					if (V1 >= V2) ErrorHandler.IError(Token, "Unexpected", "index range number sequence (a must be less than b)");
 					return new IndexRange(V1,V2);
+			},
+			NewType:function(State,Token){
+				let Name = Token.Read("Name");
+				State.NewType(Name,Token.Read("Value"));
 			},
 		},
 	};
