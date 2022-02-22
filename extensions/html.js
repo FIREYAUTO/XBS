@@ -43,19 +43,25 @@ main();
 		{
 			Type:"Constant",
 			Call:function(Stack){
-				return Stack.Token.Value;
+				let Node = Stack.NewNode("Constant");
+				Node.Write("Value",Stack.Token.Value);
+				return Node;
 			},
 		},
 		{
 			Type:"Bool",
 			Call:function(Stack){
-				return Stack.Token.Value;
+				let Node = Stack.NewNode("Constant");
+				Node.Write("Value",Stack.Token.Value);
+				return Node;
 			},
 		},
 		{
 			Type:"Null",
 			Call:function(Stack){
-				return Stack.Token.Value;
+				let Node = Stack.NewNode("Constant");
+				Node.Write("Value",Stack.Token.Value);
+				return Node;
 			},
 		},
 		{
@@ -138,6 +144,10 @@ main();
 				}
 			}
 			Elements.push(Element);
+		},
+		Constant:function(Stack,State,Token){
+			let Elements = State.Data.Elements;
+			Elements.push(Token.Read("Value"));
 		},
 	};
 	
