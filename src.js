@@ -655,11 +655,9 @@ const XBS = ((DebugMode = false) => {
 						this.TestNext("ICLOSE","Bracket");
 					}
 					this.Next();
-					Node.Write("V1",this.ParseTypeExpression(200));
 					return [Node,Priority];
 				},
 			},
-			/*
 			{
 			      Value:"BOPEN",
 			      Type:"Bracket",
@@ -706,7 +704,6 @@ const XBS = ((DebugMode = false) => {
 					return [Node,Priority];
 				}
 			},
-			*/
 		],
 		ComplexTypeExpressions:[
 			{
