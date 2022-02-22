@@ -66,10 +66,14 @@ main();
 				if(Stack.CheckNext("IOPEN","Bracket")){
 					Stack.Next();
 					Node.Write("Properties",Stack.IdentifierListInside({Value:"IOPEN",Type:"Bracket"},{Value:"ICLOSE",Type:"Bracket"},{AllowDefault:true,SoftCheck:true}));
+				}else{
+					Node.Write("Properties",[]);	
 				}
 				if(Stack.CheckNext("BOPEN","Bracket")){
 					Stack.Next();
 					Node.Write("Body",ParseBlock(Stack));
+				}else{
+					Node.Write("Body",Stack.NewBlock("HtmlChunk"));	
 				}
 				return Node;
 			},
