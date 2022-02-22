@@ -974,7 +974,7 @@ const XBS = ((DebugMode = false) => {
 					this.Next();
 					Node.Write("Name", this.Token.Value);
 					this.Next();
-					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType:true }));
 					Node.Write("ReturnType", this.GetType());
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
@@ -1403,7 +1403,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Priority) {
 					let Node = this.NewNode("FastFunction");
 					this.Next();
-					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true }));
+					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType:true }));
 					Node.Write("ReturnType",this.GetType());
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
@@ -3484,6 +3484,9 @@ const XBS = ((DebugMode = false) => {
 					}
 					if (Argument === undefined) Argument = self.Parse(State, Parameter.Value);
 					NewState.NewVariable(Parameter.Name, Argument);
+					if(Parameter.Type){
+						self.TypeCheck(NewState,Argument,Parameter.Type);	
+					}
 					if (Stop) break;
 				}
 				for (let Variable of GlobalVariables) State.TransferVariable(NewState, Variable);
@@ -3746,7 +3749,7 @@ const XBS = ((DebugMode = false) => {
 		    }
 		    let Done = Check(Value,Type);
 		    if(!Done){
-			ErrorHandler.IError(State.Token,"TypeCheck",`${Value} does not match type ${Type}`);
+			ErrorHandler.IError(State,"TypeCheck",`${Value} does not match type ${Type}`);
 		    }
 		}
 	}
