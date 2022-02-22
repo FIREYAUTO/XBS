@@ -2183,9 +2183,17 @@ const XBS = ((DebugMode = false) => {
 					}
 				}
 				if (!AST.IsType(Token, "Identifier")) {
-					ErrorHandler.AError(this, "Expected", "identifier", Token.Type.toLowerCase());
+					let DoError = true;
+					if(Options.AllowKeyword===true){
+						if(AST.IsType(Token,"Keyword")){
+							DoError=false;
+						}
+					}
+					if(DoError){
+						ErrorHandler.AError(this, "Expected", "identifier", Token.Type.toLowerCase());	
+					}
 				}
-				Identifier.Name = Token.Value;
+				Identifier.Name = Token.Type==="Keyword"?Token.RawValue:Token.Value;
 				if (Options.AllowDefault === true) {
 					if (Options.SoftCheck === true) {
 						if (this.CheckNext("EQ", "Assignment")) {
