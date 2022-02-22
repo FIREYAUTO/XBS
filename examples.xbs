@@ -73,3 +73,23 @@ class Request {
 
 set x=new Request("GET","https://fireyauto.github.io/SingleScript/imports/load.singlescript",log);
 x::Send();
+
+# Instance Class Test
+
+class Instance {
+	private const Properties = {}
+	private method construct(Properties:{[string]:any}={})
+		each Properties as k,v
+			self.Properties[k] = v;
+	method Get(Name:string)
+		send self.Properties[Name];
+	method Names()
+		send object.keys(self.Properties);
+}
+
+set x = new Instance({
+	Name = "Name Here"
+});
+
+log(x::Get("Name")); #Name Here
+log(x::Names()); #Name
