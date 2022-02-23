@@ -1166,7 +1166,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function () {
 					let Node = this.NewNode("GlobalVariable");
 					this.Next();
-					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 }));
+					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1, AllowType:true }));
 					return Node;
 				},
 			},
