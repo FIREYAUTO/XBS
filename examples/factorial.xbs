@@ -1,0 +1,8 @@
+func Factorial(Number:number=1){
+	set List = 1..Number,
+		Result = List[0];
+	<|{Value}(*List[1:?List])Result*=Value;
+	send Result;
+}
+
+log(Factorial(4)) #24
