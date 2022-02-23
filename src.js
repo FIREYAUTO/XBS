@@ -634,6 +634,15 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Type:"Null",
+				Stop:false,
+				Call:function(Priority){
+					let Node = this.NewNode("GetType");
+					Node.Write("Name","null");
+					return [Node,Priority];
+				},
+			},
+			{
 				Value:"NOT",
 				Type:"Operator",
 				Stop:false,
