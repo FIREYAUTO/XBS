@@ -1,0 +1,118 @@
+settype worker = {Name:string,Age:number,Gender:string};
+settype product = {Name:string,Price:number};
+
+class Firm {
+	undefined Name
+	set Wage = 0
+	set Revenue = 0
+	set Sales = 0
+	set TotalSales = 0
+	const Workers = []
+	const Products = []
+	private method construct(Name:string="Firm Name")
+		self.Name = Name;
+	method SetWage(Amount:number=0)
+		self.Wage = Amount;
+	method AddWorker(_Worker:worker)
+		if(!self.Workers.includes(_Worker)&_Worker isa Worker)
+			self.Workers.push(_Worker);
+	method AddProduct(_Product:product)
+		if(!self.Products.includes(_Product)&_Product isa Product)
+			self.Products.push(_Product);
+	method CalculateSales(){
+		set Total = 0,
+			Sales = math.random(10,20);
+		repeat Sales {
+			set _Product = self.Products[math.random(0,?self.Products-1)];
+			_Product.Sales++;
+			Total += _Product.Price;
+		}
+		self.Sales = Sales;	
+		self.TotalSales += Sales;
+		self.Revenue += Total;
+	}
+	method PayWorkers()
+		each self.Workers as _,_Worker {
+			if(self.Revenue-self.Wage<0)stop;
+			_Worker.Money += self.Wage;
+			self.Revenue -= self.Wage;
+		};
+	method Format(){
+		set Result = [
+			`--- {self.Name} ---`,
+			`Revenue: ${self.Revenue}`,
+			`Sales: {self.Sales}`,
+			`Total Sales: {self.TotalSales}`
+		];
+		Result.push("Workers:");
+		each self.Workers as _,_Worker
+			Result.push("\t"+_Worker::Format());
+		Result.push("Products:")
+		each self.Products as _,_Product
+			Result.push("\t"+_Product::Format());
+		send Result.join("\n");
+	}
+}
+
+class Worker {
+	undefined Name
+	undefined Age
+	undefined Gender
+	set Money = 0
+	private method construct(Name:string="John",Age:number=20,Gender:string="Male"){
+		self.Name = Name;
+		self.Age = Age;
+		self.Gender = Gender;
+	}
+	method Format():string
+		send `{self.Name}: {self.Age}, {self.Gender} (${self.Money})`;
+}
+
+class Product {
+	undefined Name
+	set Price = 0
+	set Sales = 0
+	private method construct(Name:string,Price:number=0){
+		self.Name = Name;
+		self.Price = Price;
+	}
+	method Format()
+		send `{self.Name}: ${self.Price} ({self.Sales} Sales)`;
+}
+
+#> Testing <#
+
+const MyFirm = new Firm("Plants & More");
+MyFirm::SetWage(15);
+
+# Products
+
+const Products = {
+	Plant = 3,
+	Tree = 8,
+};
+
+each Products as Name,Price
+	MyFirm::AddProduct(new Product(Name,Price));
+
+# Workers
+
+const Workers = [
+	new Worker("John",20,"Male"),
+	new Worker("Linda",32,"Female")
+];
+
+each Workers as _,_Worker
+	MyFirm::AddWorker(_Worker);
+
+# Sales
+
+log("<b>PRE-PAY</b>");
+
+MyFirm::CalculateSales();
+log(MyFirm::Format());
+
+log("<b>POST-PAY</b>");
+
+MyFirm::PayWorkers();
+log(MyFirm::Format());
