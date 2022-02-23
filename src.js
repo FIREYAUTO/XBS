@@ -3558,7 +3558,8 @@ const XBS = ((DebugMode = false) => {
 			StackUp:function(State,Token){
 				let Body = Token.Read("Body");
 				let NS = new IState(Body,State.Parent);
-				this.ParseProxyState(NS,State);
+				if(!State.Parent)this.ParseState(NS);
+				else this.ParseState(State.Parent,false,NS);
 			},
 		},
 	};
@@ -3641,32 +3642,10 @@ const XBS = ((DebugMode = false) => {
 				}
 			}
 		}
-		ParseState(State, Unpack = false) {
-			while (!State.IsEnd()) {
-				if (State.Read("InAs") === true) {
-					if (!this.Parse(State, State.Read("AsExpression"))) {
-						break;
-					}
-				}
-				let Result = this.Parse(State, State.Token, Unpack);
-				if (this.IsEvaluation) {
-					this.Evaluation = Result;
-				}
-				State.Next();
-				if (State.Read("Returned") === true) {
-					State.Write("InLoop", false);
-					break;
-				}
-				if (State.Read("Stopped") === true) {
-					State.Write("InLoop", false);
-					break;
-				}
-				if (State.Read("Continued") === true) break;
-				if (State.Read("Exited") === true) break;
-			}
-			State.Close();
-		}
-		ParseProxyState(S1,S2, Unpack = false) {
+		ParseState(State, Unpack = false,Proxy) {
+			let S1 = State;
+			let S2 = State;
+			if(Proxy)S1=Proxy;
 			while (!S1.IsEnd()) {
 				if (S2.Read("InAs") === true) {
 					if (!this.Parse(S2, S2.Read("AsExpression"))) {
@@ -3689,7 +3668,7 @@ const XBS = ((DebugMode = false) => {
 				if (S2.Read("Continued") === true) break;
 				if (S2.Read("Exited") === true) break;
 			}
-			State.Close();
+			S1.Close();
 		}
 		//-- Other Language States --\\
 		FunctionState(State, Token) {
