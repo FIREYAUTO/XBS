@@ -413,6 +413,7 @@ const XBS = ((DebugMode = false) => {
 					}
 					Token.Type = "Constant";
 					Token.Value = Result;
+					Token.StringType=1;
 					Token.RawValue = "String";
 				} else if (Token.Value === "\'"&&!Stack.IsEString) {
 					let Tokens = this.BetweenRead(Stack, { End: { Value: "\'", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false }), Result = "";
@@ -427,7 +428,29 @@ const XBS = ((DebugMode = false) => {
 					}
 					Token.Type = "Constant";
 					Token.Value = Result;
+					Token.StringType=0;
 					Token.RawValue = "String";
+				} else if (Token.Value === "\`") {
+					let Result = [];
+					Stack.Next();
+					while(!Stack.IsEnd()){
+						let Back = false;
+						let Tk = Stack.Token;
+						if(Tk.Value==="\\"&&Tk.Type==="Control"){
+							Stack.Next();
+							Tk=Stack.Token;
+							Tk.Escaped = true;
+							Back = true;
+						}
+						let Res = Back?Tk:this.TypeRead(Stack);
+						if(Res)Result.push(Res);
+						Stack.Next();
+						if(Stack.Token.Type==="String"&&Stack.Token.Value==="\`")break;
+					}
+					Result=this.ApplyTokenNames(Result);
+					Token.Type = "ExpressionalString";
+					Token.Value = Result;
+					Token.RawValue = "ExpressionalString";
 				}
 			} else if (Token.Type === "Identifier") {
 				let Value = this.NumberRead(Stack);
@@ -1273,6 +1296,43 @@ const XBS = ((DebugMode = false) => {
 				Stop: false,
 				Call: function (Priority) {
 					return [this.Token.Value, Priority];
+				},
+			},
+			{
+				Type:"ExpressionalString",
+				Stop:false,
+				Call: function (Priority) {
+					let Node = this.NewNode("ExpressionalString");
+					let Result = [];
+					let Stack = new ASTStack({Tokens:this.Token.Value,Lines:[]});
+					while(!Stack.IsEnd()){
+						if(AST.IsToken(Stack.Token,"BOPEN","Bracket")){
+							Stack.Next();
+							Result.push(Stack.ParseExpression());
+							Stack.TestNext("BCLOSE","Bracket");
+							Stack.Next();
+						}else{
+							let T=Stack.Token,
+								V=T.RawValue,
+							    	Add=undefined;
+							if(T.Type==="Constant"){
+								if(V==="String")
+									V=`${T.StringType===1?"\"":"'"}${T.Value}${T.StringType===1?"\"":"'"}`;
+								else V=T.Value;
+							}else if(T.Type==="Bool"||T.Type==="Null"){
+								V=T.Value;	
+							}
+							if(T.Escaped===true){
+								if(V.length>1)Add=V.substr(1,V.length),V=V.substr(0, 1);
+								V=Tokenizer.EscapeStringLiteral(V);
+							}
+							Result.push(V);
+							if(Add)Result.push(Add);
+						}
+						Stack.Next();
+					}
+					Node.Write("Expressions",Result);
+					return [Node,Priority];	
 				},
 			},
 			{
@@ -3404,6 +3464,14 @@ const XBS = ((DebugMode = false) => {
 				let Name = Token.Read("Name");
 				State.NewType(Name,Token.Read("Value"));
 			},
+			ExpressionalString:function(State,Token){
+				let Expressions = Token.Read("Expressions");
+				let Result = "";
+				for(let v of Expressions){
+					Result+=this.Parse(State,v);	
+				}
+				return Result;
+			}
 		},
 	};
 
