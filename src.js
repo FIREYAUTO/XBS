@@ -100,6 +100,7 @@ const XBS = ((DebugMode = false) => {
 			"LOCKVAR": { Value: "lockvar", Type: "Keyword" },
 			"UPVAR": { Value: "upvar", Type: "Keyword" },
 			"EXIT": { Value: "exit", Type: "Keyword" },
+			"STACKUP": { Value: "stackup", Type: "Keyword" },
 			//Operator Tokens
 			"ADD": { Value: "+", Type: "Operator" },
 			"SUB": { Value: "-", Type: "Operator" },
@@ -989,6 +990,16 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Send");
 					this.Next();
 					Node.Write("Expression", this.ParseExpression());
+					return Node;
+				},
+			},
+			{
+				Value: "STACKUP",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("StackUp");
+					this.Next();
+					Node.Write("Body", this.ParseBlock());
 					return Node;
 				},
 			},
@@ -3543,7 +3554,12 @@ const XBS = ((DebugMode = false) => {
 					Result+=this.Parse(State,v);	
 				}
 				return Result;
-			}
+			},
+			StackUp:function(State,Token){
+				let Body = Token.Read("Body");
+				let NS = new IState(Body,State.Parent);
+				this.ParseState(NS);
+			},
 		},
 	};
 
