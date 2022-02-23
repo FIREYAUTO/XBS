@@ -3934,11 +3934,11 @@ const XBS = ((DebugMode = false) => {
 		}
 		GetAdvancedMethod(State,O,N){
 			if(typeof O!="object")return;
-			if (State.Read("IsClass") === true && State.Read("Class") === O) {
-				let Private = State.Read("Private");
-				if (Private.hasOwnProperty(I)) {
-					O = Private;
-				}
+			if(O.__IS_XBS_CLASS===true){
+				let p = O.__XBS_PRIVATE_PROPERTIES;
+				if(p.hasOwnProperty("__"+N)){
+					return p["__"+N];
+				}	
 			}
 			return O["__"+N];
 		}
