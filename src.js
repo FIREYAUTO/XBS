@@ -3558,7 +3558,7 @@ const XBS = ((DebugMode = false) => {
 			StackUp:function(State,Token){
 				let Body = Token.Read("Body");
 				let NS = new IState(Body,State.Parent);
-				this.ParseState(NS);
+				this.ParseProxyState(NS,State);
 			},
 		},
 	};
@@ -3663,6 +3663,31 @@ const XBS = ((DebugMode = false) => {
 				}
 				if (State.Read("Continued") === true) break;
 				if (State.Read("Exited") === true) break;
+			}
+			State.Close();
+		}
+		ParseProxyState(S1,S2, Unpack = false) {
+			while (!S1.IsEnd()) {
+				if (S2.Read("InAs") === true) {
+					if (!this.Parse(S2, S2.Read("AsExpression"))) {
+						break;
+					}
+				}
+				let Result = this.Parse(S2, S1.Token, Unpack);
+				if (this.IsEvaluation) {
+					this.Evaluation = Result;
+				}
+				S1.Next();
+				if (S2.Read("Returned") === true) {
+					S2.Write("InLoop", false);
+					break;
+				}
+				if (S2.Read("Stopped") === true) {
+					S2.Write("InLoop", false);
+					break;
+				}
+				if (S2.Read("Continued") === true) break;
+				if (S2.Read("Exited") === true) break;
 			}
 			State.Close();
 		}
