@@ -54,7 +54,7 @@
 - [x] Settype Statement 
 - [x] TypeCheck Operator
 - [x] Expressional Strings (Some bugs still exist)
-- [ ] Advanced Object Methods
+- [x] Advanced Object Methods
 ***
 ## Using XBS
 
