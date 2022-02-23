@@ -52,8 +52,8 @@
 - [x] XBS File Extensions 
 - [x] Type System
 - [x] Settype Statement 
-- [ ] Istype Statement
-- [ ] Expressional Strings
+- [x] TypeCheck Operator
+- [x] Expressional Strings (Some bugs still exist)
 ***
 ## Using XBS
 
