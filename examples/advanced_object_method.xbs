@@ -1,0 +1,15 @@
+class Color {
+	private method construct(r:number=0,g:number=0,b:number=0){
+		self.r=r;
+		self.g=g;
+		self.b=b;
+	}
+	private method __add(v)
+		send new Color(self.r+v,self.g+v,self.b+v);
+	method Format()
+		send `{self.r},{self.g},{self.b}`;
+}
+
+set c = new Color(1,1,1);
+log(c::Format()); # 1,1,1
+log((c+1)::Format()); # 2,2,2
