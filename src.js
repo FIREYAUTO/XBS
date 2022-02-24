@@ -401,7 +401,7 @@ const XBS = ((DebugMode = false) => {
 		TypeRead(Stack) {
 			let Token = Stack.Token;
 			if (Token.Type === "String") {
-				if (Token.Value === "\""&&!Stack.IsEString) {
+				if (Token.Value === "\"") {
 					let Tokens = this.BetweenRead(Stack, { End: { Value: "\"", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false }), Result = "";
 					for (let Value of Tokens) {
 						let Text = Value.RawValue, Add = undefined;
@@ -416,7 +416,7 @@ const XBS = ((DebugMode = false) => {
 					Token.Value = Result;
 					Token.StringType=1;
 					Token.RawValue = "String";
-				} else if (Token.Value === "\'"&&!Stack.IsEString) {
+				} else if (Token.Value === "\'") {
 					let Tokens = this.BetweenRead(Stack, { End: { Value: "\'", Type: "String" }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false }), Result = "";
 					for (let Value of Tokens) {
 						let Text = Value.RawValue, Add = undefined;
@@ -451,15 +451,15 @@ const XBS = ((DebugMode = false) => {
 						Stack.Next();
 						if(Stack.IsEnd())break;
 					}
-					if(Stack.Token){
+					if(Stack.Token&&Stack.Token.Type==="String"&&Stack.Token.Value==="\`"){
 						Stack.Result.push(Stack.Token);
 						Stack.Token.Type="ExpressionalString";
 						Stack.Token.RawValue="ExpressionalString";
 					}
 					Token.Type = "ExpressionalString";
 					Token.RawValue = "ExpressionalString";
+					return;
 				}
-				return;
 			} else if (Token.Type === "Identifier") {
 				let Value = this.NumberRead(Stack);
 				if (Value) {
@@ -1336,7 +1336,10 @@ const XBS = ((DebugMode = false) => {
 					while(!this.IsEnd()){
 						if(AST.IsToken(this.Token,"BOPEN","Bracket")){
 							this.Next();
+							let pre = this.IsString;
+							this.IsString=true;
 							Result.push(this.ParseExpression());
+							this.IsString=pre;
 							this.TestNext("BCLOSE","Bracket");
 							this.Next();
 						}else{
