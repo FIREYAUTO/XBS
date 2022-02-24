@@ -1551,18 +1551,10 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Pipe");
 					this.Next();
 					Node.Write("Expressions", this.ExpressionListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }));
-					let B = { BLANK: true }
+					let B = { BLANK: true };
 					let CE = this.ParseComplexExpression(new ASTExpression(B, Priority));
 					Node.Write("ComplexExpression", CE);
-					if (CE instanceof ASTNode && CE.Read(CE.FirstData) != B) {
-						for (let Key in CE.Data) {
-							let Value = CE.Data[Key];
-							if (Value == B) {
-								CE.FirstData = Key;
-								break;
-							}
-						}
-					}
+					Node.Write("Blank",B);
 					return [Node, Priority];
 				},
 			},
@@ -3348,13 +3340,31 @@ const XBS = ((DebugMode = false) => {
 				let Expressions = Token.Read("Expressions"),
 					ComplexExpression = Token.Read("ComplexExpression"),
 					Result = [],
-					Ex = [];
+					Ex = [],
+				    	Blank = Token.Read("Blank");
 				for (let E of Expressions)
 					if (E instanceof ASTBase && E.Type === "UnpackArray") for (let x of this.Parse(State, E.Read("V1"), true)) Ex.push(x);
 					else Ex.push(E);
-				if (ComplexExpression.FirstData === undefined) ErrorHandler.IError(ComplexExpression, "Unexpected", "complex expression for pipe operator");
+				function FindData(R){
+					let RS = [];
+					for(let k in R){
+						let v = R[k];
+						if(v instanceof ASTBase){
+							Array.prototype.push.apply(RS,FindData(v.Data))
+						}else if(v===Blank){
+							RS.push({
+								Name:k,
+								Data:R
+							});
+						}
+					}
+					return RS;
+				}
+				let Data = FindData(ComplexExpression.Data);
 				for (let Expression of Ex) {
-					ComplexExpression.Write(ComplexExpression.FirstData, Expression);
+					for(let V of Data){
+						V.Data[V.Name] = Expression;
+					}
 					Result.push(this.Parse(State, ComplexExpression));
 				}
 				return Result;
