@@ -1,5 +1,9 @@
 const XBS = ((DebugMode = false) => {
-
+	
+	const DefaultGlobals = {
+		XBS_VERSION:"XBS 1.0",
+	};
+	
 	//-- Debugger --\\
 
 	function DebugLog(...a) {
@@ -3636,6 +3640,9 @@ const XBS = ((DebugMode = false) => {
 				this.IsEvaluation = IsEvaluation,
 				this.Environment = Environment;
 			for (let Name in Environment) this.MainState.NewVariable(Name, Environment[Name]);
+			for (let Name in DefaultGlobals){
+				this.MainState.NewVariable(Name,DefaultGlobals[Name]);	
+			}
 			this.ParseStates = {};
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
