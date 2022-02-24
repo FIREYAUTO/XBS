@@ -432,9 +432,9 @@ const XBS = ((DebugMode = false) => {
 					Token.StringType=0;
 					Token.RawValue = "String";
 				} else if (Token.Value === "\`") {
-					let Result = [];
 					Stack.Next();
-					while(!Stack.IsEnd()){
+					Stack.Result.push(Token);
+					while(!(Stack.Token.Type==="String"&&Stack.Token.Value==="\`")){
 						let Back = false;
 						let Tk = Stack.Token;
 						if(Tk.Value==="\\"&&Tk.Type==="Control"){
@@ -443,16 +443,23 @@ const XBS = ((DebugMode = false) => {
 							Tk.Escaped = true;
 							Back = true;
 						}
+						if(Tk.Type==="Whitespace"){
+							Tk.IsPerm=true;	
+						}
 						let Res = Back?Tk:this.TypeRead(Stack);
-						if(Res)Result.push(Res);
+						if(Res)Stack.Result.push(Res);
 						Stack.Next();
-						if(Stack.Token.Type==="String"&&Stack.Token.Value==="\`")break;
+						if(Stack.IsEnd())break;
 					}
-					Result=this.ApplyTokenNames(Result);
+					if(Stack.Token){
+						Stack.Result.push(Stack.Token);
+						Stack.Token.Type="ExpressionalString";
+						Stack.Token.RawValue="ExpressionalString";
+					}
 					Token.Type = "ExpressionalString";
-					Token.Value = Result;
 					Token.RawValue = "ExpressionalString";
 				}
+				return;
 			} else if (Token.Type === "Identifier") {
 				let Value = this.NumberRead(Stack);
 				if (Value) {
@@ -525,6 +532,7 @@ const XBS = ((DebugMode = false) => {
 			let Stack = {
 				IsEString:IsEString,
 				Tokens: Tokens,
+				Result: Result,
 				Position: 0,
 				Token: Tokens[0],
 				Next: function (Amount = 1) {
@@ -544,7 +552,7 @@ const XBS = ((DebugMode = false) => {
 			return Result;
 		}
 		RemoveWhitespace(Tokens) {
-			return Tokens.filter(Token => Token.Type != "Whitespace");
+			return Tokens.filter(Token=>Token.Type!="Whitespace"||(Token.Type==="Whitespace"&&Token.IsPerm===true));
 		}
 		ApplyTokenNames(Tokens) {
 			Tokens.forEach(Token => Token.Value = Tokenizer.TokenNameFromValue(Token.Value,Token.Type));
@@ -1324,15 +1332,18 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Priority) {
 					let Node = this.NewNode("ExpressionalString");
 					let Result = [];
-					let Stack = new ASTStack({Tokens:this.Token.Value,Lines:[]});
-					while(!Stack.IsEnd()){
-						if(AST.IsToken(Stack.Token,"BOPEN","Bracket")){
-							Stack.Next();
-							Result.push(Stack.ParseExpression());
-							Stack.TestNext("BCLOSE","Bracket");
-							Stack.Next();
+					this.Next();
+					while(!this.IsEnd()){
+						if(AST.IsToken(this.Token,"BOPEN","Bracket")){
+							this.Next();
+							Result.push(this.ParseExpression());
+							this.TestNext("BCLOSE","Bracket");
+							this.Next();
 						}else{
-							let T=Stack.Token,
+							if(AST.IsType(this.Token,"ExpressionalString")){
+								break;	
+							}
+							let T=this.Token,
 								V=T.RawValue,
 							    	Add=undefined;
 							if(T.Type==="Constant"){
@@ -1349,7 +1360,7 @@ const XBS = ((DebugMode = false) => {
 							Result.push(V);
 							if(Add)Result.push(Add);
 						}
-						Stack.Next();
+						this.Next();
 					}
 					Node.Write("Expressions",Result);
 					return [Node,Priority];	
