@@ -1044,7 +1044,7 @@ const XBS = ((DebugMode = false) => {
 					this.Next();
 					Node.Write("Name", this.Token.Value);
 					this.Next();
-					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType:true }));
+					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType:true, AllowConstant:true }));
 					Node.Write("ReturnType", this.GetType());
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
@@ -1080,7 +1080,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function () {
 					let Node = this.NewNode("Destructure");
 					this.Next();
-					Node.Write("Names", this.IdentifierListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" },{AllowType: true}));
+					Node.Write("Names", this.IdentifierListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" },{AllowType: true, AllowConstant:true}));
 					this.Next();
 					Node.Write("Object", this.ParseExpression());
 					return Node;
@@ -1227,7 +1227,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 							let Name = this.Token.Value;
 							this.Next();
-							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true }));
+							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true, AllowConstant:true }));
 							O.Write("ReturnType",this.GetType());
 							this.Next();
 							O.Write("Private", Private);
@@ -1272,7 +1272,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 							let Name = this.Token.Value;
 							this.Next();
-							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true });
+							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true, AllowConstant:true });
 							Ids.unshift({Name:"self"});
 							O.Write("Parameters", Ids);
 							O.Write("ReturnType",this.GetType());
@@ -1514,7 +1514,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Priority) {
 					let Node = this.NewNode("FastFunction");
 					this.Next();
-					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType:true }));
+					Node.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType:true, AllowConstant:true }));
 					Node.Write("ReturnType",this.GetType());
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
@@ -2489,6 +2489,7 @@ const XBS = ((DebugMode = false) => {
 					Name: undefined,
 					Value: undefined,
 					Type: undefined,
+					Constant; false,
 				}
 				this.ErrorIfEOS();
 				if (Options.AllowVarargs === true) {
@@ -2510,6 +2511,17 @@ const XBS = ((DebugMode = false) => {
 					}
 				}
 				Identifier.Name = Token.Type==="Keyword"?Token.RawValue:Token.Value;
+				if (Options.AllowConstant === true) {
+					if (this.CheckNext("LT","Operator")){
+						this.Next();
+						if(this.CheckNext("CONST","Keyword")){
+							Identifier.Constant = true;
+							this.Next();
+						}
+						this.TestNext("GT","Operator");
+						this.Next();
+					}
+				}
 				if (Options.AllowType === true) {
 					Identifier.Type = this.GetType(Options.TypePriority,Options.TypeIgnoreList);	
 				}
@@ -3261,13 +3273,19 @@ const XBS = ((DebugMode = false) => {
 							if(V.Type){
 								this.TypeCheck(State,Default,V.Type);	
 							}
-							State.NewVariable(V.Name, Default);
+							State.NewVariable(V.Name, Default,{
+								Type: V.Type,
+								Constant: V.Constant,
+							});
 						}
 					} else {
 						if(V.Type){
 							this.TypeCheck(State,O[V.Name],V.Type);	
 						}
-						State.NewVariable(V.Name, O[V.Name]);
+						State.NewVariable(V.Name, O[V.Name],{
+							Type: V.Type,
+							Constant: V.Constant,
+						});
 					}
 				}
 			},
@@ -3713,10 +3731,13 @@ const XBS = ((DebugMode = false) => {
 						Stop = true;
 					}
 					if (Argument === undefined) Argument = self.Parse(State, Parameter.Value);
-					NewState.NewVariable(Parameter.Name, Argument);
 					if(Parameter.Type){
 						self.TypeCheck(NewState,Argument,Parameter.Type);	
 					}
+					NewState.NewVariable(Parameter.Name, Argument,{
+						Constant:Parameter.Constant,
+						Type:Parameter.Type,
+					});
 					if (Stop) break;
 				}
 				for (let Variable of GlobalVariables) State.TransferVariable(NewState, Variable);
