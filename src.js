@@ -3639,10 +3639,10 @@ const XBS = ((DebugMode = false) => {
 				this.Evaluation = undefined,
 				this.IsEvaluation = IsEvaluation,
 				this.Environment = Environment;
+			for (let Name in DefaultGlobals)
+				if(!Object.prototype.hasOwnProperty.call(Environment,Name))
+					Environment[Name]=DefaultGlobals[Name];
 			for (let Name in Environment) this.MainState.NewVariable(Name, Environment[Name]);
-			for (let Name in DefaultGlobals){
-				this.MainState.NewVariable(Name,DefaultGlobals[Name]);	
-			}
 			this.ParseStates = {};
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
