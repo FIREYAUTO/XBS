@@ -2489,7 +2489,7 @@ const XBS = ((DebugMode = false) => {
 					Name: undefined,
 					Value: undefined,
 					Type: undefined,
-					Constant; false,
+					Constant: false,
 				}
 				this.ErrorIfEOS();
 				if (Options.AllowVarargs === true) {
