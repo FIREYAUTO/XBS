@@ -53,7 +53,7 @@
 - [x] Type System
 - [x] Settype Statement 
 - [x] TypeCheck Operator
-- [x] Expressional Strings (Some bugs still exist)
+- [x] Expressional Strings
 - [x] Advanced Object Methods
 ***
 ## Using XBS
