@@ -40,8 +40,8 @@ Example:
 	XBS.NewInterpreterParseState("Export",function(State,Token){
 		const Chunk = Token.Read("Chunk");
 		let NS = new IState({Data: [], Line: Chunk.Line, Index: Chunk.Index},State);
-		if(!this.GlobalSettings["XBS Exports"])this.GlobalSettings["XBS Exports"]={};
-		let Exports = this.GlobalSettings["XBS Exports"];
+		if(!State.GlobalVariables["XBS Exports"])State.GlobalVariables["XBS Exports"]={};
+		let Exports = State.GlobalVariables["XBS Exports"];
 		if(Chunk.Type==="GetVariable"){
 			let V = State.GetGlobalRawVariable(Chunk.Read("Name"));
 			NS.Variables.push(V);
@@ -49,8 +49,8 @@ Example:
 			this.ParseState(NS);	
 		}
 		for(let V in NS.Variables){
-				V.State = State;
-				Exports[V.Name]=V;
+			V.State = State;
+			Exports[V.Name]=V;
 		}
 	});
 	
