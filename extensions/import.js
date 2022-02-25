@@ -59,7 +59,7 @@ Example:
 	XBS.NewToken("IMPORT","import","Keyword");
 	XBS.NewASTChunk({
 		Value:"IMPORT",
-		Type:"import",
+		Type:"Keyword",
 		Call:function(){
 			let Node = this.NewNode("Import");
 			this.Next();
