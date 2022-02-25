@@ -1,0 +1,10 @@
+export class Stream {
+	private set Text:string = ""
+	private method construct();
+	method Write(Text)
+		self.Text+=Text;
+	method Out(){
+		log(self.Text);
+		self.Text="";
+	}
+}
