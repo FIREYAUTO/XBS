@@ -3977,17 +3977,17 @@ const XBS = ((DebugMode = false) => {
 		    let Check=function(a,b){
 			if(a===undefined)a=null;
 			let ta=self.GetType(a);
-			if (b.Type == "Union"){
+			if (b&&b.Type == "Union"){
 				return Check(a,b.V1)||Check(a,b.V2);
-			}else if(b.Type=="Concat"){
+			}else if(b&&b.Type=="Concat"){
 				return Check(a,b.V1)&&Check(a,b.V2);
-			}else if(b.Type=="Array"){
+			}else if(b&&b.Type=="Array"){
 				return Check(a,"array")&&(!a.find((v, k)=>!Check(v, b.V)))
-			}else if(b.Type=="Null"){
+			}else if(b&&b.Type=="Null"){
 				return Check(a,"null")||Check(a,b.V);
-			}else if(b.Type=="Not"){
+			}else if(b&&b.Type=="Not"){
 				return !Check(a,b.V);
-			}else if(b.Type=="TypedKeysObject"){
+			}else if(b&&b.Type=="TypedKeysObject"){
 			  let R = Check(a,"object");
 			  if(!R)return R;
 			  for(let k in a){
@@ -3996,7 +3996,7 @@ const XBS = ((DebugMode = false) => {
 			    if(!c)return c;
 			  }
 			  return true;
-			}else if(b.Type=="NamedKeysObject"){
+			}else if(b&&b.Type=="NamedKeysObject"){
 			  let R = Check(a,"object");
 			  if(!R)return R;
 			  let N = b.V;
