@@ -48,7 +48,7 @@ Example:
 		}else{
 			this.ParseState(NS);	
 		}
-		for(let V in NS.Variables){
+		for(let V of NS.Variables){
 			V.State = State;
 			Exports[V.Name]=V;
 		}
