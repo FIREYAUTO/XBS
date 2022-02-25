@@ -64,7 +64,7 @@ Example:
 			let Node = this.NewNode("Import");
 			this.Next();
 			Node.Write("URL",this.ParseExpression());
-			this.TestNext("AS","Keyword");
+			this.TestNext("WITH","Keyword");
 			this.Next(2);
 			let Tk = this.Token;
 			if(AST.IsToken(Tk,"MUL","Operator")){
