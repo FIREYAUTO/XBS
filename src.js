@@ -929,7 +929,7 @@ const XBS = ((DebugMode = false) => {
 					let Node = this.NewNode("Foreach");
 					this.TestNext("POPEN", "Bracket");
 					this.Next(2);
-					Node.Write("Names", this.IdentifierList());
+					Node.Write("Names", this.IdentifierList({AllowType:true}));
 					if (this.CheckNext("IN", "Keyword")) {
 						this.Next();
 						Node.Write("Type", "In");
@@ -961,7 +961,7 @@ const XBS = ((DebugMode = false) => {
 					Node.Write("Iterator", this.ParseExpression());
 					this.TestNext("AS", "Keyword");
 					this.Next(2);
-					Node.Write("Names", this.IdentifierList());
+					Node.Write("Names", this.IdentifierList({AllowType:true}));
 					this.Next();
 					Node.Write("Body", this.ParseBlock());
 					return Node;
@@ -3179,14 +3179,19 @@ const XBS = ((DebugMode = false) => {
 					let v = Iterator[k];
 					let NewState = new IState(Body, State, { InLoop: true, IsLoop: true });
 					if (Type === "In") {
-						NewState.NewVariable(Names[0].Name, k);
+						let V = Names[0];
+						if(V.Type)this.TypeCheck(State,k,V.Type);	
+						NewState.NewVariable(V.Name, k);
 					} else if (Type === "Of") {
-						NewState.NewVariable(Names[0].Name, v);
+						let V = Names[0];
+						if(V.Type)this.TypeCheck(State,v,V.Type);
+						NewState.NewVariable(V.Name, v);
 					} else if (Type === "As") {
 						let Vars = [k, v];
 						for (let x in Vars) {
 							let n = Names[x];
 							if (!n) break;
+							if(n.Type)this.TypeCheck(State,Vars[x],n.Type);
 							NewState.NewVariable(n.Name, Vars[x])
 						}
 					}
