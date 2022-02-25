@@ -46,7 +46,7 @@ Example:
 			let V = State.GetGlobalRawVariable(Chunk.Read("Name"));
 			NS.Variables.push(V);
 		}else{
-			this.ParseState(NS);	
+			this.Parse(NS,Chunk);
 		}
 		for(let V of NS.Variables){
 			V.State = State;
