@@ -2731,9 +2731,21 @@ const XBS = ((DebugMode = false) => {
 				this.Parent.Children.splice(this.Parent.Children.indexOf(this), 1);
 			}
 			let Variables = this.GetAllGlobalVariables();
+			let Types = {};
+			let Search = this;
+			while(Search){
+				for(let n in Search.TypeVars)
+					if(!Types.hasOwnProperty(n))Types[n]=Search.TypeVars[n];
+				Search=Search.Parent;
+			}
 			for (let Child of this.Children) {
 				for (let Variable of Variables) {
 					this.TransferVariable(Child, Variable);
+				}
+				for(let n in Types){
+					if(!Child.TypeVars.hasOwnProperty(n)){
+						Child.TypeVars[n]=Types[n];	
+					}
 				}
 				Child.Parent = undefined;
 			}
