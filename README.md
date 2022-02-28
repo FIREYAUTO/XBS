@@ -11,7 +11,6 @@
 ***
 ## Notes
 * XBS is not finished.
-* The wiki is being rewritten.
 ***
 ## Features
 - [x] Declaring & Updating Variables
