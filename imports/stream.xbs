@@ -1,5 +1,5 @@
 export class Stream {
-	private set Text = ""
+	private set Text:string = ""
 	private method construct();
 	method Write(Text)
 		self.Text+=Text;
