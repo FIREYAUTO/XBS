@@ -9,6 +9,8 @@ const Library = {
 	window:window,
 	console:console,
 	object:Object,
+	inf:Infinity,
+	nan:NaN,
 	//-- Type Functions --\\
 	tostring:x=>String(x),
 	toint:x=>parseInt(x),
@@ -94,7 +96,10 @@ const Library = {
 		random:(mi,ma)=>Math.floor(Math.random()*(ma-mi+1)+mi),
 		sqrt2:(x,b=2)=>x**(1/b),
 		pi:Math.PI,
-		e:Math.E
+		e:Math.E,
+		max:Math.max,
+		min:Math.min,
+		clamp:(x,a,b)=>Math.max(a,Math.min(x,b)),
 	}),
 	json:Object.freeze({
 		encode:x=>JSON.stringify(x),
