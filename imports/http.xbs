@@ -1,0 +1,32 @@
+export const http = {
+	contentTypes = {
+		"application/x-www-form-urlencoded" = func(x){
+			set r = [];
+			each x as k,v
+				r.push(`{k}={window.encodeURIComponent(v)}`);
+			send "?"+r.join("&")
+		},
+		"application/json"=func(x){
+			send json.encode(x);
+		},
+	},
+	get = func(self,url:string,data:object={}){
+		set x = new window.XMLHttpRequest();
+		url=url+self.contentTypes["application/x-www-form-urlencoded"](data);
+		x.open("get",url,false);
+		x.send();
+		send x.response;
+	},
+	post = func(self,url:string,data:object={},headers:object={}){
+		set x = new window.XMLHttpRequest();
+		x.open("post",url,false);
+		each headers as k,v
+			x.setRequestHeader(k,v);
+		set fallback = "application/json";
+		if(headers["Content-Type"] in self.contentTypes){
+			fallback = headers["Content-Type"];
+		}
+		x.send(self.contentTypes[fallback](data));
+		send x.response;
+	},
+};
