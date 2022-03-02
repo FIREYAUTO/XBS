@@ -1,7 +1,7 @@
 const XBS = ((DebugMode = false) => {
 	
 	const DefaultGlobals = {
-		XBS_VERSION:"XBS 1.0",
+		XBS_VERSION:"XBS 1.05",
 	};
 	
 	//-- Debugger --\\
@@ -2363,6 +2363,10 @@ const XBS = ((DebugMode = false) => {
 					break;
 				}
 			}
+			if (Result === undefined) {
+				ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing expression`);
+			}
+			Result = this.ParseComplexExpression(new ASTExpression(Result, Priority),IgnoreList);
 			if (AllowComma === true) {
 				if (this.CheckNext("COMMA", "Operator")) {
 					let List = [Result];
@@ -2376,10 +2380,7 @@ const XBS = ((DebugMode = false) => {
 					return Result;
 				}
 			}
-			if (Result === undefined) {
-				ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing expression`);
-			}
-			return this.ParseComplexExpression(new ASTExpression(Result, Priority),IgnoreList);
+			return Result;
 		}
 		ParseFullExpression(Priority = -1, AllowComma = false,IgnoreList) {
 			let Result = this.ParseExpression(Priority, AllowComma,IgnoreList);
