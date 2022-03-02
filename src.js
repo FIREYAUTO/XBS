@@ -387,12 +387,12 @@ const XBS = ((DebugMode = false) => {
 					Stack.Next();
 					let Value = this.ENumberRead(Stack);
 					if (!Value) {
-						if (!isNaN(+Stack.Token.Value)) {
+						if (!isNaN(+Stack.Token.Value)&&Stack.Token.Type!="Whitespace") {
 							Result += Stack.Token.Value;
 							return Result;
 						} else {
 							Stack.Next(-2);
-							return Result; //ErrorHandler.TError(this,"Malformed",`number ${Result}`);
+							return; //ErrorHandler.TError(this,"Malformed",`number ${Result}`);
 						}
 					}
 					Result += Value;
@@ -485,9 +485,11 @@ const XBS = ((DebugMode = false) => {
 					Token.RawValue = "Number";
 					return Token;
 				}
+				/*
 				if (Token.Value.match(/^[0-9]/)) {
 					ErrorHandler.TError(this, "Unexpected", `identifier ${Token.Value}`);
 				}
+				*/
 			} else if (Token.Type === "Bool") {
 				Token.RawValue = Token.Value;
 				Token.Value = Token.Value === "true" ? true : false;
@@ -501,7 +503,7 @@ const XBS = ((DebugMode = false) => {
 					Do=false;	
 				}
 				Stack.Next();
-				if(Do&&Stack.Token&&!isNaN(+Stack.Token.Value)){
+				if(Do&&Stack.Token&&!isNaN(+Stack.Token.Value)&&Stack.Token.Type!="Whitespace"){
 					Token.Type="Constant";
 					Token.Value=+`0.${Stack.Token.Value}`;
 					Token.RawValue="Number";
