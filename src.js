@@ -22,6 +22,7 @@ const XBS = ((DebugMode = false) => {
 			"Cannot": (a) => `Cannot ${a}`,
 			"Invalid": (a)=>`Invalid ${a}`,
 			"TypeCheck": (a)=> String(a),
+			"Malformed": (a)=> `Malformed ${a}`,
 		},
 		RawError: function (Type, StartMessage = "", EndMessage = "", ...Parameters) {
 			let Result = this.ErrorTypes[Type];
@@ -390,8 +391,8 @@ const XBS = ((DebugMode = false) => {
 							Result += Stack.Token.Value;
 							return Result;
 						} else {
-							Stack.Next(-1);
-							return;
+							Stack.Next(-2);
+							return Result; //ErrorHandler.TError(this,"Malformed",`number ${Result}`);
 						}
 					}
 					Result += Value;
@@ -438,6 +439,8 @@ const XBS = ((DebugMode = false) => {
 				} else if (Token.Value === "\`") {
 					Stack.Next();
 					Stack.Result.push(Token);
+					let pre = Stack.IsEString;
+					Stack.IsEString=true;
 					while(!(Stack.Token.Type==="String"&&Stack.Token.Value==="\`")){
 						let Back = false;
 						let Tk = Stack.Token;
@@ -455,6 +458,7 @@ const XBS = ((DebugMode = false) => {
 						Stack.Next();
 						if(Stack.IsEnd())break;
 					}
+					Stack.IsEString=pre;
 					if(Stack.Token&&Stack.Token.Type==="String"&&Stack.Token.Value==="\`"){
 						Stack.Result.push(Stack.Token);
 						Stack.Token.Type="ExpressionalString";
@@ -467,6 +471,7 @@ const XBS = ((DebugMode = false) => {
 			} else if (Token.Type === "Identifier") {
 				let Value = this.NumberRead(Stack);
 				if (Value) {
+					if(Value.endsWith(".")&&!Stack.IsEString)ErrorHandler.TError(this,"Malformed",`number ${Value}`);
 					Token.Type = "Constant";
 					Token.Value = +Value;
 					Token.RawValue = "Number";
@@ -474,6 +479,7 @@ const XBS = ((DebugMode = false) => {
 				}
 				Value = this.ENumberRead(Stack);
 				if (Value) {
+					if(Value.endsWith(".")&&!Stack.IsEString)ErrorHandler.TError(this,"Malformed",`number ${Value}`);
 					Token.Type = "Constant";
 					Token.Value = +Value;
 					Token.RawValue = "Number";
@@ -488,6 +494,21 @@ const XBS = ((DebugMode = false) => {
 			} else if (Token.Type === "Null") {
 				Token.RawValue = Token.Value;
 				Token.Value = null;
+			} else if (Token.Type==="Operator"&&Token.Value==="."){
+				let Last = Stack.Tokens[Stack.Position-1];
+				let Do = true;
+				if(Last&&Last.Type==="Identifier"){
+					Do=false;	
+				}
+				Stack.Next();
+				if(Do&&Stack.Token&&!isNaN(+Stack.Token.Value)){
+					Token.Type="Constant";
+					Token.Value=+`0.${Stack.Token.Value}`;
+					Token.RawValue="Number";
+					return Token;
+				}else{
+					Stack.Next(-1);	
+				}
 			} else if (Token.Type === "Comment") {
 				if (Token.Value === "#") {
 					this.BetweenRead(Stack, { End: { LineBreak: true }, Control: { Value: "\\", Type: "Control" }, AppendSurrounding: false });
@@ -1313,6 +1334,7 @@ const XBS = ((DebugMode = false) => {
 				Type: "Constant",
 				Stop: false,
 				Call: function (Priority) {
+					if(this.Token.RawValue==="Number"&&this.CheckNext("DOT","Operator"))ErrorHandler.AError(this,"Malformed",`number ${this.Token.Value}.`);
 					return [this.Token.Value, Priority];
 				},
 			},
