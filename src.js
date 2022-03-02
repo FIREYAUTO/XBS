@@ -1505,7 +1505,7 @@ const XBS = ((DebugMode = false) => {
 					do {
 						if (AST.IsToken(this.Token, "BCLOSE", "Bracket")) break;
 						this.ErrorIfEOS();
-						let Result = { Name: undefined, Value: undefined, Type: undefined };
+						let Result = { Name: undefined, Value: undefined, Type: undefined, Constant: false };
 						let Token = this.Token;
 						if (Token.Type === "Identifier" || Token.Type === "Constant" || Token.Type === "Keyword") {
 							let n = Token.Type === "Keyword" ? Token.RawValue : Token.Value;
@@ -1517,6 +1517,14 @@ const XBS = ((DebugMode = false) => {
 							this.Next();
 						} else {
 							ErrorHandler.AError(this, "Unexpected", `${Token.Type.toLowerCase()} ${Token.RawValue} while parsing object`);
+						}
+						if(this.CheckNext("LT","Operator")){
+							this.Next(2);
+							if(AST.IsToken(this.Token,"CONST","Keyword")){
+								Result.Constant = true;	
+							}
+							this.TestNext("GT","Operator");
+							this.Next();
 						}
 						Result.Type = this.GetType();
 						this.TestNext("EQ", "Assignment");
@@ -3292,12 +3300,21 @@ const XBS = ((DebugMode = false) => {
 				let O = Token.Read("Object");
 				let R = {};
 				for (let v of O) {
-					let Value = this.Parse(State, v.Value);
-					let Type = v.Type;
+					let Value = this.Parse(State, v.Value),
+						Type = v.Type,
+						Name = this.Parse(State, v.Name);
 					if(Type){
 						this.TypeCheck(State,Value,Type);	
 					}
-					R[this.Parse(State, v.Name)] = Value;
+					if(v.Constant===true){
+						Object.defineProperty(R, Name, {
+							value: Value,
+							writeable: false,
+							enumerable: true,
+						});
+					}else{
+						R[Name] = Value;
+					}
 				}
 				return R;
 			},
