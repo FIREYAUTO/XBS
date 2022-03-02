@@ -1,0 +1,17 @@
+class Instance {
+	private undefined Properties
+	private method construct(Properties <const>: {[string]: any} = {})
+		self.Properties = Properties;
+	private method __index(Name: string)
+		send self.Properties[Name];
+	private method __setindex(Name: string, Value: any)
+		send self.Properties[Name] = Value;
+}
+
+set MyInstance = new Instance({
+	Name<const> = "My Instance",
+});
+
+log(MyInstance.Name); #My Instance
+MyInstance.Name = "Hello";
+log(MyInstance.Name); #My Instance
