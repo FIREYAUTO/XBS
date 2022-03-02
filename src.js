@@ -1783,6 +1783,7 @@ const XBS = ((DebugMode = false) => {
 					Node.Write("Index", this.ParseExpression(-1,false,[]));
 					this.TestNext("ICLOSE", "Bracket");
 					this.Next();
+					this.AdvancedObjectDeclaration(Node,Priority);
 					return new ASTExpression(Node, Priority);
 				},
 			},
@@ -1799,6 +1800,7 @@ const XBS = ((DebugMode = false) => {
 						ErrorHandler.AError(this, "Expected", "identifier for index name", this.Token.RawValue);
 					}
 					Node.Write("Index", this.Token.RawValue);
+					this.AdvancedObjectDeclaration(Node,Priority);
 					return new ASTExpression(Node, Priority);
 				},
 			},
@@ -2601,6 +2603,35 @@ const XBS = ((DebugMode = false) => {
 				ErrorHandler.AError(this, "Expected", `${Start.Type.toLowerCase} ${Start.Value}`, `${this.Token.Type.toLowerCase} ${this.Token.Value}`);
 			}
 		}
+		AdvancedObjectDeclaration(Node,Priority){
+			if(this.CheckNext("LT","Operator")){
+				this.Next();
+				let Constant = false;
+				let Type = undefined;
+				let Do = false;
+				if(this.CheckNext("CONST","Keyword")){
+					this.Next();
+					Do=true;
+					Constant=true;
+				}else if(this.CheckNext("SETTYPE","Keyword")){
+					this.Next(2);
+					Do=true;
+					Type=this.ParseTypeExpression();
+				}else{
+					this.Next(-1);	
+				}
+				if(Do){
+					this.TestNext("GT","Operator");
+					this.Next();
+					if(this.TypeCheckNext("Assignment")){
+						Node.Write("Constant",Constant);
+						Node.Write("Type",Type);
+					}else{
+						ErrorHandler.AError(this,"Unexpected","advanced object declaration");	
+					}
+				}
+			}	
+		}
 		ParseBlock() {
 			let Token = this.Token;
 			this.OpenChunk();
@@ -2929,23 +2960,37 @@ const XBS = ((DebugMode = false) => {
 							return Result;
 						}
 					} else if (Name.Type === "GetIndex") {
-						let Object = this.Parse(State, Name.Read("Object")),
+						let OBJ = this.Parse(State, Name.Read("Object")),
 							Index = this.Parse(State, Name.Read("Index")),
-							ObjectValue = Object[Index];
-						let O = Object;
+							ObjectValue = OBJ[Index];
+						let O = OBJ;
 						let Pr = false;
-						if (State.Read("IsClass") === true && State.Read("Classes").includes(Object)) {
+						if (State.Read("IsClass") === true && State.Read("Classes").includes(OBJ)) {
 							let Private = State.Read("Private");
 							if (Private.hasOwnProperty(Index)) {
 								ObjectValue = Private[Index];
-								Object = Private;
+								OBJ = Private;
 								Pr = true;
 							}
 						}
-						let M = this.GetAdvancedMethod(State,Object,"setindex");
+						let M = this.GetAdvancedMethod(State,OBJ,"setindex");
 						if(M&&typeof M==="function"&&!Pr)return M(O,Index,Value);
-						Object[Index] = Call(ObjectValue, Value);
-						return Object[Index];
+						let Res = Call(ObjectValue, Value);
+						if(Name.Read("Constant")===true){
+							Object.defineProperty(OBJ,Index,{
+								value:Res,
+								writable:false,
+								enumerable:true,
+							});
+						}else{
+							let TY = Name.Read("Type");
+							if(TY){
+								this.TypeCheck(State,Res,TY);	
+							}
+							OBJ[Index] = Res;	
+						}
+						
+						return OBJ[Index];
 					} else {
 						ErrorHandler.IError(Token, "Unexpected", "assignment operator");
 					}
