@@ -2925,15 +2925,17 @@ const XBS = ((DebugMode = false) => {
 							Index = this.Parse(State, Name.Read("Index")),
 							ObjectValue = Object[Index];
 						let O = Object;
+						let Pr = false;
 						if (State.Read("IsClass") === true && State.Read("Classes").includes(Object)) {
 							let Private = State.Read("Private");
 							if (Private.hasOwnProperty(Index)) {
 								ObjectValue = Private[Index];
 								Object = Private;
+								Pr = true;
 							}
 						}
 						let M = this.GetAdvancedMethod(State,Object,"setindex");
-						if(M&&typeof M==="function")return M(O,Index,Value);
+						if(M&&typeof M==="function"&&!Pr)return M(O,Index,Value);
 						Object[Index] = Call(ObjectValue, Value);
 						return Object[Index];
 					} else {
@@ -3108,15 +3110,17 @@ const XBS = ((DebugMode = false) => {
 					}
 				}
 				let O = Object;
+				let Pr = false;
 				if (State.Read("IsClass") === true && State.Read("Classes").includes(Object)) {
 					let Private = State.Read("Private");
 					if (Private.hasOwnProperty(Index)) {
 						Object = Private;
+						Pr = true;
 					}
 				}
 				let Value = Object[Index];
 				let M = this.GetAdvancedMethod(State,Object,"index");
-				if(M&&typeof M==="function")Value=M(O,Index);
+				if(M&&typeof M==="function"&&!Pr)Value=M(O,Index);
 				if (Value instanceof Function) {
 					Value = Value.bind(Object);
 				}
@@ -3136,16 +3140,18 @@ const XBS = ((DebugMode = false) => {
 				let O = this.Parse(State, Token.Read("Object"));
 				let I = this.Parse(State, Token.Read("Index"));
 				let Obj = O;
+				let Pr = false;
 				if (State.Read("IsClass") === true && State.Read("Classes").includes(O)) {
 					let Private = State.Read("Private");
 					if (Private.hasOwnProperty(I)) {
 						O = Private;
+						Pr = true;
 					}
 				}
 				let Arguments = this.ParseArray(State, Token.Read("Arguments"));
 				let Call = O[I];
 				let M = this.GetAdvancedMethod(State,O,"index");
-				if(M&&typeof M==="function")Call=M(Obj,I);
+				if(M&&typeof M==="function"&&!Pr)Call=M(Obj,I);
 				if (!(Call instanceof Function)) {
 					ErrorHandler.IError(Token, "Attempt", "call non-function");
 				}
