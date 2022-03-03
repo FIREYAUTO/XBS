@@ -2479,12 +2479,13 @@ const XBS = ((DebugMode = false) => {
 			this.Next(2);
 			return this.ParseTypeExpression(Priority,IgnoreList);
 		}
-		ExpressionList(Priority) {
+		ExpressionList(Priority,End) {
 			let List = [];
 			do {
 				List.push(this.ParseExpression(Priority));
 				if (this.CheckNext("COMMA", "Operator")) {
 					this.Next(2);
+					if(End&&this.Token&&AST.IsToken(this.Token,End.Value,End.Type)){End.Stopped=true;break}
 					continue;
 				}
 				break;
@@ -2500,9 +2501,11 @@ const XBS = ((DebugMode = false) => {
 				if (AST.IsToken(this.Token, End.Value, End.Type)) {
 					return [];
 				}
-				let List = this.ExpressionList(Priority);
-				this.TestNext(End.Value, End.Type);
-				this.Next();
+				let List = this.ExpressionList(Priority,End);
+				if(!End.Stopped){
+					this.TestNext(End.Value, End.Type);
+					this.Next();
+				}
 				return List;
 			} else {
 				this.ErrorIfEOS();
