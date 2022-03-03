@@ -3733,8 +3733,13 @@ const XBS = ((DebugMode = false) => {
 
 	class DefineState {
 		constructor(State, Body) {
+			let GlobalVariables = State.GetAllGlobalVariables();
 			this.Fire = function (IStack,S) {
-				if (IStack instanceof InterpreterStack&&S instanceof IState){let B = new IState(Body, S);IStack.ParseState(B)}
+				if (IStack instanceof InterpreterStack&&S instanceof IState){
+					let B=new IState(Body,S);
+					for(let Variable of GlobalVariables)State.TransferVariable(B,Variable);
+					IStack.ParseState(B)
+				}
 			}
 		}
 	}
