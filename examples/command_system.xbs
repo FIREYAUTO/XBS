@@ -4,24 +4,19 @@ const Settings = {
 	Prefix<const> = "@",
 	Splitter<const> = " ",
 	ParameterTypes<const> = {
-		String<const> = func(self){
-			send tostring(self.Token);
-		},
-		Integer<const> = func(self){
-			send toint(self.Token);
-		},
-		Float<const> = func(self){
-			send tofloat(self.Token);
-		},
-		Boolean<const> = func(self){
-			send ["on","1","true"].includes(self.Token.toLowerCase())?true:false;
-		},
+		String<const> = func(self)
+			send tostring(self.Token);,
+		Integer<const> = func(self)
+			send toint(self.Token),
+		Float<const> = func(self)
+			send tofloat(self.Token),
+		Boolean<const> = func(self)
+			send ["on","1","true"].includes(self.Token.toLowerCase())?true:false;,
 		LongString<const> = func(self){
 			set String = [];
-			while(!self::IsEnd()){
-				String.push(self.Token);
+			while(!self::IsEnd())
+				String.push(self.Token),
 				self::Next();
-			}
 			send String.join(Settings.Splitter);
 		},
 	},
@@ -31,11 +26,10 @@ const Settings = {
 # Classes
 
 class Stack {
-	private method construct(Arguments:[string]=[]){
-		self.Tokens = Arguments;
-		self.Position = 0;
+	private method construct(Arguments:[string]=[])
+		self.Tokens = Arguments,
+		self.Position = 0,
 		self.Token = Arguments[0];
-	}
 	method Next(Amount=1){
 		self.Position+=Amount;
 		self.Token = self.Tokens[self.Position];
@@ -46,12 +40,11 @@ class Stack {
 }
 
 class Command {
-	private method construct(Options:object={}){
-		self.Names = Options.Names|[];
-		self.Description = Options.Description|"";
-		self.Call = Options.Call;
+	private method construct(Options:object={})
+		self.Names = Options.Names|[],
+		self.Description = Options.Description|"",
+		self.Call = Options.Call,
 		self.Parameters = Options.Parameters|[];
-	}
 	method Fire(Parameters:[string]=[]){
 		set P = self.Parameters;
 		set S = new Stack(Parameters);
@@ -85,12 +78,11 @@ const CommandSystem = {
 			if(Command.Names.includes(Message[0])){
 				set Success=false,Result="";
 				Message.shift();
-				try {
-					Result = Command::Fire(Message);
+				try
+					Result = Command::Fire(Message),
 					Success = true;
-				}catch E{
+				catch E
 					Result = E;
-				}
 				send new CommandResult(Success,Result);
 			}
 	}
