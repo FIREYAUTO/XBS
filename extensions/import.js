@@ -21,6 +21,8 @@ Example:
 		  ASTNode=XBS.ASTNode,
 		  ASTBlock=XBS.ASTBlock;
 	
+	const ImportCache = {};
+	
 	//{{ Export Syntax }}\\
   
 	XBS.NewToken("EXPORT","export","Keyword");
@@ -99,14 +101,23 @@ Example:
 		},
 	});
 	XBS.NewInterpreterParseState("Import",function(State,Token){
+		let URL = this.Parse(State,Token.Read("URL"));
+		let Loaded = undefined;
+		if (ImportCache.hasOwnProperty(URL))Loaded=ImportCache[URL];
 		let Names = Token.Read("Names");
 		let Type = Token.Read("Type");
-		let XML = new XMLHttpRequest();
-		XML.open("GET",this.Parse(State,Token.Read("URL")),false);
-		XML.send();
-		let Res = XBS(XML.response,this.Environment);
-		if(!Res.Success)throw Error(Res.Error);
-		let Exp = Res.GlobalSettings["XBS Exports"]||{};
+		let Exp;
+		if(!Loaded){
+			let XML = new XMLHttpRequest();
+			XML.open("GET",URL,false);
+			XML.send();
+			let Res = XBS(XML.response,this.Environment);
+			if(!Res.Success)throw Error(Res.Error);
+			ImportCache[URL] = Res;
+			Exp = Res.GlobalSettings["XBS Exports"]||{};
+		}else{
+			Exp=Loaded.GlobalSettings["XBS Exports"]||{};	
+		}
 		let R = {};
 		if(Type==="All"){
 			for(let Name in Exp){
