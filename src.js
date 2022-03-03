@@ -3213,7 +3213,7 @@ const XBS = ((DebugMode = false) => {
 				if (!(Call instanceof Function)) {
 					ErrorHandler.IError(Token, "Attempt", "call non-function");
 				}
-				return Call(O, ...Arguments);
+				return Call(Obj, ...Arguments);
 			},
 			If: function (State, Token) {
 				let Expression = this.Parse(State, Token.Read("Expression"));
