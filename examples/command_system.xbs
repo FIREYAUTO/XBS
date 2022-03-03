@@ -46,14 +46,14 @@ class Command {
 		self.Call = Options.Call,
 		self.Parameters = Options.Parameters|[];
 	method Fire(Parameters:[string]=[]){
-		set P = self.Parameters;
-		set S = new Stack(Parameters);
-		set PS = [];
-		each P as _,PN {
+		set P = self.Parameters,
+			S = new Stack(Parameters),
+			PS = [];
+		each P as _,PN
 			if(S::IsEnd())stop;
-			PS.push(Settings.ParameterTypes[PN](S));
-			S::Next();
-		}
+			else
+				PS.push(Settings.ParameterTypes[PN](S)),
+				S::Next();
 		send self.Call(*PS);
 	}
 }
