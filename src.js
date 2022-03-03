@@ -3383,7 +3383,7 @@ const XBS = ((DebugMode = false) => {
 			},
 			RunDefine: function (State, Token) {
 				let Define = this.Parse(State, Token.Read("V1"));
-				Define.Fire(this);
+				Define.Fire(this,State);
 			},
 			Destructure: function (State, Token) {
 				let Names = Token.Read("Names");
@@ -3733,9 +3733,8 @@ const XBS = ((DebugMode = false) => {
 
 	class DefineState {
 		constructor(State, Body) {
-			Body = new IState(Body, State);
-			this.Fire = function (IStack) {
-				if (IStack instanceof InterpreterStack) IStack.ParseState(Body);
+			this.Fire = function (IStack,S) {
+				if (IStack instanceof InterpreterStack&&S instanceof IState){let B = new IState(Body, S);IStack.ParseState(B)}
 			}
 		}
 	}
