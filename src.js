@@ -2613,12 +2613,13 @@ const XBS = ((DebugMode = false) => {
 					this.Next();
 					Do=true;
 					Constant=true;
-				}else if(this.CheckNext("SETTYPE","Keyword")){
+				}
+				if(this.CheckNext("SETTYPE","Keyword")){
 					this.Next(2);
 					Do=true;
 					Type=this.ParseTypeExpression();
-				}else{
-					this.Next(-1);	
+				}else if(!Do){
+					this.Next(-1);
 				}
 				if(Do){
 					this.TestNext("GT","Operator");
@@ -2976,6 +2977,10 @@ const XBS = ((DebugMode = false) => {
 						let M = this.GetAdvancedMethod(State,OBJ,"setindex");
 						if(M&&typeof M==="function"&&!Pr)return M(O,Index,Value);
 						let Res = Call(ObjectValue, Value);
+						let TY = Name.Read("Type");
+						if(TY){
+							this.TypeCheck(State,Res,TY);	
+						}
 						if(Name.Read("Constant")===true){
 							Object.defineProperty(OBJ,Index,{
 								value:Res,
@@ -2983,10 +2988,6 @@ const XBS = ((DebugMode = false) => {
 								enumerable:true,
 							});
 						}else{
-							let TY = Name.Read("Type");
-							if(TY){
-								this.TypeCheck(State,Res,TY);	
-							}
 							OBJ[Index] = Res;	
 						}
 						
