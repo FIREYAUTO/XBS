@@ -1310,6 +1310,7 @@ const XBS = ((DebugMode = false) => {
 						} else {
 							this.Next();
 							this.ErrorIfEOS();
+							if(AST.IsToken(this.Token,"LINEEND","Operator"))continue;
 							ErrorHandler.AError(this, "Unexpected", `${this.Token.Type.toLowerCase()} ${this.Token.RawValue} while parsing class`);
 						}
 					}
