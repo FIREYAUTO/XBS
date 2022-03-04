@@ -98,8 +98,6 @@ const XBS = ((DebugMode = false) => {
 			"CATCH": { Value: "catch", Type: "Keyword" },
 			"FINALLY": { Value: "finally", Type: "Keyword" },
 			"DEFINE": { Value: "define", Type: "Keyword" },
-			"ISTYPE": { Value: "istype", Type: "Keyword" },
-			"DOERROR": { Value: "doerror", Type: "Keyword" },
 			"CONTINUE": { Value: "continue", Type: "Keyword" },
 			"EACH": { Value: "each", Type: "Keyword" },
 			"LOCKVAR": { Value: "lockvar", Type: "Keyword" },
@@ -137,6 +135,7 @@ const XBS = ((DebugMode = false) => {
 			"SELFCALL": { Value: "::", Type: "Operator" },
 			"COLON": { Value: ":", Type: "Operator" },
 			"QUESTION": { Value: "?", Type: "Operator" },
+			"ISNULL": { Value: "??", Type: "Operator" },
 			"AT": { Value: "@", Type: "Operator" },
 			"FORCEPARSE": { Value: "=>", Type: "Operator" },
 			//Bitwise Tokens
@@ -157,6 +156,7 @@ const XBS = ((DebugMode = false) => {
 			"POWEQ": { Value: "^=", Type: "Assignment" },
 			"PERCENTOFEQ": { Value: "%%=", Type: "Assignment" },
 			"FLOORDIVEQ": { Value: "//=", Type: "Assignment" },
+			"ISNULLEQ": { Value: "??=", Type: "Assignment" },
 			//String Tokens
 			"QUOTE": { Value: "\"", Type: "String" },
 			"APOS": { Value: "'", Type: "String" },
@@ -1921,6 +1921,20 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "ISNULLEQ",
+				Type: "Assignment",
+				Stop: false,
+				Priority: 50,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("Assignment");
+					Node.Write("Type", 9);
+					Node.Write("Name", Value);
+					Node.Write("Value", this.ParseExpression());
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
 				Value: "PERCENTOFEQ",
 				Type: "Assignment",
 				Stop: false,
@@ -2026,6 +2040,19 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "ISNULL",
+				Type: "Operator",
+				Stop: false,
+				Priority: 155,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("IsNull");
+					Node.Write("V1", Value);
+					Node.Write("V2", this.ParseExpression(Priority));
+					return new ASTExpression(Node, Priority);
+				},
+			},
+			{
 				Value: "AND",
 				Type: "Operator",
 				Stop: false,
@@ -2090,7 +2117,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Value, Priority) {
 					this.Next();
 					let Node = this.NewNode("Assignment");
-					Node.Write("Type", 9);
+					Node.Write("Type", 20);
 					Node.Write("Name", Value);
 					Node.Write("Value", null);
 					return new ASTExpression(Node, Priority);
@@ -2104,7 +2131,7 @@ const XBS = ((DebugMode = false) => {
 				Call: function (Value, Priority) {
 					this.Next();
 					let Node = this.NewNode("Assignment");
-					Node.Write("Type", 10);
+					Node.Write("Type", 21);
 					Node.Write("Name", Value);
 					Node.Write("Value", null);
 					return new ASTExpression(Node, Priority);
@@ -2947,8 +2974,9 @@ const XBS = ((DebugMode = false) => {
 			6: (a, b) => a ** b,
 			7: (a, b) => Math.floor(a / b),
 			8: (a, b) => (b / 100) * a,
-			9: (a, b) => a + 1,
-			10: (a, b) => a - 1,
+			9: (a, b) => a===null||a===undefined?b:a,
+			20: (a, b) => a + 1,
+			21: (a, b) => a - 1,
 		},
 		ParseStates: {
 			GetVariable: function (State, Token) {
@@ -2991,7 +3019,7 @@ const XBS = ((DebugMode = false) => {
                         				}
 							let Previous = Variable.Value;
 							State.SetVariable(Name, Call(Variable.Value, Value));
-							return Token.Read("Type") >= 9 ? Previous : Variable.Value;
+							return Token.Read("Type") >= 20 ? Previous : Variable.Value;
 						} else {
 							let Result = Call(null, Value);
 							State.SetVariable(Name, Result);
