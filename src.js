@@ -297,7 +297,7 @@ const XBS = ((DebugMode = false) => {
 				let Token = Tokenizer.Tokens[Name];
 				if (Token.Value.match(new RegExp(`^${Escape}`))) {
 					let Matches = 0;
-					for (let Index = Character.length - 1, Length = Token.Value.length - 1; Index <= Length; Index++) {
+					for (let Index = 0, Length = Token.Value.length - 1; Index <= Length; Index++) { //Set Index to Character.length-1 if bugs happen
 						let Value = Token.Value.substr(Index, 1);
 						if (this.Code.substr(this.Position + Index, 1) === Value) {
 							Matches++;
