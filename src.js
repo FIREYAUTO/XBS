@@ -4201,6 +4201,7 @@ const XBS = ((DebugMode = false) => {
 		    }
 		}
 		GetAdvancedMethod(State,O,N){
+			if(O===undefined||O===null)return;
 			if(typeof O!="object")return;
 			if(O.__IS_XBS_CLASS===true){
 				let p = O.__XBS_PRIVATE_PROPERTIES;
