@@ -2784,8 +2784,8 @@ const XBS = ((DebugMode = false) => {
 				this.TypeVars = {},
 				this.Children = [],
 				this.Position = 0,
-				this.Line=this.Token.Line,
-				this.Index=this.Token.Index,
+				this.Line=0,
+				this.Index=0,
 				this.GlobalVariables = {};
 			for (let k in Data) this.Data[k] = Data[k];
 			if (Parent && Parent instanceof IState) {
@@ -2798,6 +2798,13 @@ const XBS = ((DebugMode = false) => {
 				}
 				this.GlobalVariables = this.Parent.GlobalVariables;
 			}
+			if(this.Token)
+				this.Line=this.Token.Line,
+				this.Index=this.Token.Index,	
+			else if(this.Parent&&this.Parent.Token)
+				this.Line=this.Parent.Token.Line,
+				this.Index=this.Parent.Token.Index;
+			
 		}
 		IsType(Name){
 			return this.TypeVars.hasOwnProperty(Name);
