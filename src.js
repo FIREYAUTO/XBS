@@ -3113,6 +3113,13 @@ const XBS = ((DebugMode = false) => {
 				if(M&&typeof M==="function")return M(V1,V2);
 				return Math.floor(V1 / V2);
 			},
+			IsNull: function (State, Token) {
+				let V1 = this.Parse(State, Token.Read("V1")),
+					V2 = this.Parse(State, Token.Read("V2"));
+				let M = this.GetAdvancedMethod(State,V1,"isnull");
+				if(M&&typeof M==="function")return M(V1,V2);
+				return V1===undefined||V1===null?V2:V1;
+			},
 			PercentOf: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
