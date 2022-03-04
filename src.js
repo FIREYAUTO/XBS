@@ -2800,7 +2800,7 @@ const XBS = ((DebugMode = false) => {
 			}
 			if(this.Token)
 				this.Line=this.Token.Line,
-				this.Index=this.Token.Index,	
+				this.Index=this.Token.Index;
 			else if(this.Parent&&this.Parent.Token)
 				this.Line=this.Parent.Token.Line,
 				this.Index=this.Parent.Token.Index;
