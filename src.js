@@ -3791,6 +3791,17 @@ const XBS = ((DebugMode = false) => {
 				else this.ParseState(State.Parent,false,NS);
 			},
 		},
+		Types:{},
+		GetType:function(V){
+			let T = typeof V;
+			if(V instanceof Array)return"array";
+			if(V===undefined||V===null)return"null";
+			for(let Type in this.Types){
+				let Ref = this.Types[Type];
+				if(V instanceof Ref)return Type;
+			}
+			return T;	
+		},
 	};
 
 	class UnpackState {
@@ -3834,13 +3845,7 @@ const XBS = ((DebugMode = false) => {
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
 		GetType(V) {
-			let T = typeof V;
-			if (T === "object" && V instanceof Array) {
-				return "array";
-			} else if (V === undefined || V === null) {
-				return "null";
-			}
-			return T;
+			return Interpreter.GetType(V);
 		}
 		ParseArray(State, List) {
 			let Result = [];
@@ -4232,7 +4237,7 @@ const XBS = ((DebugMode = false) => {
 			}
 			//-- Interpret --\\
 			let IStack = Interpreter.NewStack(AStack, Library, true);
-			let RawTypes = "string number boolean object array function null any".split(" ");
+			let RawTypes = "string number boolean object array function null any defineobject".split(" ");
 			for(let V of RawTypes){
 				IStack.MainState.NewType(V,V);	
 			}	
@@ -4281,6 +4286,10 @@ const XBS = ((DebugMode = false) => {
 	Main.ASTBase=ASTBase;
 	Main.ASTNode=ASTNode;
 	Main.ASTBlock=ASTBlock;
+	
+	Interpreter.Types = {
+		defineobject:DefineState,
+	};
 	
 	return Main
 
