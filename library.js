@@ -15,12 +15,7 @@ const Library = {
 	tostring:x=>String(x),
 	toint:x=>parseInt(x),
 	tofloat:x=>parseFloat(x),
-	type:a=>{
-		let t = typeof a;
-		if(a instanceof Array)return"array";
-		if(a===null||a===undefined)return"null";
-		return t;
-	},
+	type:a=>XBS.Interpreter.GetType(a),
 	//-- Other Functions --\\
 	load:(x,e)=>XBS(x,e),
 	time:()=>(Date.now()/1000),
