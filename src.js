@@ -4128,7 +4128,8 @@ const XBS = ((DebugMode = false) => {
 					}
 				}
 				let Con = self.Parse(NS, Construct);
-				let R = Con(New, ...Arguments);
+				Arguments.unshift(New);
+				let R = self.DoCall(NS,Con,Arguments);
 				if (R === undefined) {
 					return New;
 				}
