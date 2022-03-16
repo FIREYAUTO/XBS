@@ -1,6 +1,6 @@
 const Library = {
 	//-- Debug Functions --\\
-	log:(...a)=>console.log(...a),
+	log:(...a)=>document.write(...a),
 	warn:(...a)=>console.warn(...a),
 	info:(...a)=>console.info(...a),
 	error:a=>{throw Error(a)},
@@ -100,5 +100,46 @@ const Library = {
 		encode:x=>JSON.stringify(x),
 		decode:x=>JSON.parse(x),
 	}),
+    getlocalenv:XBS.NewClosure((Stack,State,x)=>{
+    	let s = undefined,
+        	ss = State,
+        	type = Stack.GetType(x);
+        if(type==="number"){
+        	let search = State;
+            for(let i=1;i<=x;i++){
+            	while(search){
+            		if(!search||search.Read("IsFunction")===true)break;
+                    let p = search.Parent;
+                    if(!p)break;
+                    search=p;
+                }
+        	}
+            if(!search)return {};
+            s = search.Read("LocalEnvironment");
+            ss = search;
+        }else{
+        	XBS.ErrorHandler.IError(State,"Expected","number for getlocalenv",type);
+        }
+        if(!s){
+        	s = new Proxy({},{
+            	get:function(self,Name){
+                	return ss.GetVariable(Name);
+                },
+                set:function(self,Name,Value){
+                	let Raw = ss.GetRawVariable(Name);
+                    if(!Raw){
+                    	ss.NewVariable(Name,Value);
+                        return Value;
+                    }
+                    if(Raw.Constant===true)return XBS.ErrorHandler.IError(ss,"Cannot",`modify constant variable ${Name}`);
+                    if(Raw.Type)Stack.TypeCheck(ss,Value,Raw.Type);
+                    Raw.Value = Value;
+                    return Value;
+                },
+            });
+            ss.Write("LocalEnvironment",s);
+        }
+        return s;
+    }),
 };
 Library.env = Library;
