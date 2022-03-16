@@ -4319,6 +4319,9 @@ const XBS = ((DebugMode = false) => {
 			CodeResult.Success = true;
 			CodeResult.Result = IStack.Evaluation;
 			CodeResult.GlobalSettings = IStack.MainState.GlobalVariables;
+			CodeResult.TokenizerStack = TokenizerStack;
+			CodeResult.ASTStack = AStack;
+			CodeResult.InterpreterStack = IStack;
 		} catch (Error) {
 			CodeResult.Success = false;
 			CodeResult.Error = Error.stack;
