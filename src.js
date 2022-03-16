@@ -1,7 +1,7 @@
 const XBS = ((DebugMode = false) => {
 	
 	const DefaultGlobals = {
-		XBS_VERSION:"XBS 1.1",
+		XBS_VERSION:"XBS 1.2",
 	};
 	
 	//-- Debugger --\\
@@ -104,6 +104,8 @@ const XBS = ((DebugMode = false) => {
 			"UPVAR": { Value: "upvar", Type: "Keyword" },
 			"EXIT": { Value: "exit", Type: "Keyword" },
 			"STACKUP": { Value: "stackup", Type: "Keyword" },
+			"VARTYPE": { Value: "vartype", Type: "Keyword" },
+			"LOCKTYPE": { Value: "locktype", Type: "Keyword" },
 			//Operator Tokens
 			"ADD": { Value: "+", Type: "Operator" },
 			"SUB": { Value: "-", Type: "Operator" },
@@ -860,6 +862,24 @@ const XBS = ((DebugMode = false) => {
 				},
 			},
 			{
+				Value: "VARTYPE",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("VariableType");
+					this.Next();
+					let T = this.Token;
+					if(!AST.IsType(T,"Identifier")){
+						this.ErrorIfEOS();
+						ErrorHandler.AError(this,"Expected","identifier for variable name",this.GetFormattedToken(T,true,false));
+					}
+					Node.Write("Name",T.Value);
+					this.TestNext("EQ","Assignment");
+					this.Next(2);
+					Node.Write("Value",this.ParseTypeExpression());
+					return Node;
+				},
+			},
+			{
 				Value: "IF",
 				Type: "Keyword",
 				Call: function () {
@@ -1215,6 +1235,16 @@ const XBS = ((DebugMode = false) => {
 					this.TypeTestNext("Identifier");
 					this.Next();
 					Node.Write("Name", this.Token.Value);
+					return Node;
+				},
+			},
+			{
+				Value: "LOCKTYPE",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("TypeLock");
+					this.Next();
+					Node.Write("Names",this.IdentifierList({AllowDefault:false,Priority:-1}));
 					return Node;
 				},
 			},
@@ -3789,6 +3819,24 @@ const XBS = ((DebugMode = false) => {
 				let NS = new IState(Body,State.Parent);
 				if(!State.Parent)this.ParseState(NS);
 				else this.ParseState(State.Parent,false,NS);
+			},
+			VariableType:function(State,Token){
+				let Name = Token.Read("Name");
+				let Value = this.ParseType(State,Token.Read("Value"));
+				let Variable = State.GetGlobalRawVariable(Name);
+				if(!Variable)ErrorHandler.IError(Token,"Cannot",`set type of non-existent variable ${Name} to ${String(Value)}`);
+				if(Variable.Constant===true&&Variable.Type)ErrorHandler.IError(Token,"Cannot",`modify type of the constant variable ${Name} because it already has a type`);
+				if(Variable.TypeLocked===true)ErrorHandler.IError(Token,"Cannot",`modify type of variable ${Name}`);
+				this.TypeCheck(State,Variable.Value,Value);
+				Variable.Type = Value;
+			},
+			TypeLock:function(State,Token){
+				let Names = Token.Read("Names");
+				for(let V of Names){
+					let Variable = State.GetGlobalRawVariable(V.Name);
+					if(!Variable)ErrorHandler.IError(Token,"Cannot",`lock type of non-existent variable ${V.Name}`);
+					Variable.TypeLocked = true;
+				}
 			},
 		},
 		Types:{},
