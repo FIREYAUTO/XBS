@@ -3278,7 +3278,16 @@ const XBS = ((DebugMode = false) => {
 				let M = this.GetAdvancedMethod(State,Object,"index");
 				if(M&&typeof M==="function"&&!Pr)Value=this.DoCall(State,M,[O,Index]);
 				if (Value instanceof Function) {
+					let p = Value;
 					Value = Value.bind(Object);
+					if(p.__XBS_CLOSURE===true){
+						window.Object.defineProperty(Value,"__XBS_CLOSURE",{
+							value:true,
+							enumerable:false,
+							writeable:false,
+							configurable:false,
+						});
+					}
 				}
 				return Value;
 			},
@@ -3894,9 +3903,10 @@ const XBS = ((DebugMode = false) => {
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
 		DoCall(State,Call,Arguments){
-			if (Call.__XBS_CLOSURE===true)
+			if (Call.__XBS_CLOSURE===true){
 				Arguments.unshift(State),
 				Arguments.unshift(this);
+			}
 			return Call(...Arguments);
 		}
 		GetType(V) {
@@ -4011,7 +4021,7 @@ const XBS = ((DebugMode = false) => {
 				writable:false,
 				configurable:false,
 			});
-			return Callback
+			return Callback;
 		}
 		GetExtendingClasses(Class) {
 			if (!Class) return [];
