@@ -3070,7 +3070,7 @@ const XBS = ((DebugMode = false) => {
 							}
 						}
 						let M = this.GetAdvancedMethod(State,OBJ,"setindex");
-						if(M&&typeof M==="function"&&!Pr)return M(O,Index,Value);
+						if(M&&typeof M==="function"&&!Pr)return this.DoCall(State,M,[O,Index,Value]);
 						let Res = Call(ObjectValue, Value);
 						let TY = Name.Read("Type");
 						if(TY){
@@ -3098,70 +3098,70 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"add");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 + V2;
 			},
 			Sub: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"sub");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 - V2;
 			},
 			Mul: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"mul");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 * V2;
 			},
 			Div: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"div");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 / V2;
 			},
 			Mod: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"mod");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 % V2;
 			},
 			Pow: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"pow");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 ** V2;
 			},
 			FloorDiv: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"floordiv");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return Math.floor(V1 / V2);
 			},
 			IsNull: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"isnull");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1===undefined||V1===null?V2:V1;
 			},
 			PercentOf: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"percentof");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return (V1 / 100) * V2;
 			},
 			Eqs: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"eq");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 == V2;
 			},
 			Teq: function (State, Token) {
@@ -3177,35 +3177,35 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"leq");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 <= V2;
 			},
 			Lt: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"lt");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 < V2;
 			},
 			Geq: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"leq");
-				if(M&&typeof M==="function")return !M(V1,V2);
+				if(M&&typeof M==="function")return !this.DoCall(State,M,[V1,V2]);
 				return V1 >= V2;
 			},
 			Gt: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"lt");
-				if(M&&typeof M==="function")return !M(V1,V2);
+				if(M&&typeof M==="function")return !this.DoCall(State,M,[V1,V2]);
 				return V1 > V2;
 			},
 			Neq: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"eq");
-				if(M&&typeof M==="function")return !M(V1,V2);
+				if(M&&typeof M==="function")return !this.DoCall(State,M,[V1,V2]);
 				return V1 != V2;
 			},
 			And: function (State, Token) {
@@ -3229,19 +3229,19 @@ const XBS = ((DebugMode = false) => {
 			Not: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				let M = this.GetAdvancedMethod(State,V1,"not");
-				if(M&&typeof M==="function")return M(V1);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1]);
 				return !V1;
 			},
 			Negative: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				let M = this.GetAdvancedMethod(State,V1,"neg");
-				if(M&&typeof M==="function")return M(V1);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1]);
 				return -V1;
 			},
 			Round: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				let M = this.GetAdvancedMethod(State,V1,"round");
-				if(M&&typeof M==="function")return M(V1);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1]);
 				return Math.round(V1);
 			},
 			GetIndex: function (State, Token) {
@@ -3276,7 +3276,7 @@ const XBS = ((DebugMode = false) => {
 				}
 				let Value = Object[Index];
 				let M = this.GetAdvancedMethod(State,Object,"index");
-				if(M&&typeof M==="function"&&!Pr)Value=M(O,Index);
+				if(M&&typeof M==="function"&&!Pr)Value=this.DoCall(State,M,[O,Index]);
 				if (Value instanceof Function) {
 					Value = Value.bind(Object);
 				}
@@ -3286,11 +3286,11 @@ const XBS = ((DebugMode = false) => {
 				let Call = this.Parse(State, Token.Read("Call"));
 				let Arguments = this.ParseArray(State, Token.Read("Arguments"));
 				let M = this.GetAdvancedMethod(State,Call,"call");
-				if(M&&typeof M==="function")return M(Call,...Arguments);
+				if(M&&typeof M==="function")return this.DoCall(State,Call,Arguments);
 				if (!(Call instanceof Function)) {
 					ErrorHandler.IError(Token, "Attempt", "call non-function");
 				}
-				return Call(...Arguments);
+				return this.DoCall(State,Call,Arguments);
 			},
 			SelfCall: function (State, Token) {
 				let O = this.Parse(State, Token.Read("Object"));
@@ -3307,11 +3307,12 @@ const XBS = ((DebugMode = false) => {
 				let Arguments = this.ParseArray(State, Token.Read("Arguments"));
 				let Call = O[I];
 				let M = this.GetAdvancedMethod(State,O,"index");
-				if(M&&typeof M==="function"&&!Pr)Call=M(Obj,I);
+				if(M&&typeof M==="function"&&!Pr)Call=this.DoCall(State,M,[Obj,I]);
 				if (!(Call instanceof Function)) {
 					ErrorHandler.IError(Token, "Attempt", "call non-function");
 				}
-				return Call(Obj, ...Arguments);
+				Arguments.unshift(Obj);
+				return this.DoCall(State,Call,Arguments);
 			},
 			If: function (State, Token) {
 				let Expression = this.Parse(State, Token.Read("Expression"));
@@ -3513,28 +3514,28 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"bitand");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 & V2;
 			},
 			BitOr: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"bitor");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 & V2;
 			},
 			BitXor: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"bitxor");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 ^ V2;
 			},
 			BitZLShift: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"bitlshift");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 << V2;
 			},
 			BitZRShift: function (State, Token) {
@@ -3548,19 +3549,19 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"bitrshift");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				return V1 >>> V2;
 			},
 			BitNot: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				let M = this.GetAdvancedMethod(State,V1,"bitnot");
-				if(M&&typeof M==="function")return M(V1);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1]);
 				return ~V1;
 			},
 			Length: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				let M = this.GetAdvancedMethod(State,V1,"len");
-				if(M&&typeof M==="function")return M(V1);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1]);
 				let T = this.GetType(V1);
 				if (T != "string" && T != "array") ErrorHandler.IError(Token, "Expected", "string or array", T);
 				return V1.length;
@@ -3733,7 +3734,7 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1"));
 				let V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"in");
-				if(M&&typeof M==="function")return M(V1,V2);
+				if(M&&typeof M==="function")return this.DoCall(State,M,[V1,V2]);
 				let T = this.GetType(V2);
 				if (T === "string") return !!V2.match(Tokenizer.Escape(V1));
 				else if (T === "array") return V2.includes(V1);
@@ -3892,6 +3893,12 @@ const XBS = ((DebugMode = false) => {
 			this.ParseStates = {};
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
+		DoCall(State,Call,Arguments){
+			if (Call.__XBS_CLOSURE===true)
+				Arguments.unshift(this),
+				Arguments.unshift(State);
+			return Call(...Arguments);
+		}
 		GetType(V) {
 			return Interpreter.GetType(V);
 		}
@@ -3925,7 +3932,7 @@ const XBS = ((DebugMode = false) => {
 					if (Unpack === true) {
 						let List = this.Parse(State, Token.Read("V1"), true);
 						let M = this.GetAdvancedMethod(State,List,"unpack");
-						if(M&&typeof M==="function")List=M(List);
+						if(M&&typeof M==="function")List=this.DoCall(State,M,[List]);
 						return new UnpackState(List);
 					} else ErrorHandler.IError(Token, "Unexpected", "unpacking operator");
 				}
@@ -3966,7 +3973,7 @@ const XBS = ((DebugMode = false) => {
 				Body = Token.Read("Body"),
 				self = this,
 			    	ReturnType = Token.Read("ReturnType");
-			return function (...Arguments) {
+			let Callback = function (PStack,PState,...Arguments) {
 				let NewState = new IState(Body, State, { IsFunction: true });
 				let Stop = false;
 				for (let Key in Parameters) {
@@ -3998,6 +4005,13 @@ const XBS = ((DebugMode = false) => {
 				}
 				return Return;
 			}
+			Object.defineProperty(Callback,"__XBS_CLOSURE",{
+				value:true,
+				enumerable:false,
+				writable:false,
+				configurable:false,
+			});
+			return Callback
 		}
 		GetExtendingClasses(Class) {
 			if (!Class) return [];
