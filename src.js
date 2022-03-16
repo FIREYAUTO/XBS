@@ -3895,8 +3895,8 @@ const XBS = ((DebugMode = false) => {
 		}
 		DoCall(State,Call,Arguments){
 			if (Call.__XBS_CLOSURE===true)
-				Arguments.unshift(this),
-				Arguments.unshift(State);
+				Arguments.unshift(State),
+				Arguments.unshift(this);
 			return Call(...Arguments);
 		}
 		GetType(V) {
