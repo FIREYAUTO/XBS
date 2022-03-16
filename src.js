@@ -4348,6 +4348,15 @@ const XBS = ((DebugMode = false) => {
 	Main.ASTBase=ASTBase;
 	Main.ASTNode=ASTNode;
 	Main.ASTBlock=ASTBlock;
+	Main.NewClosure=function(Callback){
+		Object.defineProperty(Callback,"__XBS_CLOSURE",{
+			value:true,
+			enumerable:false,
+			writable:false,
+			configurable:false,
+		});
+		return Callback;
+	}
 	
 	Interpreter.Types = {
 		defineobject:DefineState,
