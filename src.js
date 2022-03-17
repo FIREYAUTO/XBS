@@ -1692,7 +1692,7 @@ const XBS = ((DebugMode = false) => {
 				Type: "Keyword",
 				Stop: false,
 				Call: function (Priority) {
-					let Node = this.NewNode("Class");
+					let Node = this.NewNode("FastClass");
 					if (this.CheckNext("EXTENDS", "Keyword")) {
 						this.Next(2);
 						Node.Write("Extends", this.ParseExpression());
