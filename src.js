@@ -1687,6 +1687,99 @@ const XBS = ((DebugMode = false) => {
 					return [Node, Priority];
 				},
 			},
+			{
+				Value: "CLASS",
+				Type: "Keyword",
+				Stop: false,
+				Call: function (Priority) {
+					let Node = this.NewNode("Class");
+					if (this.CheckNext("EXTENDS", "Keyword")) {
+						this.Next(2);
+						Node.Write("Extends", this.ParseExpression());
+					}
+					this.TestNext("BOPEN", "Bracket");
+					this.Next();
+					let Properties = {};
+					while (!this.CheckNext("BCLOSE", "Bracket")) {
+						this.ErrorIfEOS();
+						let Private = false;
+						if (this.CheckNext("private", "Identifier")) {
+							Private = true;
+							this.Next();
+						}
+						if (this.CheckNext("FUNC", "Keyword")) {
+							this.Next();
+							let O = this.NewNode("FastFunction");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							this.Next();
+							O.Write("Parameters", this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true, AllowConstant:true }));
+							O.Write("ReturnType",this.GetType());
+							this.Next();
+							O.Write("Private", Private);
+							O.Write("Body", this.ParseBlock());
+							Properties[Name] = O;
+						} else if (this.CheckNext("SET", "Keyword")) {
+							this.Next();
+							let O = this.NewNode("Set");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							O.Write("Type",this.GetType());
+							this.TestNext("EQ", "Assignment");
+							this.Next(2);
+							O.Write("Value", this.ParseExpression());
+							O.Write("Private", Private);
+							Properties[Name] = O;
+						} else if (this.CheckNext("CONST", "Keyword")) {
+							this.Next();
+							let O = this.NewNode("Constant");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							O.Write("Type",this.GetType());
+							this.TestNext("EQ", "Assignment");
+							this.Next(2);
+							O.Write("Value", this.ParseExpression());
+							O.Write("Private", Private);
+							Properties[Name] = O;
+						} else if (this.CheckNext("undefined", "Identifier")) {
+							this.Next();
+							let O = this.NewNode("Undefined");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							O.Write("Private", Private);
+							Properties[Name] = O;
+						} else if (this.CheckNext("method","Identifier")){
+							this.Next();
+							let O = this.NewNode("FastFunction");
+							this.TypeTestNext("Identifier");
+							this.Next();
+							let Name = this.Token.Value;
+							this.Next();
+							let Ids = this.IdentifierListInside({ Value: "POPEN", Type: "Bracket" }, { Value: "PCLOSE", Type: "Bracket" }, { AllowDefault: true, AllowVarargs: true, SoftCheck: true, AllowType: true, AllowConstant:true });
+							Ids.unshift({Name:"self"});
+							O.Write("Parameters", Ids);
+							O.Write("ReturnType",this.GetType());
+							this.Next();
+							O.Write("Private", Private);
+							O.Write("Body", this.ParseBlock());
+							Properties[Name] = O;
+						} else {
+							this.Next();
+							this.ErrorIfEOS();
+							if(AST.IsToken(this.Token,"LINEEND","Operator"))continue;
+							ErrorHandler.AError(this, "Unexpected", `${this.GetFormattedToken(this.Token,true,true,true)} while parsing class`);
+						}
+					}
+					this.TestNext("BCLOSE", "Bracket");
+					this.Next();
+					Node.Write("Properties", Properties);
+					return [Node,Priority];
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -3795,6 +3888,9 @@ const XBS = ((DebugMode = false) => {
 			},
 			Class: function (State, Token) {
 				State.NewVariable(Token.Read("Name"), this.ClassState(State, Token));
+			},
+			FastClass: function (State, Token) {
+				return this.ClassState(State, Token);
 			},
 			IsA: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
