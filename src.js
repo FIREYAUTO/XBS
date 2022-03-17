@@ -4059,10 +4059,6 @@ const XBS = ((DebugMode = false) => {
 			let Class = function (...Arguments) {
 				let New = this;
 				let Private = {};
-				New.toString=function(){
-					if(New.__tostring)return New.__tostring(New);
-					else if(Private.__tostring)return Private.__tostring(New);
-				};
 				let Classes = [New];
 				Object.defineProperty(New, "__IS_XBS_CLASS", {
 					value: true,
@@ -4083,6 +4079,11 @@ const XBS = ((DebugMode = false) => {
 					enumerable: false,
 				});
 				let NS = new IState({ Data: [], Line: 0, Index: 0 }, CS, { IsClass: true, Private: Private, Classes: Classes });
+				New.toString=function(){
+					if(New.__tostring)return self.DoCall(NS,New.__tostring,[New]);
+					else if(Private.__tostring)return self.DoCall(NS,Private.__tostring,[New]);
+					return "[XBS Class]";
+				};
 				let Super = function (...A) {
 					let Result = new Extends(...A);
 					Classes.push(Result);
