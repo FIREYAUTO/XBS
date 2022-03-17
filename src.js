@@ -2913,14 +2913,6 @@ const XBS = ((DebugMode = false) => {
 			},
 		],
 	};
-	
-	function GetXBSObject(){
-		return {
-			toString:function(){
-				return this.__tostring(this);	
-			},
-		};
-	}
 
 	class IState {
 		constructor(Tokens, Parent, Data = {}) {
@@ -3556,8 +3548,14 @@ const XBS = ((DebugMode = false) => {
 				return List;
 			},
 			Object: function (State, Token) {
-				let O = Token.Read("Object");
-				let R = GetXBSObject();
+				let O = Token.Read("Object"),
+				    	self = this;
+				let R = {
+					toString:function(){
+						if(R.__tostring)return self.DoCall(State,R.__tostring);	
+						return "[XBS Object]";
+					},	
+				};
 				for (let v of O) {
 					let Value = this.Parse(State, v.Value),
 						Type = v.Type,
