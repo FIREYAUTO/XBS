@@ -2820,6 +2820,14 @@ const XBS = ((DebugMode = false) => {
 			},
 		],
 	};
+	
+	function GetXBSObject(){
+		return {
+			toString:function(){
+				return this.__tostring(this);	
+			},
+		};
+	}
 
 	class IState {
 		constructor(Tokens, Parent, Data = {}) {
@@ -3456,7 +3464,7 @@ const XBS = ((DebugMode = false) => {
 			},
 			Object: function (State, Token) {
 				let O = Token.Read("Object");
-				let R = {};
+				let R = GetXBSObject();
 				for (let v of O) {
 					let Value = this.Parse(State, v.Value),
 						Type = v.Type,
@@ -4051,6 +4059,10 @@ const XBS = ((DebugMode = false) => {
 			let Class = function (...Arguments) {
 				let New = this;
 				let Private = {};
+				New.toString=function(){
+					if(New.__tostring)return New.__tostring(New);
+					else if(Private.__tostring)return Private.__tostring(New);
+				};
 				let Classes = [New];
 				Object.defineProperty(New, "__IS_XBS_CLASS", {
 					value: true,
