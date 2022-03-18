@@ -3576,7 +3576,7 @@ const XBS = ((DebugMode = false) => {
 				    	self = this;
 				let R = {
 					toString:function(){
-						if(R.__tostring)return self.DoCall(State,R.__tostring);	
+						if(R.__tostring)return self.DoCall(State,R.__tostring,[R]);	
 						return "[XBS Object]";
 					},	
 				};
@@ -4028,7 +4028,7 @@ const XBS = ((DebugMode = false) => {
 			this.ParseStates = {};
 			for (let Name in Interpreter.ParseStates) this.ParseStates[Name] = Interpreter.ParseStates[Name].bind(this);
 		}
-		DoCall(State,Call,Arguments){
+		DoCall(State,Call,Arguments=[]){
 			if (Call.__XBS_CLOSURE===true){
 				Arguments.unshift(State),
 				Arguments.unshift(this);
