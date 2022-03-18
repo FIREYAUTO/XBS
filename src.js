@@ -106,6 +106,7 @@ const XBS = ((DebugMode = false) => {
 			"STACKUP": { Value: "stackup", Type: "Keyword" },
 			"VARTYPE": { Value: "vartype", Type: "Keyword" },
 			"LOCKTYPE": { Value: "locktype", Type: "Keyword" },
+			"LET": { Value: "let", Type: "Keyword" },
 			//Operator Tokens
 			"ADD": { Value: "+", Type: "Operator" },
 			"SUB": { Value: "-", Type: "Operator" },
@@ -810,6 +811,16 @@ const XBS = ((DebugMode = false) => {
 		Chunks: [
 			{
 				Value: "SET",
+				Type: "Keyword",
+				Call: function () {
+					let Node = this.NewNode("NewVariable");
+					this.Next();
+					Node.Write("Variables", this.IdentifierList({ AllowDefault: true, Priority: -1 , AllowType: true}));
+					return Node;
+				},
+			},
+			{
+				Value: "LET",
 				Type: "Keyword",
 				Call: function () {
 					let Node = this.NewNode("NewVariable");
