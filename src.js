@@ -806,6 +806,19 @@ const XBS = ((DebugMode = false) => {
 					return new ASTExpression(Node, Priority);
 				},
 			},
+			{
+				Value: "COLON",
+				Type: "Operator",
+				Stop: false,
+				Priority: 200,
+				Call: function (Value, Priority) {
+					this.Next(2);
+					let Node = this.NewNode("TypeMatch");
+					Node.Write("Value", Value);
+					Node.Write("Match", this.ExpressionListInside({ Value: "IOPEN", Type: "Bracket" }, { Value: "ICLOSE", Type: "Bracket" }));
+					return new ASTExpression(Node, Priority);
+				},
+			},
 		],
 		//{{ Main States }}\\
 		Chunks: [
@@ -4308,6 +4321,17 @@ const XBS = ((DebugMode = false) => {
 				return `!${String(this.V)}`
 			    }
 			};
+		    }else if(T=="TypeMatch"){
+			    let Expressions = this.ParseArray(State,Type.Read("Match"));
+			    let Value = this.ParseType(State,Type.Read("Value"));
+			    return {
+				Type:"Match",
+				V:Value,
+				E:Expressions,
+				toString:function(){
+					return `${String(this.V)}:${this.E.join(", ")}`;
+				},
+			    };
 		    }else if(T=="TypeArray"){
 			return {
 				Type:"Array",
@@ -4365,6 +4389,20 @@ const XBS = ((DebugMode = false) => {
 				return Check(a,"null")||Check(a,b.V);
 			}else if(b&&b.Type=="Not"){
 				return !Check(a,b.V);
+			}else if(b&&b.Type=="Match"){
+				let V = b.V,
+					E = b.E;
+				let R = Check(a,V);
+				if(!R)return R;
+				for(let k in E){
+					let e = E[k];
+					if(ta==="array"){
+						if(a[k]===e)return true;
+					}else{
+						if(a===e)return true;	
+					}
+				}
+				return false;
 			}else if(b&&b.Type=="TypedKeysObject"){
 			  let R = Check(a,"object");
 			  if(!R)return R;
