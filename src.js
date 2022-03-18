@@ -3284,14 +3284,14 @@ const XBS = ((DebugMode = false) => {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"leq");
-				if(M&&typeof M==="function")return !this.DoCall(State,M,[V1,V2]);
+				if(M&&typeof M==="function")return !this.DoCall(State,M,[V2,V1]);
 				return V1 >= V2;
 			},
 			Gt: function (State, Token) {
 				let V1 = this.Parse(State, Token.Read("V1")),
 					V2 = this.Parse(State, Token.Read("V2"));
 				let M = this.GetAdvancedMethod(State,V1,"lt");
-				if(M&&typeof M==="function")return !this.DoCall(State,M,[V1,V2]);
+				if(M&&typeof M==="function")return !this.DoCall(State,M,[V2,V1]);
 				return V1 > V2;
 			},
 			Neq: function (State, Token) {
