@@ -3574,12 +3574,16 @@ const XBS = ((DebugMode = false) => {
 			Object: function (State, Token) {
 				let O = Token.Read("Object"),
 				    	self = this;
-				let R = {
-					toString:function(){
+				let R = {};
+				Object.defineProperty(R,"toString",{
+					value:function(){
 						if(R.__tostring)return self.DoCall(State,R.__tostring,[R]);	
 						return "[XBS Object]";
-					},	
-				};
+					},
+					enumerable:false,
+					configurable:false,
+					writeable:false,
+				});
 				for (let v of O) {
 					let Value = this.Parse(State, v.Value),
 						Type = v.Type,
@@ -4197,11 +4201,16 @@ const XBS = ((DebugMode = false) => {
 					enumerable: false,
 				});
 				let NS = new IState({ Data: [], Line: 0, Index: 0 }, CS, { IsClass: true, Private: Private, Classes: Classes });
-				New.toString=function(){
-					if(New.__tostring)return self.DoCall(NS,New.__tostring,[New]);
-					else if(Private.__tostring)return self.DoCall(NS,Private.__tostring,[New]);
-					return "[XBS Class]";
-				};
+				Object.defineProperty(New,"toString",{
+					value:function(){
+						if(New.__tostring)return self.DoCall(NS,New.__tostring,[New]);
+						else if(Private.__tostring)return self.DoCall(NS,Private.__tostring,[New]);
+						return "[XBS Class]";
+					},
+					enumerable:false,
+					configurable:false,
+					writeable:true,
+				});
 				let Super = function (...A) {
 					let Result = new Extends(...A);
 					Classes.push(Result);
