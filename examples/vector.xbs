@@ -1,0 +1,68 @@
+class Vector {
+	private method construct(x:number=0,y:number=0,z:number=0)
+		self.x=x,
+		self.y=y,
+		self.z=z;
+	private const MergePlane = ["x","y","z"];
+	# MathOp Method
+	private method __mathop(v,c){
+		set x=v,y=v,z=v;
+		if(v isa Vector)stackup destruct[x,y,z]v;
+		send new Vector(c(self.x,x),c(self.y,y),c(self.z,z));
+	}
+	# Op Methods
+	private func __addop(a,b)send a+b;
+	private func __subop(a,b)send a-b;
+	private func __mulop(a,b)send a*b;
+	private func __divop(a,b)send a/b;
+	private func __powop(a,b)send a^b;
+	private func __modop(a,b)send a%b;
+	# Advanced Methods
+	private method __add(v)send self::__mathop(v,self.__addop);
+	private method __sub(v)send self::__mathop(v,self.__subop);
+	private method __mul(v)send self::__mathop(v,self.__mulop);
+	private method __div(v)send self::__mathop(v,self.__divop);
+	private method __mod(v)send self::__mathop(v,self.__modop);
+	private method __pow(v)send self::__mathop(v,self.__powop);
+	private method __tostring()send`{self.x},{self.y},{self.z}`;
+	private method __eq(v)if(v isa Vector)send self.x==v.x&self.y==v.y&self.z==v.z;
+	private method __lt(v)if(v isa Vector)send self.x<v.x&self.y<v.y&self.z<v.z;
+	private method __leq(v)if(v isa Vector)send self.x<=v.x&self.y<=v.y&self.z<=v.z;
+	# Methods
+	method Magnitude()
+		send math.sqrt((self.x^2)+(self.y^2)+(self.z^2));
+	method Normalize(){
+		set M = self::Magnitude();
+		send new Vector(self.x/M,self.y/M,self.z/M);
+	}
+	method Dot(v)
+		if(v isa Vector)
+			send (self.x*v.x)+(self.y*v.y)+(self.z*v.z);
+	method Cross(v)
+		if(v isa Vector)
+			send new Vector((self.y*v.z)-(self.z*v.y),(self.z*x)-(self.x*v.z),(self.x*v.y)-(self.y*v.x));
+	method ScalarTriple(b,c)
+		if((b isa Vector)&(c isa Vector))
+			send self::Dot(b::Cross(c));
+	method VectorTriple(b,c)
+		if((b isa Vector)&(c isa Vector))
+			send self::Cross(b::Cross(c));
+	method Reflect(v)
+		if(v isa Vector){
+			set N = self::Normalize(),
+				D = v::Normalize();
+			send (N*(-2*N::Dot(D)))+D;
+		}
+	method From(v)
+		if(v isa Vector)
+			send self*v::Magnitude();
+	method Merge(v,Axis:[string]=[]){
+		set Merge = [];
+		each self.MergePlane as K,D
+			if(D in Axis)
+				Merge[K]=v[D];
+			else
+				Merge[K]=self[D];
+		send new Vector(*Merge);
+	}
+}
