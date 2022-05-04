@@ -4240,6 +4240,9 @@ const XBS = ((DebugMode = false) => {
 				writable:false,
 				configurable:false,
 			});
+			Callback.toString=function(){
+				return `[XBS Function]`;	
+			}
 			return Callback;
 		}
 		GetExtendingClasses(Class) {
@@ -4562,7 +4565,7 @@ const XBS = ((DebugMode = false) => {
 				let R=Check(a,"function",TE);
 				if(!R)return R;
 				if(!a.__XBS_RETURN_TYPE)return false;
-				return Check(a.__XBS_RETURN_TYPE,b.V,TE);
+				return String(a.__XBS_RETURN_TYPE)==String(b.V);//Check(this.ParseType(State,),b.V,TE);
 			}else if(b&&b.Type=="Template"){
 				return Check(a,b.V,TE);
 			}else{
