@@ -1,7 +1,7 @@
 const XBS = ((DebugMode = false) => {
 	
 	const DefaultGlobals = {
-		XBS_VERSION:"XBS 1.2",
+		XBS_VERSION:"XBS 1.3",
 	};
 	
 	//-- Debugger --\\
@@ -710,6 +710,17 @@ const XBS = ((DebugMode = false) => {
 				Type:"Bracket",
 				Stop:false,
 				Call:function(Priority){
+					if(this.CheckNext("PCLOSE","Bracket")){
+						this.Next();
+						if(this.CheckNext("COLON","Operator")){
+							this.Next(2);
+							let Node = this.NewNode("TypeFunctionReturn");
+							Node.Write("V1",this.ParseTypeExpression());
+							return Node;
+						}else{
+							this.Next(-1);	
+						}
+					}
 					this.Next();
 					let Node = this.ParseTypeExpression();
 					this.TestNext("PCLOSE","Bracket");
@@ -4151,6 +4162,12 @@ const XBS = ((DebugMode = false) => {
 				writable:false,
 				configurable:false,
 			});
+			Object.defineProperty(Callback,"__XBS_RETURN_TYPE",{
+				value:ReturnType,
+				enumerable:false,
+				writable:false,
+				configurable:false,
+			});
 			return Callback;
 		}
 		GetExtendingClasses(Class) {
@@ -4341,6 +4358,14 @@ const XBS = ((DebugMode = false) => {
 					return `${String(this.V)}:${this.E.join(", ")}`;
 				},
 			    };
+		    }else if(T=="TypeFunctionReturn"){
+			    return {
+				Type:"FunctionReturn",
+				V:this.ParseType(State,Type.Read("V1")),
+				toString:function(){
+					return `():${String(this.V)}`;	
+				}
+			    };
 		    }else if(T=="TypeArray"){
 			return {
 				Type:"Array",
@@ -4433,6 +4458,11 @@ const XBS = ((DebugMode = false) => {
 			    }
 			  }
 			  return true;
+			}else if(b&&b.Type=="FunctionReturn"){
+				let R=Check(a,"function");
+				if(!R)return R;
+				if(!a.__XBS_RETURN_TYPE)return false;
+				return Check(a.__XBS_RETURN_TYPE,b.V);
 			}else{
 				if(b=="any")return true;
 				return b==ta;
