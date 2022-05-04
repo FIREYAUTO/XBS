@@ -4051,16 +4051,7 @@ const XBS = ((DebugMode = false) => {
 				if(Variable.Constant===true&&Variable.Type)ErrorHandler.IError(Token,"Cannot",`modify type of the constant variable ${Name} because it already has a type`);
 				if(Variable.TypeLocked===true)ErrorHandler.IError(Token,"Cannot",`modify type of variable ${Name}`);
 				this.TypeCheck(State,Variable.Value,Value);
-				Variable.Type.Value=Value;
-				let T=undefined;
-				let TE=Token.Read("Templates");
-				if(TE){
-					T=[];
-					for(let V of TE){
-						T.push(V.Name);	
-					}
-				}
-				Variable.Type.Templates=T;
+				Variable.Type=Value;
 			},
 			TypeLock:function(State,Token){
 				let Names = Token.Read("Names");
