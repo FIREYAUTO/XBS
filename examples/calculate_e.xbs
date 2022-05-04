@@ -1,0 +1,9 @@
+func CalculateE(p){
+	set e=0,n=1;
+	for(set i=1;i<=p;i++)
+		e+=1/((n*=i)/i);
+	send e;
+}
+
+log(CalculateE(100));
+log(math.e);
