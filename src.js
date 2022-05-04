@@ -4384,15 +4384,8 @@ const XBS = ((DebugMode = false) => {
         		if(!(Type instanceof ASTBase)){return Type}
         		let T = Type.Type;
 		    if (T=="GetType"){
-			let RT=State.GetRawType(Type.Read("Name"));
-			if(RT&&RT.Templates&&RT.Templates.length>0&&RT.Templates.includes(Type.Read("Name"))){
-				return Templates[RT.Templates.indexOf(Type.Read("Name"))];
-				/*
-				return {
-					Type:"VarTemplate",
-					V:this.ParseType(State,Templates[Type.Read("Name")],Templates),
-				};
-				*/
+			if(Templates[Type.Read("Name")]){
+				return Templates[Type.Read("Name")];
 			}
 			return this.ParseType(State,State.GetType(Type.Read("Name")),Templates);
 		    }else if(T=="TypeOr"){
@@ -4450,10 +4443,20 @@ const XBS = ((DebugMode = false) => {
 			    };
 		    }else if(T=="TypeTemplate"){
 			    let T=[];
+			    let Ex = Type.Read("Expression");
 			    for(let E of Type.Read("Templates")){
 				let R=this.ParseType(State,E,Templates);
 				T.push(R);
 				Templates.push(R);
+			    }
+			    if(Ex.Type=="GetType"){
+				let RT=State.GetRawType(Ex.Read("Name"));
+				if(RT&&RT.Templates){
+					for(let k in RT.Templates){
+						let TS=RT.Templates[k];
+						Templates[TS]=T[k];
+					}
+				}    
 			    }
 			    return {
 				Type:"Template",
