@@ -716,7 +716,7 @@ const XBS = ((DebugMode = false) => {
 							this.Next(2);
 							let Node = this.NewNode("TypeFunctionReturn");
 							Node.Write("V1",this.ParseTypeExpression());
-							return Node;
+							return [Node,Priority];
 						}else{
 							this.Next(-1);	
 						}
@@ -791,6 +791,19 @@ const XBS = ((DebugMode = false) => {
 			},
 		],
 		ComplexTypeExpressions:[
+			{
+				Value:"LT",
+				Type:"Operator",
+				Stop:true,
+				Priority:300,
+				Call:function(Value,Priority){
+					this.Next();
+					let Node = this.NewNode("TypeTemplate");
+					Node.Write("Expression",Value);
+					Node.Write("Templates", this.TypeExpressionListInside({ Value: "LT", Type: "Operator" }, { Value: "GT", Type: "Operator" }));
+					return new ASTExpression(Node,Priority);
+				},
+			},
 			{
 				Value: "OR",
 				Type: "Operator",
@@ -890,6 +903,10 @@ const XBS = ((DebugMode = false) => {
 						ErrorHandler.AError(this,"Expected","identifier for type name",this.GetFormattedToken(T,true,false));
 					}
 					Node.Write("Name",T.Value);
+					if(this.CheckNext("LT","Operator")){
+						this.Next();
+						Node.Write("Templates", this.IdentifierListInside({ Value: "LT", Type: "Operator" }, { Value: "GT", Type: "Operator" }));
+					}
 					this.TestNext("EQ","Assignment");
 					this.Next(2);
 					Node.Write("Value",this.ParseTypeExpression());
@@ -908,6 +925,10 @@ const XBS = ((DebugMode = false) => {
 						ErrorHandler.AError(this,"Expected","identifier for variable name",this.GetFormattedToken(T,true,false));
 					}
 					Node.Write("Name",T.Value);
+					if(this.CheckNext("LT","Operator")){
+						this.Next();
+						Node.Write("Templates", this.IdentifierListInside({ Value: "LT", Type: "Operator" }, { Value: "GT", Type: "Operator" }));
+					}
 					this.TestNext("EQ","Assignment");
 					this.Next(2);
 					Node.Write("Value",this.ParseTypeExpression());
@@ -2676,6 +2697,36 @@ const XBS = ((DebugMode = false) => {
 			}
 			return this.ParseComplexTypeExpression(new ASTExpression(Result, Priority),IgnoreList);		
 		}
+		TypeExpressionList(Priority,End) {
+			let List = [];
+			do {
+				List.push(this.ParseTypeExpression(Priority));
+				if (this.CheckNext("COMMA", "Operator")) {
+					this.Next(2);
+					if(End&&this.Token&&AST.IsToken(this.Token,End.Value,End.Type)){End.Stopped=true;break}
+					continue;
+				}
+				break;
+			} while (true);
+			return List;
+		}
+		TypeExpressionListInside(Start, End, Priority) {
+			if (AST.IsToken(this.Token, Start.Value, Start.Type)) {
+				this.Next();
+				if (AST.IsToken(this.Token, End.Value, End.Type)) {
+					return [];
+				}
+				let List = this.TypeExpressionList(Priority,End);
+				if(!End.Stopped){
+					this.TestNext(End.Value, End.Type);
+					this.Next();
+				}
+				return List;
+			} else {
+				this.ErrorIfEOS();
+				ErrorHandler.AError(this, "Expected", `${this.GetFormattedTokenRaw(Start.Type,Tokenizer.ValueFromName(Start.Value,Start.Type),true,true)}`,this.GetFormattedToken(this.Token,true,true,true));
+			}
+		}
 		GetType(Priority,IgnoreList){
 			if(!this.CheckNext("COLON","Operator"))return;
 			this.Next(2);
@@ -2994,14 +3045,25 @@ const XBS = ((DebugMode = false) => {
 		IsType(Name){
 			return this.TypeVars.hasOwnProperty(Name);
 		}
-		NewType(Name,Value){
-			this.TypeVars[Name]=Value;
+		NewType(Name,Value,Extra={}){
+			let T = {
+				Value:Value,	
+			};
+			for(let k in Extra)T[k]=Extra[k];
+			this.TypeVars[Name]=T;
 		}
 		GetType(Name){
 			if(this.IsType(Name)){
-				return this.TypeVars[Name];
+				return this.TypeVars[Name].Value;
 			}else if(this.Parent){
 				return this.Parent.GetType(Name);
+			}
+		}
+		GetRawType(Name){
+			if(this.IsType(Name)){
+				return this.TypeVars[Name];
+			}else if(this.Parent){
+				return this.Parent.GetRawType(Name);
 			}
 		}
 		Write(Name, Value) {
@@ -3955,7 +4017,17 @@ const XBS = ((DebugMode = false) => {
 			},
 			NewType:function(State,Token){
 				let Name = Token.Read("Name");
-				State.NewType(Name,Token.Read("Value"));
+				let T=undefined;
+				let TE= Token.Read("Templates");
+				if(TE){
+					T=[];
+					for(let V of TE){
+						T.push(V.Name);	
+					}
+				}
+				State.NewType(Name,Token.Read("Value"),{
+					Templates:T,
+				});
 			},
 			ExpressionalString:function(State,Token){
 				let Expressions = Token.Read("Expressions");
@@ -3973,13 +4045,22 @@ const XBS = ((DebugMode = false) => {
 			},
 			VariableType:function(State,Token){
 				let Name = Token.Read("Name");
-				let Value = this.ParseType(State,Token.Read("Value"));
+				let Value = Token.Read("Value")//this.ParseType(State,Token.Read("Value"));
 				let Variable = State.GetGlobalRawVariable(Name);
 				if(!Variable)ErrorHandler.IError(Token,"Cannot",`set type of non-existent variable ${Name} to ${String(Value)}`);
 				if(Variable.Constant===true&&Variable.Type)ErrorHandler.IError(Token,"Cannot",`modify type of the constant variable ${Name} because it already has a type`);
 				if(Variable.TypeLocked===true)ErrorHandler.IError(Token,"Cannot",`modify type of variable ${Name}`);
 				this.TypeCheck(State,Variable.Value,Value);
-				Variable.Type = Value;
+				Variable.Type.Value=Value;
+				let T=undefined;
+				let TE=Token.Read("Templates");
+				if(TE){
+					T=[];
+					for(let V of TE){
+						T.push(V.Name);	
+					}
+				}
+				Variable.Type.Templates=T;
 			},
 			TypeLock:function(State,Token){
 				let Names = Token.Read("Names");
@@ -4308,16 +4389,26 @@ const XBS = ((DebugMode = false) => {
 			return Class;
 		}
 		//-- Type Handler --\\
-		ParseType(State,Type){
+		ParseType(State,Type,Templates=[]){
         		if(!(Type instanceof ASTBase)){return Type}
         		let T = Type.Type;
 		    if (T=="GetType"){
-			return this.ParseType(State,State.GetType(Type.Read("Name")));
+			let RT=State.GetRawType(Type.Read("Name"));
+			if(RT&&RT.Templates&&RT.Templates.length>0&&RT.Templates.includes(Type.Read("Name"))){
+				return Templates[RT.Templates.indexOf(Type.Read("Name"))];
+				/*
+				return {
+					Type:"VarTemplate",
+					V:this.ParseType(State,Templates[Type.Read("Name")],Templates),
+				};
+				*/
+			}
+			return this.ParseType(State,State.GetType(Type.Read("Name")),Templates);
 		    }else if(T=="TypeOr"){
 			return {
 				Type:"Union",
-			    V1:this.ParseType(State,Type.Read("V1")),
-			    V2:this.ParseType(State,Type.Read("V2")),
+			    V1:this.ParseType(State,Type.Read("V1"),Templates),
+			    V2:this.ParseType(State,Type.Read("V2"),Templates),
 			    toString:function(){
 				return `${String(this.V1)}|${String(this.V2)}`
 			    }
@@ -4325,8 +4416,8 @@ const XBS = ((DebugMode = false) => {
 		    }else if(T=="TypeUnion"){
 			return {
 				Type:"Concat",
-			    V1:this.ParseType(State,Type.Read("V1")),
-			    V2:this.ParseType(State,Type.Read("V2")),
+			    V1:this.ParseType(State,Type.Read("V1"),Templates),
+			    V2:this.ParseType(State,Type.Read("V2"),Templates),
 			    toString:function(){
 				return `${String(this.V1)}&${String(this.V2)}`
 			    }
@@ -4334,7 +4425,7 @@ const XBS = ((DebugMode = false) => {
 		    }else if(T=="TypeNull"){
 			return {
 				Type:"Null",
-			    V:this.ParseType(State,Type.Read("V1")),
+			    V:this.ParseType(State,Type.Read("V1"),Templates),
 			    toString:function(){
 				return `?${String(this.V)}`
 			    }
@@ -4342,14 +4433,14 @@ const XBS = ((DebugMode = false) => {
 		    }else if(T=="TypeNot"){
 			return {
 				Type:"Not",
-			    V:this.ParseType(State,Type.Read("V1")),
+			    V:this.ParseType(State,Type.Read("V1"),Templates),
 			    toString:function(){
 				return `!${String(this.V)}`
 			    }
 			};
 		    }else if(T=="TypeMatch"){
 			    let Expressions = this.ParseArray(State,Type.Read("Match"));
-			    let Value = this.ParseType(State,Type.Read("Value"));
+			    let Value = this.ParseType(State,Type.Read("Value"),Templates);
 			    return {
 				Type:"Match",
 				V:Value,
@@ -4361,15 +4452,30 @@ const XBS = ((DebugMode = false) => {
 		    }else if(T=="TypeFunctionReturn"){
 			    return {
 				Type:"FunctionReturn",
-				V:this.ParseType(State,Type.Read("V1")),
+				V:this.ParseType(State,Type.Read("V1"),Templates),
 				toString:function(){
 					return `():${String(this.V)}`;	
+				}
+			    };
+		    }else if(T=="TypeTemplate"){
+			    let T=[];
+			    for(let E of Type.Read("Templates")){
+				let R=this.ParseType(State,E,Templates);
+				T.push(R);
+				Templates.push(R);
+			    }
+			    return {
+				Type:"Template",
+				V:this.ParseType(State,Type.Read("Expression"),Templates),
+				T:T,
+				toString:function(){
+					return `${String(this.V)}<${this.T.join(",")}>`;	
 				}
 			    };
 		    }else if(T=="TypeArray"){
 			return {
 				Type:"Array",
-			    V:this.ParseType(State,Type.Read("List")),
+			    V:this.ParseType(State,Type.Read("List"),Templates),
 			    toString:function(){
 				return `[${String(this.V)}]`;
 			    }
@@ -4379,8 +4485,8 @@ const XBS = ((DebugMode = false) => {
 		      if(TY=="TypedKeys"){
 			return {
 			  Type:"TypedKeysObject",
-			  K:this.ParseType(State,Type.Read("KeyType")),
-			  V:this.ParseType(State,Type.Read("ValueType")),
+			  K:this.ParseType(State,Type.Read("KeyType"),Templates),
+			  V:this.ParseType(State,Type.Read("ValueType"),Templates),
 			  toString:function(){
 			    return `{[${String(this.K)}]:${String(this.V)}}`;
 			  }
@@ -4389,7 +4495,7 @@ const XBS = ((DebugMode = false) => {
 			let O = Type.Read("TypeObject");
 			let N = {};
 			for(let k in O){
-			  N[k]=this.ParseType(State,O[k]);
+			  N[k]=this.ParseType(State,O[k],Templates);
 			}
 			return {
 			  Type:"NamedKeysObject",
@@ -4410,23 +4516,23 @@ const XBS = ((DebugMode = false) => {
 		TypeCheck(State,Value,Type){
 		    Type=this.ParseType(State,Type);
 		    let self = this;
-		    let Check=function(a,b){
+		    let Check=function(a,b,TE=[]){
 			if(a===undefined)a=null;
 			let ta=self.GetType(a);
 			if (b&&b.Type == "Union"){
-				return Check(a,b.V1)||Check(a,b.V2);
+				return Check(a,b.V1,TE)||Check(a,b.V2,TE);
 			}else if(b&&b.Type=="Concat"){
-				return Check(a,b.V1)&&Check(a,b.V2);
+				return Check(a,b.V1,TE)&&Check(a,b.V2,TE);
 			}else if(b&&b.Type=="Array"){
-				return Check(a,"array")&&(!a.find((v, k)=>!Check(v, b.V)))
+				return Check(a,"array",TE)&&(!a.find((v, k)=>!Check(v, b.V,TE)))
 			}else if(b&&b.Type=="Null"){
-				return Check(a,"null")||Check(a,b.V);
+				return Check(a,"null",TE)||Check(a,b.V,TE);
 			}else if(b&&b.Type=="Not"){
-				return !Check(a,b.V);
+				return !Check(a,b.V,TE);
 			}else if(b&&b.Type=="Match"){
 				let V = b.V,
 					E = b.E;
-				let R = Check(a,V);
+				let R = Check(a,V,TE);
 				if(!R)return R;
 				for(let k in E){
 					let e = E[k];
@@ -4438,31 +4544,33 @@ const XBS = ((DebugMode = false) => {
 				}
 				return false;
 			}else if(b&&b.Type=="TypedKeysObject"){
-			  let R = Check(a,"object");
+			  let R = Check(a,"object",TE);
 			  if(!R)return R;
 			  for(let k in a){
 			    let v = a[k];
-			    let c = Check(k,b.K)&&Check(v,b.V);
+			    let c = Check(k,b.K,TE)&&Check(v,b.V,TE);
 			    if(!c)return c;
 			  }
 			  return true;
 			}else if(b&&b.Type=="NamedKeysObject"){
-			  let R = Check(a,"object");
+			  let R = Check(a,"object",TE);
 			  if(!R)return R;
 			  let N = b.V;
 			  for(let k in N){
 			    let v = N[k];
 			    if(Object.prototype.hasOwnProperty.call(a,k)){
-			      let c = Check(a[k],v);
+			      let c = Check(a[k],v,TE);
 			      if(!c)return c;
 			    }
 			  }
 			  return true;
 			}else if(b&&b.Type=="FunctionReturn"){
-				let R=Check(a,"function");
+				let R=Check(a,"function",TE);
 				if(!R)return R;
 				if(!a.__XBS_RETURN_TYPE)return false;
-				return Check(a.__XBS_RETURN_TYPE,b.V);
+				return Check(a.__XBS_RETURN_TYPE,b.V,TE);
+			}else if(b&&b.Type=="Template"){
+				return Check(a,b.V,TE);
 			}else{
 				if(b=="any")return true;
 				return b==ta;
