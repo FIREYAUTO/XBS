@@ -4,7 +4,9 @@ Adds import/export components to XBS for modular-like code.
 
 Example:
 
+import "https://fireyauto.github.io/XBS/imports/http.xbs" with *;
 
+log(http::get("https://fireyauto.github.io/SingleScript/imports/load.singlescript"))
 
 */
 
