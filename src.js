@@ -1836,6 +1836,33 @@ const XBS = ((DebugMode = false) => {
 					return [Node,Priority];
 				},
 			},
+			{
+				Value: "INC",
+				Type: "Operator",
+				Stop: false,
+				Call: function (Priority) {
+					this.Next();
+					let Node = this.NewNode("Assignment");
+					Node.Write("Type", 20);
+					Node.Write("Name", this.ParseExpression(400));
+					Node.Write("Value", null);
+					return [Node, Priority];
+				},
+			},
+			{
+				Value: "DEINC",
+				Type: "Operator",
+				Stop: false,
+				Call: function (Priority) {
+					this.Next();
+					let Node = this.NewNode("Assignment");
+					Node.Write("Type", 21);
+					Node.Write("ReturnValue",true);
+					Node.Write("Name", this.ParseExpression(400));
+					Node.Write("Value", null);
+					return [Node, Priority];
+				},
+			},
 			/*
 			{
 				Value:"Value",
@@ -3239,7 +3266,7 @@ const XBS = ((DebugMode = false) => {
                         				}
 							let Previous = Variable.Value;
 							State.SetVariable(Name, Call(Variable.Value, Value));
-							return Token.Read("Type") >= 20 ? Previous : Variable.Value;
+							return Token.Read("Type") >= 20&&!Token.Read("ReturnValue") ? Previous : Variable.Value;
 						} else {
 							let Result = Call(null, Value);
 							State.SetVariable(Name, Result);
@@ -3275,7 +3302,6 @@ const XBS = ((DebugMode = false) => {
 						}else{
 							OBJ[Index] = Res;	
 						}
-						
 						return OBJ[Index];
 					} else {
 						ErrorHandler.IError(Token, "Unexpected", "assignment operator");
