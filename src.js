@@ -3266,7 +3266,8 @@ const XBS = ((DebugMode = false) => {
                         				}
 							let Previous = Variable.Value;
 							State.SetVariable(Name, Call(Variable.Value, Value));
-							return Token.Read("Type") >= 20&&!Token.Read("ReturnValue") ? Previous : Variable.Value;
+							if(Token.Read("Type")>=20&&Token.Read("ReturnValue"))return Variable.Value;
+							return Token.Read("Type") >= 20 ? Previous : Variable.Value;
 						} else {
 							let Result = Call(null, Value);
 							State.SetVariable(Name, Result);
