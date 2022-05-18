@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <path d="M 358.004 21.986 Q 394.443 1.523 430.882 21.986 L 572.353 101.429 Q 608.793 121.892 608.793 162.817 L 608.793 321.703 Q 608.793 362.628 572.353 383.091 L 430.882 462.534 Q 394.443 482.997 358.004 462.534 L 216.533 383.091 Q 180.093 362.629 180.093 321.703 L 180.093 162.817 Q 180.093 121.891 216.533 101.429 Z" style="stroke-width: 23px; fill-rule: nonzero; paint-order: fill; fill: rgb(255, 118, 49); stroke: rgb(232, 102, 36);" transform="matrix(-0.00007, 1, -1, -0.00007, 492.287628, -144.426055)" bx:shape="n-gon 394.443 242.26 247.51 240.737 6 0.17 1@eb8849b2"/>
+  <rect x="146.532" width="206.937" height="381.586" rx="5" ry="5" style="stroke: rgb(0, 0, 0); stroke-opacity: 0; fill: rgb(206, 206, 206);" y="59.206"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(148, 148, 148);" x1="178.187" y1="116.822" x2="308.187" y2="116.822" bx:origin="0.00575 0.5"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(148, 148, 148);" x1="178.187" y1="157" x2="308.187" y2="157" bx:origin="0.00575 0.5"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(148, 148, 148);" x1="178.187" y1="197" x2="308.187" y2="197" bx:origin="0.00575 0.5"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(51, 255, 20);" x1="182.187" y1="231" x2="192.2" y2="231" bx:origin="0.00575 0"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(255, 28, 74);" x1="220" y1="231" x2="230.013" y2="231" bx:origin="0.00575 0"/>
+  <rect x="179.113" y="282" width="141.775" height="135.83" rx="5" ry="5" style="stroke: rgb(0, 0, 0); stroke-opacity: 0; fill: rgb(148, 148, 148);"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(51, 255, 20);" x1="182.187" y1="255" x2="192.2" y2="255" bx:origin="0.00575 0"/>
+  <line style="fill: rgb(248, 248, 248); stroke-width: 14px; stroke-linecap: round; stroke: rgb(51, 255, 20);" x1="220" y1="255" x2="230.013" y2="255" bx:origin="0.00575 0"/>
+</svg>
