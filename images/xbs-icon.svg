@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
   <defs>
-    <style bx:fonts="JetBrains Mono">@import url(https://fonts.googleapis.com/css2?family=JetBrains+Mono%3Aital%2Cwght%400%2C100%3B0%2C200%3B0%2C300%3B0%2C400%3B0%2C500%3B0%2C600%3B0%2C700%3B0%2C800%3B1%2C100%3B1%2C200%3B1%2C300%3B1%2C400%3B1%2C500%3B1%2C600%3B1%2C700%3B1%2C800&amp;display=swap);</style>
+    <style bx:fonts="JetBrains Mono" type="text/css">@import url(https://fonts.googleapis.com/css2?family=JetBrains+Mono%3Aital%2Cwght%400%2C100%3B0%2C200%3B0%2C300%3B0%2C400%3B0%2C500%3B0%2C600%3B0%2C700%3B0%2C800%3B1%2C100%3B1%2C200%3B1%2C300%3B1%2C400%3B1%2C500%3B1%2C600%3B1%2C700%3B1%2C800&amp;display=swap);</style>
   </defs>
   <path d="M 351.573 25.597 Q 394.443 1.523 437.313 25.597 L 565.923 97.818 Q 608.793 121.892 608.793 170.039 L 608.793 314.481 Q 608.793 362.628 565.923 386.702 L 437.313 458.923 Q 394.443 482.997 351.573 458.923 L 222.963 386.702 Q 180.093 362.629 180.093 314.481 L 180.093 170.039 Q 180.093 121.891 222.963 97.818 Z" style="stroke-width: 23px; stroke: rgb(53, 163, 223); fill-rule: nonzero; paint-order: fill; fill: rgb(101, 180, 254);" transform="matrix(-0.00007, 1, -1, -0.00007, 492.287628, -144.426055)" bx:shape="n-gon 394.443 242.26 247.51 240.737 6 0.2 1@d3207504"/>
   <path d="M 250.693 35.65 L 322.236 35.655 C 354.335 35.657 378.407 49.949 394.454 78.53 L 466.666 207.145 C 482.713 235.726 482.711 264.306 466.66 292.885 L 394.43 421.49 C 378.379 450.069 354.304 464.357 322.206 464.355 L 250.693 464.35" style="stroke-width: 23px; stroke: rgb(53, 163, 223); fill-rule: nonzero; paint-order: fill; fill: rgb(130, 195, 255);"/>
-  <text style="fill: rgb(255, 255, 255); font-family: &quot;JetBrains Mono&quot;; font-size: 25.9px; white-space: pre;" transform="matrix(7.933012, 0, 0.10823, 10.103015, -1729.110718, -2275.064941)" x="223.611" y="259.259" bx:origin="0.635195 0.5">XBS</text>
+  <text style="fill: rgb(255, 255, 255); font-family: &quot;JetBrains Mono&quot;,monospace; font-size: 25.9px; white-space: pre;" transform="matrix(7.933012, 0, 0.10823, 10.103015, -1729.110718, -2275.064941)" x="223.611" y="259.259" bx:origin="0.635195 0.5">XBS</text>
 </svg>
